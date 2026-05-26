@@ -1,0 +1,141 @@
+import { describe, it, expect } from 'vitest'
+import { defineConfig } from '../src/config/define-config.js'
+import { buildEnvSchema, validateEnv } from '../src/config/env.js'
+import { loadConfig } from '../src/config/loader.js'
+import type { HypersonicConfig } from '../src/config/types.js'
+
+const baseConfig: HypersonicConfig = {
+  server: { port: 3000, host: 'localhost' },
+  auth: { trustedOrigins: ['http://localhost:3000'] },
+  inertia: { ssr: true },
+}
+
+const baseEnv = {
+  DATABASE_URL: 'postgresql://localhost:5432/db',
+  BETTER_AUTH_SECRET: 'a'.repeat(32),
+}
+
+describe('defineConfig', () => {
+  it('returns the config object unchanged', () => {
+    expect(defineConfig(baseConfig)).toBe(baseConfig)
+  })
+})
+
+describe('buildEnvSchema', () => {
+  it('accepts valid base env with no providers', () => {
+    expect(buildEnvSchema(baseConfig).safeParse(baseEnv).success).toBe(true)
+  })
+
+  it('requires GITHUB vars when github provider is enabled', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, providers: { github: true } },
+    }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(false)
+    expect(
+      buildEnvSchema(config).safeParse({
+        ...baseEnv,
+        GITHUB_CLIENT_ID: 'id',
+        GITHUB_CLIENT_SECRET: 'sec',
+      }).success,
+    ).toBe(true)
+  })
+
+  it('requires GOOGLE vars when google provider is enabled', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, providers: { google: true } },
+    }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(false)
+    expect(
+      buildEnvSchema(config).safeParse({
+        ...baseEnv,
+        GOOGLE_CLIENT_ID: 'id',
+        GOOGLE_CLIENT_SECRET: 'sec',
+      }).success,
+    ).toBe(true)
+  })
+
+  it('requires all four OAuth vars when both providers are enabled', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, providers: { github: true, google: true } },
+    }
+    const schema = buildEnvSchema(config)
+    expect(schema.safeParse({ ...baseEnv, GITHUB_CLIENT_ID: 'gid', GITHUB_CLIENT_SECRET: 'gsec' }).success).toBe(false)
+    expect(
+      schema.safeParse({
+        ...baseEnv,
+        GITHUB_CLIENT_ID: 'gid',
+        GITHUB_CLIENT_SECRET: 'gsec',
+        GOOGLE_CLIENT_ID: 'goid',
+        GOOGLE_CLIENT_SECRET: 'gosec',
+      }).success,
+    ).toBe(true)
+  })
+
+  it('rejects BETTER_AUTH_SECRET shorter than 32 chars', () => {
+    expect(
+      buildEnvSchema(baseConfig).safeParse({ ...baseEnv, BETTER_AUTH_SECRET: 'tooshort' }).success,
+    ).toBe(false)
+  })
+
+  it('rejects empty DATABASE_URL', () => {
+    expect(
+      buildEnvSchema(baseConfig).safeParse({ ...baseEnv, DATABASE_URL: '' }).success,
+    ).toBe(false)
+  })
+})
+
+describe('validateEnv', () => {
+  it('returns a typed Env object for valid input', () => {
+    const env = validateEnv(baseConfig, baseEnv)
+    expect(env.DATABASE_URL).toBe(baseEnv.DATABASE_URL)
+    expect(env.BETTER_AUTH_SECRET).toBe(baseEnv.BETTER_AUTH_SECRET)
+  })
+
+  it('throws listing all missing variables', () => {
+    expect(() => validateEnv(baseConfig, {})).toThrowError(/Environment validation failed/)
+  })
+
+  it('includes the missing field name in the error message', () => {
+    expect(() =>
+      validateEnv(baseConfig, { BETTER_AUTH_SECRET: 'a'.repeat(32) }),
+    ).toThrowError(/DATABASE_URL/)
+  })
+})
+
+describe('loadConfig', () => {
+  it('returns config and env when import succeeds and env is valid', async () => {
+    const importer = async () => ({ default: baseConfig })
+    const result = await loadConfig('/fake', baseEnv, importer)
+    expect(result.config).toEqual(baseConfig)
+    expect(result.env.DATABASE_URL).toBe(baseEnv.DATABASE_URL)
+  })
+
+  it('throws when the config file cannot be imported', async () => {
+    const importer = async () => { throw new Error('ENOENT') }
+    await expect(loadConfig('/fake', baseEnv, importer)).rejects.toThrowError(
+      /Failed to load hypersonic\.config\.ts/,
+    )
+  })
+
+  it('includes the original error detail in the thrown message', async () => {
+    const importer = async () => { throw new Error('syntax error') }
+    await expect(loadConfig('/fake', baseEnv, importer)).rejects.toThrowError(/syntax error/)
+  })
+
+  it('throws when the default export is missing', async () => {
+    const importer = async () => ({})
+    await expect(loadConfig('/fake', baseEnv, importer)).rejects.toThrowError(
+      /must export a config via defineConfig/,
+    )
+  })
+
+  it('throws when env is invalid', async () => {
+    const importer = async () => ({ default: baseConfig })
+    await expect(loadConfig('/fake', {}, importer)).rejects.toThrowError(
+      /Environment validation failed/,
+    )
+  })
+})
