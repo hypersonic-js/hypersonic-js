@@ -111,3 +111,9 @@ import {
 ## License
 
 MIT © [Zesuperaker](https://github.com/Zesuperaker)
+
+## Library Dev
+
+Run tests: npm test
+
+Run tests with coverage report: npm run test:coverage
