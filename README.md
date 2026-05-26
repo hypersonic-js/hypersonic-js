@@ -117,3 +117,7 @@ MIT © [Zesuperaker](https://github.com/Zesuperaker)
 Run tests: npm test
 
 Run tests with coverage report: npm run test:coverage
+
+## Test install
+
+npm install github:Zesuperaker/hypersonic-js#master
