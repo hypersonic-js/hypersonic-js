@@ -1,0 +1,14 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+allowBuilds:
+  '@prisma/engines': false
+  prisma: false
+minimumReleaseAgeExclude:
+  - '@turbo/darwin-64@2.9.15'
+  - '@turbo/darwin-arm64@2.9.15'
+  - '@turbo/linux-64@2.9.15'
+  - '@turbo/linux-arm64@2.9.15'
+  - '@turbo/windows-64@2.9.15'
+  - '@turbo/windows-arm64@2.9.15'
+  - turbo@2.9.15

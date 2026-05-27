@@ -23,7 +23,7 @@
     "@types/node": "25.9.1",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
-    "@types/supertest": "7.2.2",
+    "@types/supertest": "7.2.0",
     "@vitest/coverage-v8": "4.1.7",
     "prisma": "7.8.0",
     "supertest": "7.2.2",
