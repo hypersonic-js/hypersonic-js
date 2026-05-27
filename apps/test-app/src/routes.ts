@@ -20,6 +20,9 @@ export function registerRoutes(
   const requireAuth = createAuthGuard(auth)
 
   // ─── Public ────────────────────────────────────────────────────────────────
+  app.get('/', (_req: Request, res: Response) => {
+  res.redirect('/posts')
+  })
 
   app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok' })

@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "@hypersonic/core": "workspace:*",
-    "@prisma/adapter-pg": "^7.8.0"
+    "@prisma/adapter-pg": "^7.8.0",
+    "express": "5.2.1"
   },
   "devDependencies": {
     "@prisma/client": "7.8.0",
@@ -26,11 +27,16 @@
     "@types/react-dom": "19.2.3",
     "@types/supertest": "7.2.0",
     "@vitest/coverage-v8": "4.1.7",
+    "@types/express": "5.0.6",
     "dotenv": "^17.4.2",
     "prisma": "7.8.0",
     "supertest": "7.2.2",
     "typescript": "6.0.3",
     "vite": "8.0.14",
-    "vitest": "4.1.7"
+    "vitest": "4.1.7",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "@inertiajs/react": "3.2.0",
+    "better-auth": "1.6.11"
   }
 }

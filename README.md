@@ -112,19 +112,13 @@ import {
 
 MIT © [Zesuperaker](https://github.com/Zesuperaker)
 
-## Library Dev
-
-Run tests: npm test
-
-Run tests with coverage report: npm run test:coverage
-
 ## Test install
 
 npm install github:Zesuperaker/hypersonic-js#master
 
 ## Turbo Repo instructions
-
-- npm run build         
-- npm run test           
-- npm run test --workspace packages/core   
-- npm run test --workspace packages/admin  
+- pnpm install
+- pnpm run build         
+- pnpm run test           
+- pnpm run test --workspace packages/core   
+- pnpm run test --workspace packages/admin  
