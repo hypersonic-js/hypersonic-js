@@ -23,7 +23,8 @@ function buildHtml(page: InertiaPage, assetTags: string): string {
     ${assetTags}
   </head>
   <body>
-    <div id="app" data-page='${pageJson}'></div>
+    <script type="application/json" data-page="app">${pageJson}</script>
+    <div id="app"></div>
   </body>
 </html>`
 }
