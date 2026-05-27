@@ -2,6 +2,7 @@
   "name": "hypersonic",
   "version": "0.0.1",
   "private": true,
+  "packageManager": "pnpm@11.3.0",
   "scripts": {
     "build": "turbo build",
     "test": "turbo test",

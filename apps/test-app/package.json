@@ -16,7 +16,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@hypersonic/core": "workspace:*"
+    "@hypersonic/core": "workspace:*",
+    "@prisma/adapter-pg": "^7.8.0"
   },
   "devDependencies": {
     "@prisma/client": "7.8.0",
@@ -25,6 +26,7 @@
     "@types/react-dom": "19.2.3",
     "@types/supertest": "7.2.0",
     "@vitest/coverage-v8": "4.1.7",
+    "dotenv": "^17.4.2",
     "prisma": "7.8.0",
     "supertest": "7.2.2",
     "typescript": "6.0.3",

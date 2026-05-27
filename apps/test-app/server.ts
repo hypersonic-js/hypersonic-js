@@ -1,13 +1,13 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import { createApp, loadConfig, createAuth } from '@hypersonic/core'
 import { registerRoutes } from './src/routes.js'
 
 const { config, env } = await loadConfig()
-const prisma = new PrismaClient()
 
-// Auth instance for session checking in route guards.
-// createApp creates its own internal instance for /api/auth/*;
-// this one shares the same secret + database so sessions are consistent.
+const adapter = new PrismaPg({ connectionString: env.DATABASE_URL })
+const prisma = new PrismaClient({ adapter })
+
 const auth = createAuth({
   secret: env.BETTER_AUTH_SECRET,
   trustedOrigins: config.auth.trustedOrigins,
