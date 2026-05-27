@@ -1,0 +1,24 @@
+{
+  "name": "@hypersonic/test-app",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-strip-types server.ts",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d --wait && npx prisma migrate reset --force",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hypersonic/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@prisma/client": "7.8.0",
+    "@types/node": "25.9.1",
+    "prisma": "7.8.0",
+    "typescript": "6.0.3"
+  }
+}

@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: hypersonic_test_db
+    environment:
+      POSTGRES_USER: hypersonic
+      POSTGRES_PASSWORD: hypersonic
+      POSTGRES_DB: hypersonic_test
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hypersonic -d hypersonic_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - hypersonic_test_pgdata:/var/lib/postgresql/data
+
+volumes:
+  hypersonic_test_pgdata:
