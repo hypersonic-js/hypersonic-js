@@ -10,8 +10,8 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/index.ts',
-        'src/**/types.ts',   // Pure interface files — no runtime code
-        'src/inertia/vite.ts', // Tested in isolation in vite.test.ts
+        'src/**/types.ts',
+        'src/inertia/vite.ts',
       ],
       thresholds: {
         lines: 95,

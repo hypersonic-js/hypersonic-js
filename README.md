@@ -121,3 +121,10 @@ Run tests with coverage report: npm run test:coverage
 ## Test install
 
 npm install github:Zesuperaker/hypersonic-js#master
+
+## Turbo Repo instructions
+
+- npm run build         
+- npm run test           
+- npm run test --workspace packages/core   
+- npm run test --workspace packages/admin  
