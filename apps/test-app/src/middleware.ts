@@ -1,5 +1,5 @@
 import type { Response, NextFunction, RequestHandler } from 'express'
-import type { AuthLike, AuthRequest } from './types.js'
+import type { AuthLike, AuthRequest } from './types.ts'
 
 /**
  * Returns a middleware that checks for a valid session.

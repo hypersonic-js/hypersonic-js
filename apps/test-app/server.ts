@@ -1,7 +1,8 @@
+import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { createApp, loadConfig, createAuth } from '@hypersonic/core'
-import { registerRoutes } from './src/routes.js'
+import { registerRoutes } from './src/routes.ts'
 
 const { config, env } = await loadConfig()
 

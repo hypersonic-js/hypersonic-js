@@ -1,7 +1,7 @@
 import type { Application, Request, Response, NextFunction } from 'express'
 import { HttpError, NotFoundError, UnauthorizedError } from '@hypersonic/core'
-import { createAuthGuard } from './middleware.js'
-import type { AuthLike, AuthRequest, PrismaRouteClient } from './types.js'
+import { createAuthGuard } from './middleware.ts'
+import type { AuthLike, AuthRequest, PrismaRouteClient } from './types.ts'
 
 function parseId(raw: string | string[] | undefined): number {
   const str = Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '')
