@@ -8,7 +8,7 @@
 ## Setup
 
 ```bash
-git clone https://github.com/Zesuperaker/hypersonic.git
+git clone https://github.com/hypersonic-js/hypersonic.git
 cd hypersonic
 pnpm install
 ```
