@@ -1,0 +1,32 @@
+{
+  "name": "@hypersonic/complete",
+  "version": "0.0.1",
+  "description": "The complete Hypersonic.js framework — all packages in one install",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist coverage"
+  },
+  "dependencies": {
+    "@hypersonic/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.1",
+    "@vitest/coverage-v8": "4.1.7",
+    "typescript": "6.0.3",
+    "vitest": "4.1.7"
+  }
+}

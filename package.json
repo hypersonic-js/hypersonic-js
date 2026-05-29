@@ -9,9 +9,13 @@
     "test:coverage": "turbo test:coverage",
     "type-check": "turbo type-check",
     "dev": "turbo dev",
-    "clean": "turbo clean"
+    "clean": "turbo clean",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "turbo build && changeset publish"
   },
   "devDependencies": {
+    "@changesets/cli": "2.31.0",
     "turbo": "2.9.15",
     "typescript": "6.0.3"
   },
