@@ -24,7 +24,7 @@ pnpm install
 | `pnpm lint` | Lint all packages                    |
 | `pnpm docs:dev` | Start the docs dev server            |
 | `pnpm docs:build` | Build the docs                       |
-| `pnpm licenses` | Regenerate `THIRD_PARTY_LICENSES.md` |
+| `pnpm run licenses` | Regenerate `THIRD_PARTY_LICENSES.md` |
 
 To target a specific package:
 

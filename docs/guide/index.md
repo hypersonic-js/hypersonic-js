@@ -4,8 +4,7 @@ Hypersonic.js is a full-stack TypeScript framework inspired by Django's "batteri
 
 ## What it is
 
-- **Not** a React meta-framework. There are no server components, no caching abstractions, no hydration edge cases.
-- **Yes** a monolithic fullstack framework. Your backend (Express) and frontend (React via Inertia) live in the same project and share types automatically through Prisma.
+A monolithic fullstack framework. Your backend (Express) and frontend (React via Inertia) live in the same project and share types automatically through Prisma.
 
 ## Core stack
 

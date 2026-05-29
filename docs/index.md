@@ -22,8 +22,12 @@ features:
     details: Postgres, MySQL, MongoDB, SQLite. Type-safe queries generated directly from your schema.
   - title: Better Auth
     details: Sessions, OAuth providers, and brute-force protection pre-wired into your database models.
-  - title: Background Jobs
+  - title: Admin Dashboard — Coming Soon
+    details: Automatically generated React dashboard from your Prisma models. Manage data without writing a line of UI.
+  - title: Email Backend — Coming Soon
+    details: First-class email configuration and transactional sending built directly into the framework.
+  - title: Background Jobs — Coming Soon
     details: BullMQ + Redis queue system with a built-in visual dashboard for monitoring and retrying tasks.
-  - title: AI Primitives
+  - title: AI Primitives — Coming Soon
     details: Stream tokens from Express routes into React hooks. pgvector and MongoDB vector search built in.
 ---

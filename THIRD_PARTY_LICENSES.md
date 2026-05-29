@@ -1,7 +1,7 @@
 # Third-Party Licenses
 
 All dependencies used by Hypersonic.js and their respective licenses.
-469 packages across 10 license types.
+585 packages across 11 license types.
 
 _Generated: 2026-05-29_
 
@@ -302,9 +302,10 @@ software or this license, under any kind of legal claim._**
 
 ## BSD-2-Clause
 
-### Packages (8)
+### Packages (9)
 
 - **dotenv@17.4.2** — Copyright (c) 2015, Scott Motte — https://github.com/motdotla/dotenv#readme
+- **entities@7.0.1** — Felix Boehm — https://github.com/fb55/entities#readme
 - **eslint-scope@9.1.2** — Copyright (C) 2012-2013 Yusuke Suzuki (twitter: @Constellation) and other contributors. — https://github.com/eslint/js/blob/main/packages/eslint-scope/README.md
 - **espree@11.2.0** — Nicholas C. Zakas — https://github.com/eslint/js/blob/main/packages/espree/README.md
 - **esprima@4.0.1** — Ariya Hidayat — http://esprima.org
@@ -345,7 +346,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## BSD-3-Clause
 
-### Packages (9)
+### Packages (10)
 
 - **deepmerge-ts@7.1.5** — Rebecca Stevens — https://github.com/RebeccaStevens/deepmerge-ts#readme
 - **esquery@1.7.0** — Joel Feenstra — https://github.com/estools/esquery/
@@ -355,6 +356,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 - **istanbul-reports@3.2.0** — Krishnan Anantheswaran — https://istanbul.js.org/
 - **qs@6.15.2** — Copyright (c) 2014, Nathan LaFreniere and other [contributors](https://github.com/ljharb/qs/graphs/contributors) — https://github.com/ljharb/qs
 - **source-map-js@1.2.1** — Valentin 7rulnik Semirulnik — https://github.com/7rulnik/source-map-js
+- **speakingurl@14.0.1** — Sascha Droste — http://pid.github.io/speakingurl/
 - **sprintf-js@1.0.3** — Alexandru Marasteanu — https://github.com/alexei/sprintf.js#readme
 
 ### License Text
@@ -393,11 +395,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ---
 
+## CC0-1.0
+
+### Packages (1)
+
+- **@iconify-json/simple-icons@1.2.84** — https://icon-sets.iconify.design/simple-icons/
+
+### License Text
+
+_License text not found in package distribution._
+
+---
+
 ## ISC
 
-### Packages (21)
+### Packages (22)
 
 - **@prisma/dev@0.24.3** — Igal Klebanov
+- **@ungap/structured-clone@1.3.1** — Andrea Giammarchi — https://github.com/ungap/structured-clone#readme
 - **dezalgo@1.0.4** — Isaac Z. Schlueter — https://github.com/npm/dezalgo
 - **fastq@1.20.1** — Matteo Collina — https://github.com/mcollina/fastq#readme
 - **flatted@3.4.2** — Andrea Giammarchi — https://github.com/WebReflection/flatted#readme
@@ -422,29 +437,47 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### License Text
 
 ```
-The ISC License
+ISC License
 
-Copyright (c) Isaac Z. Schlueter and Contributors
+Copyright (c) 2021, Andrea Giammarchi, @WebReflection
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
 copyright notice and this permission notice appear in all copies.
 
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
-IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
 ```
 
 ---
 
 ## MIT
 
-### Packages (388)
+### Packages (500)
 
+- **@algolia/abtesting@1.18.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/abtesting#readme
+- **@algolia/autocomplete-core@1.17.7** — Algolia, Inc. — https://github.com/algolia/autocomplete
+- **@algolia/autocomplete-plugin-algolia-insights@1.17.7** — Algolia, Inc. — https://github.com/algolia/autocomplete
+- **@algolia/autocomplete-preset-algolia@1.17.7** — Algolia, Inc. — https://github.com/algolia/autocomplete
+- **@algolia/autocomplete-shared@1.17.7** — Algolia, Inc. — https://github.com/algolia/autocomplete
+- **@algolia/client-abtesting@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/client-abtesting#readme
+- **@algolia/client-analytics@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/client-analytics#readme
+- **@algolia/client-common@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript#readme
+- **@algolia/client-insights@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/client-insights#readme
+- **@algolia/client-personalization@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/client-personalization#readme
+- **@algolia/client-query-suggestions@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/client-query-suggestions#readme
+- **@algolia/client-search@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/client-search#readme
+- **@algolia/ingestion@1.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/ingestion#readme
+- **@algolia/monitoring@1.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/monitoring#readme
+- **@algolia/recommend@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/recommend#readme
+- **@algolia/requester-browser-xhr@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript#readme
+- **@algolia/requester-fetch@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript#readme
+- **@algolia/requester-node-http@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript#readme
 - **@babel/helper-string-parser@7.29.7** — The Babel Team — https://babel.dev/docs/en/next/babel-helper-string-parser
 - **@babel/helper-validator-identifier@7.29.7** — The Babel Team — https://github.com/babel/babel#readme
 - **@babel/parser@7.29.7** — The Babel Team — https://babel.dev/docs/en/next/babel-parser
@@ -478,9 +511,14 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **@changesets/types@4.1.0** — https://github.com/changesets/changesets/tree/main#readme
 - **@changesets/types@6.1.0** — https://github.com/changesets/changesets/tree/main#readme
 - **@changesets/write@0.4.0** — https://github.com/changesets/changesets/tree/main#readme
+- **@docsearch/css@3.8.2** — Algolia, Inc. — https://docsearch.algolia.com
+- **@docsearch/js@3.8.2** — Algolia, Inc. — https://docsearch.algolia.com
+- **@docsearch/react@3.8.2** — Algolia, Inc. — https://docsearch.algolia.com
+- **@esbuild/win32-x64@0.21.5** — https://github.com/evanw/esbuild#readme
 - **@eslint-community/eslint-utils@4.9.1** — Toru Nagashima — https://github.com/eslint-community/eslint-utils#readme
 - **@eslint-community/regexpp@4.12.2** — Toru Nagashima — https://github.com/eslint-community/regexpp#readme
 - **@hono/node-server@1.19.11** — Yusuke Wada — https://github.com/honojs/node-server
+- **@iconify/types@2.0.0** — Vjacheslav Trushkin — https://github.com/iconify/iconify
 - **@inertiajs/core@3.2.0** — https://inertiajs.com/
 - **@inertiajs/react@3.2.0** — https://inertiajs.com/
 - **@inquirer/external-editor@1.0.3** — Simon Boudrias — https://github.com/SBoudrias/Inquirer.js/blob/main/packages/external-editor/README.md
@@ -510,6 +548,16 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **@radix-ui/react-use-layout-effect@1.1.1** — https://radix-ui.com/primitives
 - **@rolldown/binding-win32-x64-msvc@1.0.2** — https://rolldown.rs/
 - **@rolldown/pluginutils@1.0.1** — Copyright (c) 2026-present, rolldown/plugins repository contributors — https://github.com/rolldown/plugins/tree/main/packages/pluginutils#readme
+- **@rollup/rollup-win32-x64-gnu@4.60.4** — Lukas Taegert-Atkinson — https://rollupjs.org/
+- **@rollup/rollup-win32-x64-msvc@4.60.4** — Lukas Taegert-Atkinson — https://rollupjs.org/
+- **@shikijs/core@2.5.0** — Pine Wu — https://github.com/shikijs/shiki#readme
+- **@shikijs/engine-javascript@2.5.0** — Anthony Fu — https://github.com/shikijs/shiki#readme
+- **@shikijs/engine-oniguruma@2.5.0** — Anthony Fu — https://github.com/shikijs/shiki#readme
+- **@shikijs/langs@2.5.0** — Anthony Fu — https://github.com/shikijs/shiki#readme
+- **@shikijs/themes@2.5.0** — Anthony Fu — https://github.com/shikijs/shiki#readme
+- **@shikijs/transformers@2.5.0** — Anthony Fu — https://github.com/shikijs/shiki#readme
+- **@shikijs/types@2.5.0** — Anthony Fu — https://github.com/shikijs/shiki#readme
+- **@shikijs/vscode-textmate@10.0.2** — Microsoft Corporation — https://github.com/shikijs/vscode-textmate#readme
 - **@standard-schema/spec@1.1.0** — Colin McDonnell — https://standardschema.dev
 - **@tailwindcss/node@4.3.0** — https://tailwindcss.com
 - **@tailwindcss/oxide@4.3.0** — https://github.com/tailwindlabs/tailwindcss#readme
@@ -522,11 +570,17 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **@types/cookiejar@2.1.5** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/cookiejar
 - **@types/deep-eql@4.0.2** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/deep-eql
 - **@types/esrecurse@4.3.1** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/esrecurse
+- **@types/estree@1.0.8** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/estree
 - **@types/estree@1.0.9** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/estree
 - **@types/express@5.0.6** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/express
 - **@types/express-serve-static-core@5.1.1** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/express-serve-static-core
+- **@types/hast@3.0.4** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/hast
 - **@types/http-errors@2.0.5** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/http-errors
 - **@types/json-schema@7.0.15** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/json-schema
+- **@types/linkify-it@5.0.0** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/linkify-it
+- **@types/markdown-it@14.1.2** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/markdown-it
+- **@types/mdast@4.0.4** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/mdast
+- **@types/mdurl@2.0.0** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/mdurl
 - **@types/methods@1.1.4** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/methods
 - **@types/node@12.20.55** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node
 - **@types/node@25.9.1** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node
@@ -539,6 +593,8 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **@types/serve-static@2.2.0** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/serve-static
 - **@types/superagent@8.1.10** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/superagent
 - **@types/supertest@7.2.0** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/supertest
+- **@types/unist@3.0.3** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/unist
+- **@types/web-bluetooth@0.0.21** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/web-bluetooth
 - **@typescript-eslint/eslint-plugin@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/eslint-plugin
 - **@typescript-eslint/parser@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/parser
 - **@typescript-eslint/project-service@8.60.0** — Copyright (c) 2025 typescript-eslint and other contributors — https://typescript-eslint.io
@@ -550,6 +606,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **@typescript-eslint/utils@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/utils
 - **@typescript-eslint/visitor-keys@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io
 - **@vitejs/plugin-react@6.0.2** — Evan You — https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#readme
+- **@vitejs/plugin-vue@5.2.4** — Evan You — https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue#readme
 - **@vitest/coverage-v8@4.1.7** — Anthony Fu — https://vitest.dev/guide/coverage
 - **@vitest/expect@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/api/expect
 - **@vitest/mocker@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://github.com/vitest-dev/vitest/tree/main/packages/mocker
@@ -558,11 +615,28 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **@vitest/snapshot@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/guide/snapshot
 - **@vitest/spy@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/api/mock
 - **@vitest/utils@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://github.com/vitest-dev/vitest/tree/main/packages/utils
+- **@vue/compiler-core@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/compiler-core#readme
+- **@vue/compiler-dom@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/compiler-dom#readme
+- **@vue/compiler-sfc@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/compiler-sfc#readme
+- **@vue/compiler-ssr@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/compiler-ssr#readme
+- **@vue/devtools-api@7.7.9** — webfansplz — https://github.com/vuejs/devtools#readme
+- **@vue/devtools-kit@7.7.9** — webfansplz — https://github.com/vuejs/devtools#readme
+- **@vue/devtools-shared@7.7.9** — webfansplz — https://github.com/vuejs/devtools#readme
+- **@vue/reactivity@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/reactivity#readme
+- **@vue/runtime-core@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/runtime-core#readme
+- **@vue/runtime-dom@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/runtime-dom#readme
+- **@vue/server-renderer@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/server-renderer#readme
+- **@vue/shared@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/shared#readme
+- **@vueuse/core@12.8.2** — Anthony Fu — https://github.com/vueuse/vueuse#readme
+- **@vueuse/integrations@12.8.2** — Anthony Fu — https://github.com/vueuse/vueuse/tree/main/packages/integrations#readme
+- **@vueuse/metadata@12.8.2** — Anthony Fu — https://github.com/vueuse/vueuse/tree/main/packages/metadata#readme
+- **@vueuse/shared@12.8.2** — Anthony Fu — https://github.com/vueuse/vueuse/tree/main/packages/shared#readme
 - **accepts@2.0.0** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/accepts#readme
 - **acorn@8.16.0** — Copyright (C) 2012-2022 by various contributors (see AUTHORS) — https://github.com/acornjs/acorn
 - **acorn-jsx@5.3.2** — Copyright (C) 2012-2017 by Ingvar Stepanyan — https://github.com/acornjs/acorn-jsx
 - **ajv@6.15.0** — Evgeny Poberezkin — https://ajv.js.org
 - **ajv@8.20.0** — Evgeny Poberezkin — https://ajv.js.org
+- **algoliasearch@5.52.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/algoliasearch#readme
 - **ansi-colors@4.1.3** — Brian Woodward — https://github.com/doowb/ansi-colors
 - **ansi-regex@5.0.1** — Sindre Sorhus — https://github.com/chalk/ansi-regex#readme
 - **argparse@1.0.10** — Copyright (C) 2012 by Vitaly Puzrin — https://github.com/nodeca/argparse#readme
@@ -577,6 +651,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **better-call@1.3.5** — Copyright (c) 2025 Bereket Engida — https://github.com/better-auth/better-call#readme
 - **better-path-resolve@1.0.0** — Zoltan Kochan — https://github.com/zkochan/packages/tree/master/better-path-resolve#readme
 - **better-result@2.9.2** — Dillon Mulroy — https://better-result.dev
+- **birpc@2.9.0** — Anthony Fu — https://github.com/antfu-collective/birpc#readme
 - **body-parser@2.2.2** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/expressjs/body-parser#readme
 - **brace-expansion@5.0.6** — https://github.com/juliangruber/brace-expansion#readme
 - **braces@3.0.3** — Jon Schlinkert — https://github.com/micromatch/braces
@@ -584,11 +659,15 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **c12@3.3.4** — https://github.com/unjs/c12#readme
 - **call-bind-apply-helpers@1.0.2** — Jordan Harband — https://github.com/ljharb/call-bind-apply-helpers#readme
 - **call-bound@1.0.4** — Jordan Harband — https://github.com/ljharb/call-bound#readme
+- **ccount@2.0.1** — Titus Wormer — https://github.com/wooorm/ccount#readme
 - **chai@6.2.2** — Jake Luer — http://chaijs.com
+- **character-entities-html4@2.1.0** — Titus Wormer — https://github.com/wooorm/character-entities-html4#readme
+- **character-entities-legacy@3.0.0** — Titus Wormer — https://github.com/wooorm/character-entities-legacy#readme
 - **chardet@2.1.1** — Dmitry Shirokov — https://github.com/runk/node-chardet
 - **chart.js@4.5.1** — Copyright (c) 2014-2024 Chart.js Contributors — https://www.chartjs.org
 - **chokidar@5.0.0** — Paul Miller — https://github.com/paulmillr/chokidar
 - **combined-stream@1.0.8** — Felix Geisendörfer — https://github.com/felixge/node-combined-stream
+- **comma-separated-tokens@2.0.3** — Titus Wormer — https://github.com/wooorm/comma-separated-tokens#readme
 - **component-emitter@1.3.1** — Copyright (c) 2014 Component contributors <dev@component.io> — https://github.com/sindresorhus/component-emitter#readme
 - **confbox@0.2.4** — https://github.com/unjs/confbox#readme
 - **content-disposition@1.1.0** — Douglas Christopher Wilson — https://github.com/jshttp/content-disposition#readme
@@ -598,6 +677,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **cookie@0.7.2** — Roman Shtylman — https://github.com/jshttp/cookie#readme
 - **cookie-signature@1.2.2** — TJ Holowaychuk — https://github.com/visionmedia/node-cookie-signature#readme
 - **cookiejar@2.1.4** — bradleymeck — https://github.com/bmeck/node-cookiejar#readme
+- **copy-anything@4.0.5** — Luca Ban - Mesqueeb — https://github.com/mesqueeb/copy-anything#readme
 - **cross-spawn@7.0.6** — André Cruz — https://github.com/moxystudio/node-cross-spawn
 - **csstype@3.2.3** — Fredrik Nicol — https://github.com/frenic/csstype#readme
 - **debug@4.4.3** — Josh Junon — https://github.com/debug-js/debug#readme
@@ -605,12 +685,15 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **defu@6.1.7** — https://github.com/unjs/defu#readme
 - **delayed-stream@1.0.0** — Felix Geisendörfer — https://github.com/felixge/node-delayed-stream
 - **depd@2.0.0** — Douglas Christopher Wilson — https://github.com/dougwilson/nodejs-depd#readme
+- **dequal@2.0.3** — Luke Edwards — https://github.com/lukeed/dequal#readme
 - **destr@2.0.5** — https://github.com/unjs/destr#readme
 - **detect-indent@6.1.0** — Sindre Sorhus — https://github.com/sindresorhus/detect-indent#readme
+- **devlop@1.1.0** — Titus Wormer — https://github.com/wooorm/devlop#readme
 - **dir-glob@3.0.1** — Kevin Mårtensson — https://github.com/kevva/dir-glob#readme
 - **dunder-proto@1.0.1** — Jordan Harband — https://github.com/es-shims/dunder-proto#readme
 - **ee-first@1.1.1** — Jonathan Ong — https://github.com/jonathanong/ee-first#readme
 - **effect@3.20.0** — Copyright (c) 2023 Effectful Technologies Inc — https://effect.website
+- **emoji-regex-xs@1.0.0** — Steven Levithan — https://github.com/slevithan/emoji-regex-xs#readme
 - **empathic@2.0.0** — Luke Edwards — https://github.com/lukeed/empathic#readme
 - **encodeurl@2.0.0** — Copyright (c) 2016 Douglas Christopher Wilson — https://github.com/pillarjs/encodeurl#readme
 - **enhanced-resolve@5.22.0** — Tobias Koppers @sokra — http://github.com/webpack/enhanced-resolve
@@ -622,9 +705,11 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **es-object-atoms@1.1.2** — Jordan Harband — https://github.com/ljharb/es-object-atoms#readme
 - **es-set-tostringtag@2.1.0** — Jordan Harband — https://github.com/es-shims/es-set-tostringtag#readme
 - **es-toolkit@1.47.0** — Copyright (c) 2024 Viva Republica, Inc — https://es-toolkit.dev
+- **esbuild@0.21.5** — Copyright (c) 2020 Evan Wallace — https://github.com/evanw/esbuild#readme
 - **escape-html@1.0.3** — Copyright (c) 2012-2013 TJ Holowaychuk — https://github.com/component/escape-html#readme
 - **escape-string-regexp@4.0.0** — Sindre Sorhus — https://github.com/sindresorhus/escape-string-regexp#readme
 - **eslint@10.4.0** — Nicholas C. Zakas — https://eslint.org
+- **estree-walker@2.0.2** — Rich Harris — https://github.com/Rich-Harris/estree-walker#readme
 - **estree-walker@3.0.3** — Rich Harris — https://github.com/Rich-Harris/estree-walker#readme
 - **etag@1.8.1** — Copyright (c) 2014-2016 Douglas Christopher Wilson — https://github.com/jshttp/etag#readme
 - **express@5.2.1** — TJ Holowaychuk — https://expressjs.com/
@@ -643,6 +728,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **find-up@4.1.0** — Sindre Sorhus — https://github.com/sindresorhus/find-up#readme
 - **find-up@5.0.0** — Sindre Sorhus — https://github.com/sindresorhus/find-up#readme
 - **flat-cache@4.0.1** — Jared Wray — https://github.com/jaredwray/flat-cache#readme
+- **focus-trap@7.8.0** — David Clark — https://github.com/focus-trap/focus-trap#readme
 - **form-data@4.0.5** — Felix Geisendörfer — https://github.com/form-data/form-data#readme
 - **formidable@3.5.4** — Copyright (c) 2011-present Felix Geisendörfer, and contributors. — https://github.com/node-formidable/formidable
 - **forwarded@0.2.0** — Copyright (c) 2014-2017 Douglas Christopher Wilson — https://github.com/jshttp/forwarded#readme
@@ -664,8 +750,12 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **has-symbols@1.1.0** — Jordan Harband — https://github.com/ljharb/has-symbols#readme
 - **has-tostringtag@1.0.2** — Jordan Harband — https://github.com/inspect-js/has-tostringtag#readme
 - **hasown@2.0.3** — Jordan Harband — https://github.com/inspect-js/hasOwn#readme
+- **hast-util-to-html@9.0.5** — Titus Wormer — https://github.com/syntax-tree/hast-util-to-html#readme
+- **hast-util-whitespace@3.0.0** — Titus Wormer — https://github.com/syntax-tree/hast-util-whitespace#readme
 - **hono@4.12.23** — Yusuke Wada — https://hono.dev
+- **hookable@5.5.3** — https://github.com/unjs/hookable#readme
 - **html-escaper@2.0.2** — Andrea Giammarchi — https://github.com/WebReflection/html-escaper
+- **html-void-elements@3.0.0** — Titus Wormer — https://github.com/wooorm/html-void-elements#readme
 - **http-errors@2.0.1** — Jonathan Ong — https://github.com/jshttp/http-errors#readme
 - **http-status-codes@2.3.0** — Bryce Neal — https://github.com/prettymuchbryce/http-status-codes#readme
 - **human-id@4.1.3** — RienNeVaPlus — https://github.com/RienNeVaPlus/human-id#readme
@@ -680,6 +770,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **is-promise@4.0.0** — ForbesLindesay — https://github.com/then/is-promise#readme
 - **is-property@1.0.2** — Mikola Lysenko — https://github.com/mikolalysenko/is-property#readme
 - **is-subdir@1.2.0** — Zoltan Kochan — https://github.com/zkochan/packages/tree/master/is-subdir#readme
+- **is-what@5.5.0** — Luca Ban - Mesqueeb — https://github.com/mesqueeb/is-what#readme
 - **is-windows@1.0.2** — Jon Schlinkert — https://github.com/jonschlinkert/is-windows
 - **jiti@2.7.0** — https://github.com/unjs/jiti#readme
 - **jose@6.2.3** — Filip Skokan — https://github.com/panva/jose
@@ -702,17 +793,26 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **magic-string@0.30.21** — Rich Harris — https://github.com/Rich-Harris/magic-string#readme
 - **magicast@0.5.3** — https://github.com/unjs/magicast#readme
 - **make-dir@4.0.0** — Sindre Sorhus — https://github.com/sindresorhus/make-dir#readme
+- **mark.js@8.11.1** — Julian Kühnel — https://markjs.io/
 - **math-intrinsics@1.1.0** — Jordan Harband — https://github.com/es-shims/math-intrinsics#readme
+- **mdast-util-to-hast@13.2.1** — Titus Wormer — https://github.com/syntax-tree/mdast-util-to-hast#readme
 - **media-typer@1.1.0** — Douglas Christopher Wilson — https://github.com/jshttp/media-typer#readme
 - **merge-descriptors@2.0.0** — https://github.com/sindresorhus/merge-descriptors#readme
 - **merge2@1.4.1** — Copyright (c) 2014-2020 Teambition — https://github.com/teambition/merge2
 - **methods@1.1.2** — Copyright (c) 2013-2014 TJ Holowaychuk <tj@vision-media.ca> — https://github.com/jshttp/methods#readme
+- **micromark-util-character@2.1.1** — Titus Wormer — https://github.com/micromark/micromark/tree/main#readme
+- **micromark-util-encode@2.0.1** — Titus Wormer — https://github.com/micromark/micromark/tree/main#readme
+- **micromark-util-sanitize-uri@2.0.1** — Titus Wormer — https://github.com/micromark/micromark/tree/main#readme
+- **micromark-util-symbol@2.0.1** — Titus Wormer — https://github.com/micromark/micromark/tree/main#readme
+- **micromark-util-types@2.0.2** — Titus Wormer — https://github.com/micromark/micromark/tree/main#readme
 - **micromatch@4.0.8** — Jon Schlinkert — https://github.com/micromatch/micromatch
 - **mime@2.6.0** — Robert Kieffer — https://github.com/broofa/mime#readme
 - **mime-db@1.52.0** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/mime-db#readme
 - **mime-db@1.54.0** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/mime-db#readme
 - **mime-types@2.1.35** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/mime-types#readme
 - **mime-types@3.0.2** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/mime-types#readme
+- **minisearch@7.2.0** — Luca Ongaro — https://lucaong.github.io/minisearch/
+- **mitt@3.0.1** — Copyright (c) 2021 Jason Miller — https://github.com/developit/mitt
 - **mri@1.2.0** — Luke Edwards — https://github.com/lukeed/mri#readme
 - **ms@2.1.3** — Copyright (c) 2020 Vercel, Inc. — https://github.com/vercel/ms#readme
 - **mysql2@3.15.3** — Andrey Sidorov — https://sidorares.github.io/node-mysql2/docs
@@ -725,6 +825,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **obug@2.1.1** — Kevin Deng — https://github.com/sxzz/obug#readme
 - **ohash@2.0.11** — https://github.com/unjs/ohash#readme
 - **on-finished@2.4.1** — Copyright (c) 2013 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/on-finished#readme
+- **oniguruma-to-es@3.1.1** — Steven Levithan — https://github.com/slevithan/oniguruma-to-es#readme
 - **optionator@0.9.4** — George Zahariev — https://github.com/gkz/optionator
 - **outdent@0.5.0** — Andrew Bradley — https://github.com/cspotcode/outdent#readme
 - **p-filter@2.1.0** — Sindre Sorhus — https://github.com/sindresorhus/p-filter#readme
@@ -741,6 +842,7 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **path-to-regexp@8.4.2** — Copyright (c) 2014 Blake Embrey (hello@blakeembrey.com) — https://github.com/pillarjs/path-to-regexp#readme
 - **path-type@4.0.0** — Sindre Sorhus — https://github.com/sindresorhus/path-type#readme
 - **pathe@2.0.3** — Copyright (c) 2023-present Fabio Spampinato — https://github.com/unjs/pathe#readme
+- **perfect-debounce@1.0.0** — https://github.com/unjs/perfect-debounce#readme
 - **perfect-debounce@2.1.0** — https://github.com/unjs/perfect-debounce#readme
 - **pg@8.21.0** — Brian Carlson — https://github.com/brianc/node-postgres
 - **pg-cloudflare@1.4.0** — Copyright (c) 2010 - 2021 Brian Carlson — https://github.com/brianc/node-postgres#readme
@@ -759,9 +861,11 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **postgres-bytea@1.0.1** — Ben Drucker — https://github.com/bendrucker/postgres-bytea#readme
 - **postgres-date@1.0.7** — Ben Drucker — https://github.com/bendrucker/postgres-date#readme
 - **postgres-interval@1.2.0** — Ben Drucker — https://github.com/bendrucker/postgres-interval#readme
+- **preact@10.29.2** — Copyright (c) 2015-present Jason Miller — https://preactjs.com
 - **prelude-ls@1.2.1** — George Zahariev — http://preludels.com
 - **prettier@2.8.8** — James Long — https://prettier.io
 - **proper-lockfile@4.1.2** — André Cruz — https://github.com/moxystudio/node-proper-lockfile
+- **property-information@7.1.0** — Titus Wormer — https://github.com/wooorm/property-information#readme
 - **proxy-addr@2.0.7** — Douglas Christopher Wilson — https://github.com/jshttp/proxy-addr#readme
 - **punycode@2.3.1** — Mathias Bynens — https://mths.be/punycode
 - **pure-rand@6.1.0** — Nicolas DUBIEN — https://github.com/dubzzz/pure-rand#readme
@@ -774,38 +878,49 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **react-dom@19.2.6** — https://react.dev/
 - **read-yaml-file@1.1.0** — Zoltan Kochan — https://github.com/zkochan/packages/tree/master#readme
 - **readdirp@5.0.0** — Thorsten Lorenz — https://github.com/paulmillr/readdirp
+- **regex@6.1.0** — Steven Levithan — https://github.com/slevithan/regex#readme
+- **regex-recursion@6.0.2** — Steven Levithan — https://github.com/slevithan/regex-recursion#readme
+- **regex-utilities@2.3.0** — Steven Levithan — https://github.com/slevithan/regex-utilities#readme
 - **remeda@2.33.4** — Łukasz Sentkiewicz — https://remedajs.com/
 - **require-from-string@2.0.2** — Vsevolod Strukchinsky — https://github.com/floatdrop/require-from-string#readme
 - **resolve-from@5.0.0** — Sindre Sorhus — https://github.com/sindresorhus/resolve-from#readme
 - **retry@0.12.0** — Tim Koschützki — https://github.com/tim-kos/node-retry
 - **reusify@1.1.0** — Matteo Collina — https://github.com/mcollina/reusify#readme
+- **rfdc@1.4.1** — David Mark Clements — https://github.com/davidmarkclements/rfdc#readme
 - **rolldown@1.0.2** — Copyright (c) 2024-present VoidZero Inc. & Contributors — https://rolldown.rs/
+- **rollup@4.60.4** — Rich Harris — https://rollupjs.org/
 - **rou3@0.7.12** — https://github.com/h3js/rou3#readme
 - **router@2.2.0** — Douglas Christopher Wilson — https://github.com/pillarjs/router#readme
 - **run-parallel@1.2.0** — Feross Aboukhadijeh — https://github.com/feross/run-parallel
 - **safer-buffer@2.1.2** — Nikita Skovoroda — https://github.com/ChALkeR/safer-buffer#readme
 - **scheduler@0.27.0** — https://react.dev/
+- **search-insights@2.17.3** — Algolia — https://github.com/algolia/search-insights.js#readme
 - **send@1.2.1** — TJ Holowaychuk — https://github.com/pillarjs/send#readme
 - **seq-queue@0.0.5** — changchang — https://github.com/changchang/seq-queue
 - **serve-static@2.2.1** — Douglas Christopher Wilson — https://github.com/expressjs/serve-static#readme
 - **set-cookie-parser@3.1.0** — Nathan Friedly — https://github.com/nfriedly/set-cookie-parser
 - **shebang-command@2.0.0** — Kevin Mårtensson — https://github.com/kevva/shebang-command#readme
 - **shebang-regex@3.0.0** — Sindre Sorhus — https://github.com/sindresorhus/shebang-regex#readme
+- **shiki@2.5.0** — Pine Wu — https://github.com/shikijs/shiki#readme
 - **side-channel@1.1.0** — Jordan Harband — https://github.com/ljharb/side-channel#readme
 - **side-channel-list@1.0.1** — Jordan Harband — https://github.com/ljharb/side-channel-list#readme
 - **side-channel-map@1.0.1** — Jordan Harband — https://github.com/ljharb/side-channel-map#readme
 - **side-channel-weakmap@1.0.2** — Jordan Harband — https://github.com/ljharb/side-channel-weakmap#readme
 - **slash@3.0.0** — Sindre Sorhus — https://github.com/sindresorhus/slash#readme
+- **space-separated-tokens@2.0.2** — Titus Wormer — https://github.com/wooorm/space-separated-tokens#readme
 - **sqlstring@2.3.3** — Copyright (c) 2012 Felix Geisendörfer (felix@debuggable.com) and contributors — https://github.com/mysqljs/sqlstring#readme
 - **stackback@0.0.2** — Roman Shtylman — https://github.com/shtylman/node-stackback#readme
 - **statuses@2.0.2** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/statuses#readme
 - **std-env@3.10.0** — https://github.com/unjs/std-env#readme
 - **std-env@4.1.0** — https://github.com/unjs/std-env#readme
+- **stringify-entities@4.0.4** — Titus Wormer — https://github.com/wooorm/stringify-entities#readme
 - **strip-ansi@6.0.1** — Sindre Sorhus — https://github.com/chalk/strip-ansi#readme
 - **strip-bom@3.0.0** — Sindre Sorhus — https://github.com/sindresorhus/strip-bom#readme
 - **superagent@10.3.0** — TJ Holowaychuk — https://github.com/ladjs/superagent
+- **superjson@2.2.6** — Simon Knott — https://github.com/blitz-js/superjson#readme
 - **supertest@7.2.2** — TJ Holowaychuk — https://github.com/ladjs/supertest#readme
 - **supports-color@7.2.0** — Sindre Sorhus — https://github.com/chalk/supports-color#readme
+- **tabbable@6.4.0** — David Clark — https://github.com/focus-trap/tabbable#readme
 - **tailwindcss@4.3.0** — https://tailwindcss.com
 - **tapable@2.3.3** — Tobias Koppers @sokra — https://github.com/webpack/tapable
 - **term-size@2.2.1** — Sindre Sorhus — https://github.com/sindresorhus/term-size#readme
@@ -815,50 +930,61 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 - **tinyrainbow@3.1.0** — Copyright (c) 2022 Tinylibs — https://github.com/tinylibs/tinyrainbow#readme
 - **to-regex-range@5.0.1** — Jon Schlinkert — https://github.com/micromatch/to-regex-range
 - **toidentifier@1.0.1** — Douglas Christopher Wilson — https://github.com/component/toidentifier#readme
+- **trim-lines@3.0.1** — Titus Wormer — https://github.com/wooorm/trim-lines#readme
 - **ts-api-utils@2.5.0** — JoshuaKGoldberg — https://github.com/JoshuaKGoldberg/ts-api-utils#readme
 - **turbo@2.9.15** — Copyright (c) 2026 Vercel, Inc — https://turborepo.dev
 - **type-check@0.4.0** — George Zahariev — https://github.com/gkz/type-check
 - **type-is@2.1.0** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/type-is#readme
 - **typescript-eslint@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/typescript-eslint
 - **undici-types@7.24.6** — https://undici.nodejs.org
+- **unist-util-is@6.0.1** — Titus Wormer — https://github.com/syntax-tree/unist-util-is#readme
+- **unist-util-position@5.0.0** — Titus Wormer — https://github.com/syntax-tree/unist-util-position#readme
+- **unist-util-stringify-position@4.0.0** — Titus Wormer — https://github.com/syntax-tree/unist-util-stringify-position#readme
+- **unist-util-visit@5.1.0** — Titus Wormer — https://github.com/syntax-tree/unist-util-visit#readme
+- **unist-util-visit-parents@6.0.2** — Titus Wormer — https://github.com/syntax-tree/unist-util-visit-parents#readme
 - **universalify@0.1.2** — Ryan Zimmerman — https://github.com/RyanZim/universalify#readme
 - **unpipe@1.0.0** — Douglas Christopher Wilson — https://github.com/stream-utils/unpipe#readme
 - **valibot@1.2.0** — Fabian Hiller — https://valibot.dev
 - **vary@1.1.2** — Douglas Christopher Wilson — https://github.com/jshttp/vary#readme
+- **vfile@6.0.3** — Titus Wormer — https://github.com/vfile/vfile#readme
+- **vfile-message@4.0.3** — Titus Wormer — https://github.com/vfile/vfile-message#readme
+- **vite@5.4.21** — Evan You — https://vite.dev
 - **vite@8.0.14** — Evan You — https://vite.dev
+- **vitepress@1.6.4** — Evan You — https://vitepress.dev/
 - **vitest@4.1.7** — Anthony Fu — https://vitest.dev
+- **vue@3.5.35** — Evan You — https://vuejs.org/
 - **why-is-node-running@2.3.0** — Mathias Buus — https://github.com/mafintosh/why-is-node-running
 - **word-wrap@1.2.5** — Jon Schlinkert — https://github.com/jonschlinkert/word-wrap
 - **xtend@4.0.2** — Raynos — https://github.com/Raynos/xtend
 - **yocto-queue@0.1.0** — Sindre Sorhus — https://github.com/sindresorhus/yocto-queue#readme
 - **zeptomatch@2.1.0** — Copyright (c) 2023-present Fabio Spampinato — https://github.com/fabiospampinato/zeptomatch#readme
 - **zod@4.4.3** — Colin McDonnell — https://zod.dev
+- **zwitch@2.0.4** — Titus Wormer — https://github.com/wooorm/zwitch#readme
 
 ### License Text
 
 ```
 MIT License
 
-Copyright (c) 2014-present Sebastian McKenzie and other contributors
+Copyright (c) 2013-Present Algolia
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 ---
