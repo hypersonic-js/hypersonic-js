@@ -20,7 +20,7 @@ export { mountAuth } from './auth/middleware.js'
 export type { AuthSetupOptions, SocialProviderCredentials } from './auth/types.js'
 
 // Inertia
-export { createInertiaMiddleware } from './inertia/middleware.js'
+export { createInertiaMiddleware, createInertiaErrorHandler } from './inertia/middleware.js'
 export { createViteSetup } from './inertia/vite.js'
 export type { InertiaPage, InertiaOptions, ViteSetup } from './inertia/types.js'
 

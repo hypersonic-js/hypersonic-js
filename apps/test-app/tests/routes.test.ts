@@ -3,8 +3,32 @@ import express from 'express'
 import type { Request, Response, NextFunction } from 'express'
 import request from 'supertest'
 
-import { registerRoutes } from '../src/routes.js'
+import { registerRoutes, parseId } from '../src/routes.js'
 import type { PrismaRouteClient, AuthLike, SessionUser } from '../src/types.js'
+
+// ─── parseId unit tests ────────────────────────────────────────────────────
+
+describe('parseId', () => {
+  it('parses a numeric string to an integer', () => {
+    expect(parseId('42')).toBe(42)
+  })
+
+  it('returns NaN for a non-numeric string', () => {
+    expect(isNaN(parseId('abc'))).toBe(true)
+  })
+
+  it('parses the first element when given a string array', () => {
+    expect(parseId(['7', '8'])).toBe(7)
+  })
+
+  it('returns NaN when given an empty array', () => {
+    expect(isNaN(parseId([]))).toBe(true)
+  })
+
+  it('returns NaN for undefined', () => {
+    expect(isNaN(parseId(undefined))).toBe(true)
+  })
+})
 
 // ─── Test fixtures ────────────────────────────────────────────────────────────
 
@@ -68,6 +92,14 @@ describe('GET /health', () => {
     const res = await request(buildApp()).get('/health')
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ status: 'ok' })
+  })
+})
+
+describe('GET /', () => {
+  it('redirects to /posts', async () => {
+    const res = await request(buildApp()).get('/')
+    expect(res.status).toBe(302)
+    expect(res.headers['location']).toBe('/posts')
   })
 })
 
@@ -146,6 +178,13 @@ describe('GET /posts/:id', () => {
     expect(res.body.props.post.id).toBe(1)
     expect(res.body.props.user.id).toBe(testUser.id)
   })
+
+  it('returns 500 when the DB throws unexpectedly', async () => {
+    mockPrisma.post.findUnique.mockRejectedValue(new Error('DB exploded'))
+    const res = await request(buildApp(testUser)).get('/posts/1')
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
 })
 
 describe('POST /posts', () => {
@@ -187,6 +226,15 @@ describe('POST /posts', () => {
       }),
     )
   })
+
+  it('returns 500 when the DB throws unexpectedly', async () => {
+    mockPrisma.post.create.mockRejectedValue(new Error('DB exploded'))
+    const res = await request(buildApp(testUser))
+      .post('/posts')
+      .send({ title: 'Test', body: 'Body' })
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
 })
 
 describe('DELETE /posts/:id', () => {
@@ -221,6 +269,32 @@ describe('DELETE /posts/:id', () => {
     expect(res.status).toBe(302)
     expect(res.headers['location']).toBe('/posts')
     expect(mockPrisma.post.delete).toHaveBeenCalledWith({ where: { id: 1 } })
+  })
+
+  it('redirects to Referer on 404 for an Inertia DELETE request', async () => {
+    mockPrisma.post.findUnique.mockResolvedValue(null)
+    const res = await request(buildApp(testUser))
+      .delete('/posts/99')
+      .set('X-Inertia', 'true')
+      .set('Referer', '/posts')
+    expect(res.status).toBe(302)
+    expect(res.headers['location']).toBe('/posts')
+  })
+
+  it('redirects to / on 401 for an Inertia DELETE request with no Referer', async () => {
+    mockPrisma.post.findUnique.mockResolvedValue(testPost)
+    const res = await request(buildApp(otherUser))
+      .delete('/posts/1')
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(302)
+    expect(res.headers['location']).toBe('/')
+  })
+
+  it('returns 500 when the DB throws unexpectedly', async () => {
+    mockPrisma.post.findUnique.mockRejectedValue(new Error('DB exploded'))
+    const res = await request(buildApp(testUser)).delete('/posts/1')
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
   })
 })
 

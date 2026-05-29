@@ -1,9 +1,10 @@
 import type { Application, Request, Response, NextFunction } from 'express'
-import { HttpError, NotFoundError, UnauthorizedError } from '@hypersonic/core'
+import { HttpError, NotFoundError, UnauthorizedError, createInertiaErrorHandler } from '@hypersonic/core'
 import { createAuthGuard } from './middleware.ts'
 import type { AuthLike, AuthRequest, PrismaRouteClient } from './types.ts'
 
-function parseId(raw: string | string[] | undefined): number {
+/** Parses a route param string (or first element of a string array) into an integer. */
+export function parseId(raw: string | string[] | undefined): number {
   const str = Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '')
   return parseInt(str, 10)
 }
@@ -108,7 +109,12 @@ export function registerRoutes(
     },
   )
 
-  // ─── Error handler ─────────────────────────────────────────────────────────
+  // ─── Error handlers ────────────────────────────────────────────────────────
+
+  // For Inertia requests: redirect back instead of returning plain JSON
+  app.use(createInertiaErrorHandler())
+
+  // Fallback: plain JSON for non-Inertia requests (API clients, tests)
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (err instanceof HttpError) {
       res.status(err.statusCode).json({ error: err.message })

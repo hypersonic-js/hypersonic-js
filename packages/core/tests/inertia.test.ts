@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import express from 'express'
+import type { Request, Response, NextFunction } from 'express'
 import request from 'supertest'
 
 // Mock Vite setup so no real Vite server is started
@@ -10,15 +11,16 @@ vi.mock('../src/inertia/vite.js', () => ({
   })),
 }))
 
-import { createInertiaMiddleware } from '../src/inertia/middleware.js'
+import { createInertiaMiddleware, createInertiaErrorHandler } from '../src/inertia/middleware.js'
 import { createViteSetup } from '../src/inertia/vite.js'
+import { HttpError, NotFoundError } from '../src/utils/errors.js'
 
 async function buildTestApp(ssr = false, version = '1') {
   const app = express()
   await createInertiaMiddleware(app, { ssr, version })
   // Simple route that uses res.inertia()
   app.get('/test', (req, res) => {
-    res.inertia('TestPage', { user: 'Alice' })
+    res.inertia!('TestPage', { user: 'Alice' })
   })
   return app
 }
@@ -66,7 +68,7 @@ describe('createInertiaMiddleware', () => {
       const app = express()
       await createInertiaMiddleware(app, { ssr: false })
       app.get('/xss', (req, res) => {
-        res.inertia('Page', { value: '<script>alert("xss")</script>' })
+        res.inertia!('Page', { value: '<script>alert("xss")</script>' })
       })
       const res = await request(app).get('/xss')
       expect(res.text).not.toContain('<script>alert')
@@ -122,7 +124,7 @@ describe('createInertiaMiddleware', () => {
       const app = express()
       await createInertiaMiddleware(app, { ssr: false, version: 'v2' })
       app.post('/data', (req, res) => {
-        res.inertia('Page', {})
+        res.inertia!('Page', {})
       })
       const res = await request(app)
         .post('/data')
@@ -130,5 +132,73 @@ describe('createInertiaMiddleware', () => {
         .set('X-Inertia-Version', 'v1')
       expect(res.status).toBe(200)
     })
+  })
+})
+
+// ─── createInertiaErrorHandler ───────────────────────────────────────────────
+
+/**
+ * Builds a minimal Express app with an error-throwing route, the Inertia
+ * error handler, and a plain-JSON fallback — mirroring how routes.ts wires
+ * things up in the test app.
+ */
+function buildErrorTestApp(throwFn: (next: NextFunction) => void) {
+  const app = express()
+  app.get('/fail', (_req, _res, next) => throwFn(next))
+  app.use(createInertiaErrorHandler())
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    if (err instanceof HttpError) {
+      res.status(err.statusCode).json({ error: err.message })
+      return
+    }
+    res.status(500).json({ error: 'Internal Server Error' })
+  })
+  return app
+}
+
+describe('createInertiaErrorHandler', () => {
+  it('redirects to the Referer when an Inertia request throws an HttpError', async () => {
+    const app = buildErrorTestApp((next) => next(new NotFoundError('Post not found')))
+    const res = await request(app)
+      .get('/fail')
+      .set('X-Inertia', 'true')
+      .set('Referer', '/posts')
+    expect(res.status).toBe(302)
+    expect(res.headers['location']).toBe('/posts')
+  })
+
+  it('redirects to / when there is no Referer header', async () => {
+    const app = buildErrorTestApp((next) => next(new NotFoundError()))
+    const res = await request(app)
+      .get('/fail')
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(302)
+    expect(res.headers['location']).toBe('/')
+  })
+
+  it('redirects to / when the Referer header is an empty string', async () => {
+    const app = buildErrorTestApp((next) => next(new HttpError(401, 'Unauthorized')))
+    const res = await request(app)
+      .get('/fail')
+      .set('X-Inertia', 'true')
+      .set('Referer', '')
+    expect(res.status).toBe(302)
+    expect(res.headers['location']).toBe('/')
+  })
+
+  it('passes HttpErrors through to the next handler for non-Inertia requests', async () => {
+    const app = buildErrorTestApp((next) => next(new NotFoundError('Post not found')))
+    const res = await request(app).get('/fail')
+    expect(res.status).toBe(404)
+    expect(res.body.error).toBe('Post not found')
+  })
+
+  it('passes non-HttpErrors through even for Inertia requests', async () => {
+    const app = buildErrorTestApp((next) => next(new Error('DB exploded')))
+    const res = await request(app)
+      .get('/fail')
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
   })
 })

@@ -1,6 +1,7 @@
 import type { Application, Request, Response, NextFunction, RequestHandler } from 'express'
 import type { InertiaPage, InertiaOptions } from './types.js'
 import { createViteSetup } from './vite.js'
+import { HttpError } from '../utils/errors.js'
 
 const INERTIA_HEADER = 'x-inertia'
 const INERTIA_VERSION_HEADER = 'x-inertia-version'
@@ -30,8 +31,41 @@ function buildHtml(page: InertiaPage, assetTags: string): string {
 }
 
 /**
+ * Returns an error-handling middleware that intercepts HttpErrors on Inertia
+ * requests and redirects back to the referring page (or '/' as a fallback)
+ * instead of returning a plain JSON response that Inertia cannot render.
+ *
+ * Register this AFTER your routes and BEFORE your plain-JSON error handler so
+ * that the Inertia client always receives a redirect it can follow.
+ *
+ * @example
+ * ```ts
+ * registerRoutes(app, prisma, auth)        // your routes
+ * app.use(createInertiaErrorHandler())     // Inertia-aware errors
+ * app.use(plainJsonErrorHandler)           // fallback for non-Inertia
+ * ```
+ */
+export function createInertiaErrorHandler(): (
+  err: unknown,
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => void {
+  return (err: unknown, req: Request, res: Response, next: NextFunction): void => {
+    if (!(err instanceof HttpError) || !req.headers[INERTIA_HEADER]) {
+      next(err)
+      return
+    }
+
+    const referer = req.headers['referer']
+    const redirectUrl = typeof referer === 'string' && referer.length > 0 ? referer : '/'
+    res.redirect(redirectUrl)
+  }
+}
+
+/**
  * Mounts the Inertia middleware + Vite integration onto the Express app.
- * This must be the last middleware registered — it handles all remaining routes.
+ * This must be called before routes are registered.
  */
 export async function createInertiaMiddleware(
   app: Application,
