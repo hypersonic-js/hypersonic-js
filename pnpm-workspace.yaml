@@ -2,8 +2,10 @@ packages:
   - "packages/*"
   - "apps/*"
   - "scripts"
+  - "docs"
 allowBuilds:
   '@prisma/engines': false
+  esbuild: set this to true or false
   prisma: false
 minimumReleaseAgeExclude:
   - '@turbo/darwin-64@2.9.15'

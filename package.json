@@ -10,6 +10,8 @@
     "type-check": "turbo type-check",
     "dev": "turbo dev",
     "clean": "turbo clean",
+    "docs:dev": "turbo docs:dev",
+    "docs:build": "turbo docs:build",
     "changeset": "changeset",
     "version": "changeset version",
     "licenses": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/generate-licenses.ts",

@@ -23,6 +23,13 @@
     },
     "clean": {
       "cache": false
+    },
+    "docs:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "docs:build": {
+      "outputs": ["docs/.vitepress/dist/**"]
     }
   }
 }
