@@ -23,9 +23,9 @@ importers:
       '@prisma/adapter-pg':
         specifier: ^7.8.0
         version: 7.8.0
-      express:
-        specifier: 5.2.1
-        version: 5.2.1
+      better-auth:
+        specifier: 1.6.11
+        version: 1.6.11(@prisma/client@7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(magicast@0.5.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(pg@8.21.0)(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(magicast@0.5.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)
     devDependencies:
       '@inertiajs/react':
         specifier: 3.2.0
@@ -54,12 +54,12 @@ importers:
       '@vitest/coverage-v8':
         specifier: 4.1.7
         version: 4.1.7(vitest@4.1.7)
-      better-auth:
-        specifier: 1.6.11
-        version: 1.6.11(@prisma/client@7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(magicast@0.5.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(pg@8.21.0)(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(magicast@0.5.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
+      express:
+        specifier: 5.2.1
+        version: 5.2.1
       prisma:
         specifier: 7.8.0
         version: 7.8.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(magicast@0.5.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)

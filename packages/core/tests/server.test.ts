@@ -40,9 +40,10 @@ describe('createApp', () => {
   beforeEach(() => vi.clearAllMocks())
   afterEach(async () => { await disconnectPrismaClient() })
 
-  it('returns an object with express, start, and stop', async () => {
+  it('returns an object with express, auth, start, and stop', async () => {
     const app = await createApp({ config, env, prisma: mockPrisma })
     expect(app).toHaveProperty('express')
+    expect(app).toHaveProperty('auth')
     expect(app).toHaveProperty('start')
     expect(app).toHaveProperty('stop')
   })
@@ -50,6 +51,13 @@ describe('createApp', () => {
   it('returns an Express application', async () => {
     const app = await createApp({ config, env, prisma: mockPrisma })
     expect(typeof app.express).toBe('function')
+  })
+
+  it('returns the auth instance created internally', async () => {
+    const { betterAuth } = await import('better-auth')
+    const app = await createApp({ config, env, prisma: mockPrisma })
+    // The returned auth should be the same object betterAuth() produced
+    expect(app.auth).toBe(vi.mocked(betterAuth).mock.results[0]?.value)
   })
 
   it('wires GitHub provider when configured', async () => {

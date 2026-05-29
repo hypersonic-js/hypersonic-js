@@ -3,25 +3,6 @@ import express from 'express'
 import type { Request, Response, NextFunction } from 'express'
 import request from 'supertest'
 
-// ─── Mocks ───────────────────────────────────────────────────────────────────
-
-vi.mock('@hypersonic/core', () => {
-  class HttpError extends Error {
-    statusCode: number
-    constructor(statusCode: number, message: string) {
-      super(message)
-      this.statusCode = statusCode
-    }
-  }
-  class NotFoundError extends HttpError {
-    constructor(message = 'Not Found') { super(404, message) }
-  }
-  class UnauthorizedError extends HttpError {
-    constructor(message = 'Unauthorized') { super(401, message) }
-  }
-  return { HttpError, NotFoundError, UnauthorizedError }
-})
-
 import { registerRoutes } from '../src/routes.js'
 import type { PrismaRouteClient, AuthLike, SessionUser } from '../src/types.js'
 
@@ -95,6 +76,19 @@ describe('GET /login', () => {
     const res = await request(buildApp()).get('/login')
     expect(res.status).toBe(200)
     expect(res.body.component).toBe('Auth/Login')
+  })
+})
+
+describe('GET /register', () => {
+  it('renders the Auth/Register Inertia page', async () => {
+    const res = await request(buildApp()).get('/register')
+    expect(res.status).toBe(200)
+    expect(res.body.component).toBe('Auth/Register')
+  })
+
+  it('returns empty props', async () => {
+    const res = await request(buildApp()).get('/register')
+    expect(res.body.props).toEqual({})
   })
 })
 

@@ -17,7 +17,6 @@ function resolveProviders(
 
   if (config.auth.providers?.github === true) {
     providers['github'] = {
-      // validateEnv guarantees these exist when github is enabled
       clientId: e['GITHUB_CLIENT_ID'] as string,
       clientSecret: e['GITHUB_CLIENT_SECRET'] as string,
     }
@@ -25,7 +24,6 @@ function resolveProviders(
 
   if (config.auth.providers?.google === true) {
     providers['google'] = {
-      // validateEnv guarantees these exist when google is enabled
       clientId: e['GOOGLE_CLIENT_ID'] as string,
       clientSecret: e['GOOGLE_CLIENT_SECRET'] as string,
     }
@@ -36,6 +34,8 @@ function resolveProviders(
 
 /**
  * Creates and returns a fully wired Hypersonic application.
+ * The auth instance created internally is returned on `app.auth` so
+ * callers can pass it to route registration without creating a second instance.
  *
  * @example
  * ```ts
@@ -44,6 +44,7 @@ function resolveProviders(
  *
  * const { config, env } = await loadConfig()
  * const app = await createApp({ config, env, prisma: new PrismaClient() })
+ * registerRoutes(app.express, prisma, app.auth)
  * await app.start()
  * ```
  */
@@ -55,10 +56,8 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
   app.use(express.json())
   app.use(express.urlencoded({ extended: true }))
 
-  // Register the Prisma singleton used throughout the framework
   setPrismaClient(prisma)
 
-  // Auth — must be before Inertia so /api/auth/* is handled first
   const auth = createAuth({
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: config.auth.trustedOrigins,
@@ -68,10 +67,9 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
   })
   mountAuth(app, auth)
 
-  // Inertia + Vite — handles all remaining routes
   await createInertiaMiddleware(app, { ssr: config.inertia.ssr })
 
   const { start, stop } = createLifecycle(app, config)
 
-  return { express: app, start, stop }
+  return { express: app, auth, start, stop }
 }

@@ -21,7 +21,7 @@ export function registerRoutes(
 
   // ─── Public ────────────────────────────────────────────────────────────────
   app.get('/', (_req: Request, res: Response) => {
-  res.redirect('/posts')
+    res.redirect('/posts')
   })
 
   app.get('/health', (_req: Request, res: Response) => {
@@ -32,70 +32,88 @@ export function registerRoutes(
     res.inertia!('Auth/Login', {})
   })
 
+  app.get('/register', (_req: Request, res: Response) => {
+    res.inertia!('Auth/Register', {})
+  })
+
   // ─── Protected ─────────────────────────────────────────────────────────────
 
-  app.get('/posts', requireAuth, async (req: AuthRequest, res: Response) => {
-    const posts = await prisma.post.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { user: { select: { id: true, name: true } } },
-    })
-    res.inertia!('Posts/Index', { posts, user: req.sessionUser })
+  app.get('/posts', requireAuth, async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const posts = await prisma.post.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: { user: { select: { id: true, name: true } } },
+      })
+      res.inertia!('Posts/Index', { posts, user: req.sessionUser })
+    } catch (err) {
+      next(err)
+    }
   })
 
   app.get(
     '/posts/:id',
     requireAuth,
     async (req: AuthRequest, res: Response, next: NextFunction) => {
-      const id = parseId(req.params['id'])
-      if (isNaN(id)) return next(new NotFoundError())
+      try {
+        const id = parseId(req.params['id'])
+        if (isNaN(id)) return next(new NotFoundError())
 
-      const post = await prisma.post.findUnique({
-        where: { id },
-        include: { user: { select: { id: true, name: true } } },
-      })
-      if (!post) return next(new NotFoundError('Post not found'))
+        const post = await prisma.post.findUnique({
+          where: { id },
+          include: { user: { select: { id: true, name: true } } },
+        })
+        if (!post) return next(new NotFoundError('Post not found'))
 
-      res.inertia!('Posts/Show', { post, user: req.sessionUser })
+        res.inertia!('Posts/Show', { post, user: req.sessionUser })
+      } catch (err) {
+        next(err)
+      }
     },
   )
 
-  app.post('/posts', requireAuth, async (req: AuthRequest, res: Response) => {
-    const { title, body } = req.body as { title?: string; body?: string }
+  app.post('/posts', requireAuth, async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const { title, body } = req.body as { title?: string; body?: string }
 
-    await prisma.post.create({
-      data: {
-        title: title ?? '',
-        body: body ?? '',
-        userId: req.sessionUser!.id,
-      },
-    })
-
-    res.redirect('/posts')
+      await prisma.post.create({
+        data: {
+          title: title ?? '',
+          body: body ?? '',
+          userId: req.sessionUser!.id,
+        },
+      })
+      res.redirect('/posts')
+    } catch (err) {
+      next(err)
+    }
   })
 
   app.delete(
     '/posts/:id',
     requireAuth,
     async (req: AuthRequest, res: Response, next: NextFunction) => {
-      const id = parseId(req.params['id'])
-      if (isNaN(id)) return next(new NotFoundError())
+      try {
+        const id = parseId(req.params['id'])
+        if (isNaN(id)) return next(new NotFoundError())
 
-      const post = await prisma.post.findUnique({ where: { id } })
-      if (!post) return next(new NotFoundError('Post not found'))
+        const post = await prisma.post.findUnique({ where: { id } })
+        if (!post) return next(new NotFoundError('Post not found'))
+        if (post.userId !== req.sessionUser!.id) return next(new UnauthorizedError())
 
-      if (post.userId !== req.sessionUser!.id) return next(new UnauthorizedError())
-
-      await prisma.post.delete({ where: { id } })
-      res.redirect('/posts')
+        await prisma.post.delete({ where: { id } })
+        res.redirect('/posts')
+      } catch (err) {
+        next(err)
+      }
     },
   )
 
   // ─── Error handler ─────────────────────────────────────────────────────────
-
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    const httpErr = err instanceof HttpError ? err : null
-    const status = httpErr ? httpErr.statusCode : 500
-    const message = httpErr ? httpErr.message : 'Internal Server Error'
-    res.status(status).json({ error: message })
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    if (err instanceof HttpError) {
+      res.status(err.statusCode).json({ error: err.message })
+      return
+    }
+    res.status(500).json({ error: 'Internal Server Error' })
   })
 }
