@@ -12,11 +12,13 @@
     "clean": "turbo clean",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "turbo build && changeset publish",
+    "licenses": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/generate-licenses.ts",
+    "release": "turbo build && node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/generate-licenses.ts && changeset publish",
     "lint": "eslint ."
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",
+    "@types/node": "25.9.1",
     "turbo": "2.9.15",
     "typescript": "6.0.3",
     "eslint": "10.4.0",

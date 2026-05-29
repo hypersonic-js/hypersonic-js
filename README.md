@@ -119,6 +119,7 @@ npm install github:Zesuperaker/hypersonic-js#master
 ## Turbo Repo instructions
 - pnpm install
 - pnpm run build         
-- pnpm run test           
+- pnpm run test
+- pnpm run licenses
 - pnpm run test --workspace packages/core   
 - pnpm run test --workspace packages/admin  
