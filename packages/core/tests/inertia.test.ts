@@ -163,7 +163,7 @@ describe('createInertiaErrorHandler', () => {
       .get('/fail')
       .set('X-Inertia', 'true')
       .set('Referer', '/posts')
-    expect(res.status).toBe(302)
+    expect(res.status).toBe(303)
     expect(res.headers['location']).toBe('/posts')
   })
 
@@ -172,7 +172,7 @@ describe('createInertiaErrorHandler', () => {
     const res = await request(app)
       .get('/fail')
       .set('X-Inertia', 'true')
-    expect(res.status).toBe(302)
+    expect(res.status).toBe(303)
     expect(res.headers['location']).toBe('/')
   })
 
@@ -182,7 +182,7 @@ describe('createInertiaErrorHandler', () => {
       .get('/fail')
       .set('X-Inertia', 'true')
       .set('Referer', '')
-    expect(res.status).toBe(302)
+    expect(res.status).toBe(303)
     expect(res.headers['location']).toBe('/')
   })
 

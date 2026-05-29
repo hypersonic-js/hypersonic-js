@@ -59,7 +59,7 @@ export function createInertiaErrorHandler(): (
 
     const referer = req.headers['referer']
     const redirectUrl = typeof referer === 'string' && referer.length > 0 ? referer : '/'
-    res.redirect(redirectUrl)
+    res.redirect(303, redirectUrl)
   }
 }
 

@@ -266,7 +266,7 @@ describe('DELETE /posts/:id', () => {
     mockPrisma.post.findUnique.mockResolvedValue(testPost)
     mockPrisma.post.delete.mockResolvedValue(testPost)
     const res = await request(buildApp(testUser)).delete('/posts/1')
-    expect(res.status).toBe(302)
+    expect(res.status).toBe(303)
     expect(res.headers['location']).toBe('/posts')
     expect(mockPrisma.post.delete).toHaveBeenCalledWith({ where: { id: 1 } })
   })
@@ -277,7 +277,7 @@ describe('DELETE /posts/:id', () => {
       .delete('/posts/99')
       .set('X-Inertia', 'true')
       .set('Referer', '/posts')
-    expect(res.status).toBe(302)
+    expect(res.status).toBe(303)
     expect(res.headers['location']).toBe('/posts')
   })
 
@@ -286,7 +286,7 @@ describe('DELETE /posts/:id', () => {
     const res = await request(buildApp(otherUser))
       .delete('/posts/1')
       .set('X-Inertia', 'true')
-    expect(res.status).toBe(302)
+    expect(res.status).toBe(303)
     expect(res.headers['location']).toBe('/')
   })
 

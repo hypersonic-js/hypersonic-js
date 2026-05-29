@@ -102,7 +102,7 @@ export function registerRoutes(
         if (post.userId !== req.sessionUser!.id) return next(new UnauthorizedError())
 
         await prisma.post.delete({ where: { id } })
-        res.redirect('/posts')
+        res.redirect(303, '/posts')
       } catch (err) {
         next(err)
       }
