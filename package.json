@@ -12,14 +12,18 @@
     "clean": "turbo clean",
     "changeset": "changeset",
     "version": "changeset version",
-    "release": "turbo build && changeset publish"
+    "release": "turbo build && changeset publish",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "@changesets/cli": "2.31.0",
     "turbo": "2.9.15",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "eslint": "10.4.0",
+    "globals": "17.6.0",
+    "typescript-eslint": "8.60.0"
   },
   "engines": {
-    "node": "24.16.0"
+    "node": "^24.0.0"
   }
 }

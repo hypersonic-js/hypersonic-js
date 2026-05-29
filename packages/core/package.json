@@ -19,7 +19,7 @@
   "author": "Zesuperaker",
   "license": "MIT",
   "publishConfig": { "access": "public" },
-  "engines": { "node": "24.16.0" },
+  "engines": { "node": "^24.0.0" },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",

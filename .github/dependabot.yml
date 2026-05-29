@@ -1,0 +1,33 @@
+version: 2
+
+updates:
+  # ── pnpm workspace (all packages share one lockfile at root) ───────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    # Group everything into one PR to avoid noise
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+    # Turbo ships per-platform binaries; let turbo manage its own sub-packages
+    ignore:
+      - dependency-name: "@turbo/darwin-64"
+      - dependency-name: "@turbo/darwin-arm64"
+      - dependency-name: "@turbo/linux-64"
+      - dependency-name: "@turbo/linux-arm64"
+      - dependency-name: "@turbo/windows-64"
+      - dependency-name: "@turbo/windows-arm64"
+
+  # ── GitHub Actions ─────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: hypersonic
+          POSTGRES_PASSWORD: hypersonic
+          POSTGRES_DB: hypersonic_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hypersonic -d hypersonic_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://hypersonic:hypersonic@localhost:5432/hypersonic_test
+      BETTER_AUTH_SECRET: ci-test-secret-do-not-use-in-production-!!
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        # reads version from "packageManager" field in package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Generate Prisma client
+        run: pnpm --filter @hypersonic/test-app exec prisma generate
+
+      - name: Run database migrations
+        run: pnpm --filter @hypersonic/test-app exec prisma migrate deploy
+
+      - name: Test
+        run: pnpm test
