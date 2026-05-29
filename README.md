@@ -1,6 +1,6 @@
 # Hypersonic.js
 
-Hypersonic.js is the end to end typescript modern monolith framework. This framework is inspired by Django. Hypersonic.js
+Hypersonic.js is the end to end typescript modern monolith. This framework is inspired by Django. Hypersonic.js
 packages Express with Inertia.js, Better Auth and Prisma. The framework is currently in beta, so expect other exciting features
 coming soon including an admin dashboard, background jobs and first class AI support. 
 
