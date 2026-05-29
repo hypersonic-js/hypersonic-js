@@ -8,8 +8,8 @@
 ## Setup
 
 ```bash
-git clone https://github.com/hypersonic-js/hypersonic.git
-cd hypersonic
+git clone https://github.com/hypersonic-js/hypersonic-js/
+cd hypersonic-js
 pnpm install
 ```
 
@@ -40,7 +40,7 @@ This repo uses [Changesets](https://github.com/changesets/changesets).
 1. Make your changes and open a PR.
 2. Run `pnpm changeset` and follow the prompts to describe the change.
 3. Commit the generated changeset file alongside your code.
-4. On merge to `main`, the release PR is updated automatically.
+4. On merge to `master`, the release PR is updated automatically.
 5. Merging the release PR publishes to npm and tags the release.
 
 
