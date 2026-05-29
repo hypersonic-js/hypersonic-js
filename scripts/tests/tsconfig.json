@@ -10,10 +10,6 @@
     "skipLibCheck": true,
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
-  },
-  "include": ["*.ts", "tests/**/*.ts"]
+    "resolveJsonModule": true
+  }
 }

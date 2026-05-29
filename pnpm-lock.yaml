@@ -189,6 +189,21 @@ importers:
         specifier: 4.1.7
         version: 4.1.7(@types/node@25.9.1)(@vitest/coverage-v8@4.1.7)(vite@8.0.14(@types/node@25.9.1)(jiti@2.7.0))
 
+  scripts:
+    devDependencies:
+      '@types/node':
+        specifier: 25.9.1
+        version: 25.9.1
+      '@vitest/coverage-v8':
+        specifier: 4.1.7
+        version: 4.1.7(vitest@4.1.7)
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 4.1.7
+        version: 4.1.7(@types/node@25.9.1)(@vitest/coverage-v8@4.1.7)(vite@8.0.14(@types/node@25.9.1)(jiti@2.7.0))
+
 packages:
 
   '@babel/helper-string-parser@7.29.7':

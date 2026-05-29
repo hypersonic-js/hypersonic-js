@@ -25,10 +25,11 @@
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-interface PnpmLicenseEntry {
+export interface PnpmLicenseEntry {
   name: string
   versions: string[]
   paths: string[]
@@ -38,16 +39,16 @@ interface PnpmLicenseEntry {
   description?: string
 }
 
-type PnpmLicensesOutput = Record<string, PnpmLicenseEntry[]>
+export type PnpmLicensesOutput = Record<string, PnpmLicenseEntry[]>
 
-interface PackageRef {
+export interface PackageRef {
   name: string
   version: string
   copyright: string
   link: string
 }
 
-interface LicenseGroup {
+export interface LicenseGroup {
   licenseType: string
   packages: PackageRef[]
   licenseText: string | null
@@ -59,7 +60,7 @@ interface LicenseGroup {
  * execSync goes through the OS shell, which means it finds `pnpm.cmd` on
  * Windows and `pnpm` on Unix without any platform-detection logic.
  */
-function runPnpmLicenses(cwd: string): PnpmLicensesOutput {
+export function runPnpmLicenses(cwd: string): PnpmLicensesOutput {
   const stdout = execSync('pnpm licenses list --json --long', {
     cwd,
     encoding: 'utf-8',
@@ -71,7 +72,7 @@ function runPnpmLicenses(cwd: string): PnpmLicensesOutput {
  * Reads the LICENSE file from a package directory.
  * Checks all common filename variants; returns null if none is found.
  */
-function readLicenseFile(pkgPath: string): string | null {
+export function readLicenseFile(pkgPath: string): string | null {
   if (!existsSync(pkgPath)) return null
 
   const candidate = readdirSync(pkgPath).find((f) =>
@@ -90,12 +91,12 @@ function readLicenseFile(pkgPath: string): string | null {
  * "Copyright (c) 2024 Name" — the year anchor avoids matching the generic
  * "copyright" word that appears in Apache-2.0 boilerplate.
  */
-function resolveCopyright(entry: PnpmLicenseEntry, pkgPath: string): string {
+export function resolveCopyright(entry: PnpmLicenseEntry, pkgPath: string): string {
   if (entry.author) return entry.author
 
   const text = readLicenseFile(pkgPath)
   if (text) {
-    const match = text.match(/^.*copyright\s+(?:\(c\)|©)?\s*\d{4}.*$/im)
+    const match = text.match(/^.*(?:copyright\s+(?:\(c\)|©)?|©)\s*\d{4}.*$/im)
     if (match?.[0]) return match[0].trim()
   }
 
@@ -109,7 +110,7 @@ function resolveCopyright(entry: PnpmLicenseEntry, pkgPath: string): string {
  * a LICENSE file — the boilerplate is identical across packages sharing the
  * same SPDX identifier.
  */
-function buildGroups(output: PnpmLicensesOutput): LicenseGroup[] {
+export function buildGroups(output: PnpmLicensesOutput): LicenseGroup[] {
   const groups: LicenseGroup[] = []
 
   for (const [licenseType, entries] of Object.entries(output)) {
@@ -142,7 +143,7 @@ function buildGroups(output: PnpmLicensesOutput): LicenseGroup[] {
   return groups.sort((a, b) => a.licenseType.localeCompare(b.licenseType))
 }
 
-function buildMarkdown(groups: LicenseGroup[], generatedAt: string): string {
+export function buildMarkdown(groups: LicenseGroup[], generatedAt: string): string {
   const totalPackages = groups.reduce((n, g) => n + g.packages.length, 0)
 
   const lines: string[] = [
@@ -189,9 +190,7 @@ function buildMarkdown(groups: LicenseGroup[], generatedAt: string): string {
   return lines.join('\n')
 }
 
-// ── Entry point ──────────────────────────────────────────────────────────────
-
-function generateLicenses(cwd: string): void {
+export function generateLicenses(cwd: string): void {
   const raw = runPnpmLicenses(cwd)
   const groups = buildGroups(raw)
   const markdown = buildMarkdown(groups, new Date().toISOString().slice(0, 10))
@@ -205,4 +204,8 @@ function generateLicenses(cwd: string): void {
   )
 }
 
-generateLicenses(process.cwd())
+// ── Entry point ──────────────────────────────────────────────────────────────
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  generateLicenses(process.cwd())
+}
