@@ -1,5 +1,11 @@
 # `@hypersonic-js/core`
 
+## 0.1.1
+
+### Patch Changes
+
+- Fix repository and homepage metadata
+
 ## 0.1.0
 
 ### Minor Changes
