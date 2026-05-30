@@ -1,4 +1,4 @@
-# @hypersonic/core
+# `@hypersonic-js/core`
 
 ## 0.1.0
 
