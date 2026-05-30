@@ -1,5 +1,5 @@
 {
-  "name": "@hypersonic/test-app",
+  "name": "@hypersonic-js/test-app",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@hypersonic/core": "workspace:*",
+    "@hypersonic-js/core": "workspace:*",
     "better-auth": "1.6.11",
     "@prisma/adapter-pg": "^7.8.0"
   },

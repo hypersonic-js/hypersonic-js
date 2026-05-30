@@ -1,5 +1,5 @@
 import type { Application, Request, Response, NextFunction } from 'express'
-import { HttpError, NotFoundError, UnauthorizedError, createInertiaErrorHandler } from '@hypersonic/core'
+import { HttpError, NotFoundError, UnauthorizedError, createInertiaErrorHandler } from '@hypersonic-js/core'
 import { createAuthGuard } from './middleware.ts'
 import type { AuthLike, AuthRequest, PrismaRouteClient } from './types.ts'
 
