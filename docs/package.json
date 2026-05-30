@@ -1,5 +1,5 @@
 {
-  "name": "@hypersonic/docs",
+  "name": "@hypersonic-js/docs",
   "private": true,
   "type": "module",
   "scripts": {
