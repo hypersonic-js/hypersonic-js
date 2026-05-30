@@ -31,7 +31,6 @@ import type { PnpmLicenseEntry, PnpmLicensesOutput, LicenseGroup } from '../gene
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const MIT_TEXT = 'MIT License\nCopyright (c) 2024 Test Author\nPermission is hereby granted...'
-const APACHE_TEXT = 'Apache License\nVersion 2.0, January 2004'
 
 function makeEntry(overrides: Partial<PnpmLicenseEntry> = {}): PnpmLicenseEntry {
   return {
