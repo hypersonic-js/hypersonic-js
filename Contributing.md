@@ -25,6 +25,7 @@ pnpm install
 | `pnpm docs:dev` | Start the docs dev server            |
 | `pnpm docs:build` | Build the docs                       |
 | `pnpm run licenses` | Regenerate `THIRD_PARTY_LICENSES.md` |
+| `pnpm release` | Builds everything, regenerates the third-party licenses, and publishes                  |
 
 To target a specific package:
 
