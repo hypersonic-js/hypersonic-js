@@ -15,6 +15,7 @@ export interface AuthConfig {
 
 export interface InertiaConfig {
   ssr: boolean
+  version?: string
 }
 
 export interface HypersonicConfig {
