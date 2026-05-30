@@ -16,7 +16,7 @@ export default defineConfig({
       { text: 'Guide', link: '/guide/' },
       {
         text: 'GitHub',
-        link: 'https://github.com/Zesuperaker/hypersonic',
+        link: 'https://github.com/hypersonic-js/hypersonic-js',
       },
     ],
 
@@ -30,7 +30,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/Zesuperaker/hypersonic' },
+      { icon: 'github', link: 'https://github.com/hypersonic-js/hypersonic-js' },
     ],
 
     footer: {
