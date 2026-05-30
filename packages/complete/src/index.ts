@@ -1,1 +1,1 @@
-export * from '@hypersonic/core'
+export * from '@hypersonic-js/core'

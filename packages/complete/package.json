@@ -1,6 +1,6 @@
 {
-  "name": "@hypersonic/complete",
-  "version": "0.0.1",
+  "name": "@hypersonic-js/complete",
+  "version": "0.1.0",
   "description": "The complete Hypersonic.js framework — all packages in one install",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,7 +11,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "license": "MIT",
   "scripts": {
     "build": "tsc",
@@ -21,7 +23,7 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
-    "@hypersonic/core": "workspace:*"
+    "@hypersonic-js/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "25.9.1",

@@ -1,6 +1,6 @@
 {
-  "name": "@hypersonic/core",
-  "version": "0.0.1",
+  "name": "@hypersonic-js/core",
+  "version": "0.1.0",
   "description": "The core of Hypersonic.js — a modern Django-inspired full-stack TypeScript framework",
   "type": "module",
   "main": "./dist/index.js",
@@ -11,15 +11,21 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Zesuperaker/hypersonic.git"
   },
   "author": "Zesuperaker",
   "license": "MIT",
-  "publishConfig": { "access": "public" },
-  "engines": { "node": "^24.0.0" },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": "^24.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import * as complete from '../src/index.js'
-import * as core from '@hypersonic/core'
+import * as core from '@hypersonic-js/core'
 
-describe('@hypersonic/complete re-exports', () => {
+describe('@hypersonic-js/complete re-exports', () => {
   it('exports the same set of named exports as @hypersonic/core', () => {
     const coreKeys = Object.keys(core).sort()
     const completeKeys = Object.keys(complete).sort()

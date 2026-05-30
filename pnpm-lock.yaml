@@ -32,7 +32,7 @@ importers:
 
   apps/test-app:
     dependencies:
-      '@hypersonic/core':
+      '@hypersonic-js/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@prisma/adapter-pg':
@@ -108,7 +108,7 @@ importers:
 
   packages/complete:
     dependencies:
-      '@hypersonic/core':
+      '@hypersonic-js/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:

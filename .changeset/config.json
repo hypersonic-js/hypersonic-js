@@ -2,10 +2,10 @@
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["@hypersonic/core", "@hypersonic/complete"]],
+  "fixed": [["@hypersonic-js/core", "@hypersonic-js/complete"]],
   "linked": [],
   "access": "public",
   "baseBranch": "master",
   "updateInternalDependencies": "patch",
-  "ignore": ["@hypersonic/test-app", "@hypersonic/scripts"]
+  "ignore": ["@hypersonic-js/test-app", "@hypersonic-js/scripts"]
 }

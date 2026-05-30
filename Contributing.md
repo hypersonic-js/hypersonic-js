@@ -25,7 +25,6 @@ pnpm install
 | `pnpm docs:dev` | Start the docs dev server            |
 | `pnpm docs:build` | Build the docs                       |
 | `pnpm run licenses` | Regenerate `THIRD_PARTY_LICENSES.md` |
-| `pnpm release` | Builds everything, regenerates the third-party licenses, and publishes                  |
 
 To target a specific package:
 
@@ -38,16 +37,18 @@ pnpm build --filter @hypersonic/core
 
 This repo uses [Changesets](https://github.com/changesets/changesets).
 
-1. Make your changes and open a PR.
-2. Run `pnpm changeset` and follow the prompts to describe the change.
-3. Commit the generated changeset file alongside your code.
-4. On merge to `master`, the release PR is updated automatically.
-5. Merging the release PR publishes to npm and tags the release.
+On each release run the following:
+
+| Command | Description                                |
+|---|--------------------------------------------|
+| `pnpm changeset` | Describe what changed (patch/minor/major)  |
+| `pnpm changeset version` | Bump versions + update CHANGELOG.md        |
+| `pnpm release` | Build + generate licenses + publish to npm |
 
 
 ## Code Quality
 
-All PRs should come with tests, with a target of 99% test coverage.
+All PRs should come with tests, with a target of 90% test coverage.
 
 ## Security Issues
 
