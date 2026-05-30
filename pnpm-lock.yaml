@@ -43,8 +43,8 @@ importers:
         version: 1.6.11(@prisma/client@7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(magicast@0.5.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3))(typescript@6.0.3))(mysql2@3.15.3)(pg@8.21.0)(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(magicast@0.5.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)(vue@3.5.35(typescript@6.0.3))
     devDependencies:
       '@inertiajs/react':
-        specifier: 3.2.0
-        version: 3.2.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        specifier: 3.3.0
+        version: 3.3.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@prisma/client':
         specifier: 7.8.0
         version: 7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(magicast@0.5.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3))(typescript@6.0.3)
@@ -128,11 +128,11 @@ importers:
   packages/core:
     dependencies:
       '@inertiajs/core':
-        specifier: 3.2.0
-        version: 3.2.0
+        specifier: 3.3.0
+        version: 3.3.0
       '@inertiajs/react':
-        specifier: 3.2.0
-        version: 3.2.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        specifier: 3.3.0
+        version: 3.3.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@tailwindcss/vite':
         specifier: 4.3.0
         version: 4.3.0(vite@8.0.14(@types/node@25.9.1)(jiti@2.7.0))
@@ -693,16 +693,16 @@ packages:
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
 
-  '@inertiajs/core@3.2.0':
-    resolution: {integrity: sha512-9HXCyI8GjwN/KK3KSYZifuncZPc3jioDe/jDQVFZEJJEn89lhaE5+ope3l6sI+GaLLTs0MSZcOhyizlA5L7lig==}
+  '@inertiajs/core@3.3.0':
+    resolution: {integrity: sha512-6tEe5vtjwXJj68h0nkz84WkeZ8XA0phJ8ep1l/V+im62KTzlZTw9sxlmf8uNKu4seleXVw+idw48svxUCWla/Q==}
     peerDependencies:
       axios: ^1.15.2
     peerDependenciesMeta:
       axios:
         optional: true
 
-  '@inertiajs/react@3.2.0':
-    resolution: {integrity: sha512-Mg2d3Rw0/Cdmc94ZUS2ivWY0k0Jyjtci5g0em2F0N6treV5kLK15PgH1OYlDx8Xgin0mG3uchh+tQuv/Hh95uQ==}
+  '@inertiajs/react@3.3.0':
+    resolution: {integrity: sha512-8Es6i1FOyP5sHWjLlE3yFi+dOuJp3IBkl1ccoxb101Jr4/vTcNsdXvpl+U8IZmvnmyDS4dikeAa29p7xFUwgyQ==}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -3811,15 +3811,15 @@ snapshots:
 
   '@iconify/types@2.0.0': {}
 
-  '@inertiajs/core@3.2.0':
+  '@inertiajs/core@3.3.0':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       es-toolkit: 1.47.0
       laravel-precognition: 2.0.0
 
-  '@inertiajs/react@3.2.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+  '@inertiajs/react@3.3.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
     dependencies:
-      '@inertiajs/core': 3.2.0
+      '@inertiajs/core': 3.3.0
       es-toolkit: 1.47.0
       laravel-precognition: 2.0.0
       react: 19.2.6

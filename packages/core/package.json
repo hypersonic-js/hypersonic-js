@@ -28,8 +28,8 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
-    "@inertiajs/core": "3.2.0",
-    "@inertiajs/react": "3.2.0",
+    "@inertiajs/core": "3.3.0",
+    "@inertiajs/react": "3.3.0",
     "@tailwindcss/vite": "4.3.0",
     "@vitejs/plugin-react": "6.0.2",
     "better-auth": "1.6.11",
