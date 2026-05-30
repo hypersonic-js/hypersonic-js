@@ -1,52 +1,30 @@
-# @hypersonic/core
+# @hypersonic-js/complete
 
-The core of **Hypersonic.js** — a modern Django-inspired full-stack TypeScript framework. One install gives you Express, Inertia + React + Vite + Tailwind, Prisma, and Better Auth, all pre-wired together.
+**Hypersonic.js** — everything in one installation. This package re-exports the full public API of every Hypersonic package so you don't have to manage individual package versions.
 
 📖 **[hypersonic-js.com](https://hypersonic-js.com)**
 
 ## Install
 
 ```bash
-npm install @hypersonic/core
+npm install @hypersonic-js/complete
 npm install --save-dev prisma @prisma/client
 ```
 
-For a single-package install of everything, use [`@hypersonic/complete`](https://www.npmjs.com/package/@hypersonic/complete) instead.
+## When to use this
+
+Use `@hypersonic-js/complete` if you want a single dependency that tracks the full framework. Use the individual packages (e.g. `@hypersonic-js/core`) if you need fine-grained control over which parts of the framework you include.
 
 ## Quick start
 
-**`hypersonic.config.ts`** at your project root:
-
 ```ts
-import { defineConfig } from '@hypersonic/core'
-
-export default defineConfig({
-  server: { port: 3000, host: 'localhost' },
-  auth: { trustedOrigins: ['http://localhost:3000'] },
-  inertia: { ssr: true },
-})
+import { defineConfig, createApp, loadConfig } from '@hypersonic-js/complete'
 ```
 
-**`.env`**:
-
-```bash
-DATABASE_URL="postgresql://localhost:5432/myapp"
-BETTER_AUTH_SECRET="your-secret-at-least-32-characters-long"
-```
-
-**`server.ts`**:
-
-```ts
-import { PrismaClient } from '@prisma/client'
-import { createApp, loadConfig } from '@hypersonic/core'
-
-const { config, env } = await loadConfig()
-const app = await createApp({ config, env, prisma: new PrismaClient() })
-await app.start()
-```
+Everything exported by `@hypersonic-js/complete` is identical to the same export from its source package — no wrappers, no overhead.
 
 Full documentation at **[hypersonic-js.com](https://hypersonic-js.com)**.
 
 ## License
 
-MIT © Joaquim Dalton-Pereira
+MIT © [Joaquim Dalton-Pereira](https://github.com/Zesuperaker)
