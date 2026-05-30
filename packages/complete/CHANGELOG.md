@@ -1,5 +1,13 @@
 # @hypersonic-js/complete
 
+## 0.1.2
+
+### Patch Changes
+
+- Stale docs updates
+- Updated dependencies
+  - @hypersonic-js/core@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes

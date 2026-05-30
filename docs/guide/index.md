@@ -1,6 +1,6 @@
 # Introduction
 
-Hypersonic.js is a full-stack TypeScript framework inspired by Django's "batteries included" philosophy. One install gives you a production-ready backend, a React frontend with SSR, a database ORM, and authentication — all pre-wired and type-safe end to end.
+Hypersonic.js is a full-stack TypeScript framework inspired by Django's "batteries included" philosophy. One installation gives you a production-ready backend, a React frontend with SSR, a database ORM, and authentication — all pre-wired and type-safe end to end.
 
 
 ## Requirements
@@ -11,7 +11,7 @@ Hypersonic.js is a full-stack TypeScript framework inspired by Django's "batteri
 ## Installation
 
 ```bash
-npm install @hypersonic/complete
+npm install @hypersonic-js/complete
 npm install --save-dev prisma @prisma/client
 ```
 
