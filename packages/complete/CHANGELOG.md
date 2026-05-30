@@ -1,4 +1,4 @@
-# @hypersonic/complete
+# @hypersonic-js/complete
 
 ## 0.1.0
 
@@ -9,4 +9,4 @@
 ### Patch Changes
 
 - Updated dependencies [57fc5c3]
-  - @hypersonic/core@0.1.0
+  - @hypersonic-js/core@0.1.0

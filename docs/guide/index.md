@@ -18,7 +18,7 @@ npm install --save-dev prisma @prisma/client
 Or install only what you need:
 
 ```bash
-npm install @hypersonic/core
+npm install @hypersonic-js/core
 ```
 
 ## Quick start
@@ -26,7 +26,7 @@ npm install @hypersonic/core
 **`hypersonic.config.ts`** at your project root:
 
 ```ts
-import { defineConfig } from '@hypersonic/complete'
+import { defineConfig } from '@hypersonic-js/complete'
 
 export default defineConfig({
   server: {
@@ -53,7 +53,7 @@ BETTER_AUTH_SECRET="your-secret-at-least-32-characters-long"
 
 ```ts
 import { PrismaClient } from '@prisma/client'
-import { createApp, loadConfig } from '@hypersonic/complete'
+import { createApp, loadConfig } from '@hypersonic-js/complete'
 
 const { config, env } = await loadConfig()
 const app = await createApp({ config, env, prisma: new PrismaClient() })
