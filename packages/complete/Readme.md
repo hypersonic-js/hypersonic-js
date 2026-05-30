@@ -27,4 +27,4 @@ Full documentation at **[hypersonic-js.com](https://hypersonic-js.com)**.
 
 ## License
 
-MIT © [Zesuperaker](https://github.com/Zesuperaker)
+MIT © MIT © Joaquim Dalton-Pereira

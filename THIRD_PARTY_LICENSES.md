@@ -3,7 +3,7 @@
 All dependencies used by Hypersonic.js and their respective licenses.
 585 packages across 11 license types.
 
-_Generated: 2026-05-29_
+_Generated: 2026-05-30_
 
 ---
 
@@ -519,8 +519,8 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@eslint-community/regexpp@4.12.2** — Toru Nagashima — https://github.com/eslint-community/regexpp#readme
 - **@hono/node-server@1.19.11** — Yusuke Wada — https://github.com/honojs/node-server
 - **@iconify/types@2.0.0** — Vjacheslav Trushkin — https://github.com/iconify/iconify
-- **@inertiajs/core@3.2.0** — https://inertiajs.com/
-- **@inertiajs/react@3.2.0** — https://inertiajs.com/
+- **@inertiajs/core@3.3.0** — https://inertiajs.com/
+- **@inertiajs/react@3.3.0** — https://inertiajs.com/
 - **@inquirer/external-editor@1.0.3** — Simon Boudrias — https://github.com/SBoudrias/Inquirer.js/blob/main/packages/external-editor/README.md
 - **@jridgewell/gen-mapping@0.3.13** — Justin Ridgewell — https://github.com/jridgewell/sourcemaps/tree/main/packages/gen-mapping
 - **@jridgewell/remapping@2.3.5** — Justin Ridgewell — https://github.com/jridgewell/sourcemaps/tree/main/packages/remapping

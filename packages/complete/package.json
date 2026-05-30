@@ -1,6 +1,6 @@
 {
   "name": "@hypersonic-js/complete",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The complete Hypersonic.js framework — all packages in one install",
   "type": "module",
   "main": "./dist/index.js",
@@ -14,7 +14,13 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hypersonic-js/hypersonic-js"
+  },
   "license": "MIT",
+  "author": "Joaquim Dalton-Pereira",
+  "homepage": "https://hypersonic-js.com",
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
