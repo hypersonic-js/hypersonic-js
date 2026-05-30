@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import request from 'supertest'
 
 vi.mock('better-auth', () => ({
   betterAuth: vi.fn(() => ({ handler: vi.fn() })),
@@ -89,6 +90,44 @@ describe('createApp', () => {
     await createApp({ config, env, prisma: mockPrisma })
     const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
     expect(call['socialProviders']).toBeUndefined()
+  })
+
+  it('forwards version from config to the Inertia middleware', async () => {
+    const configWithVersion: HypersonicConfig = {
+      ...config,
+      inertia: { ssr: false, version: 'v42' },
+    }
+    const app = await createApp({ config: configWithVersion, env, prisma: mockPrisma })
+
+    app.express.get('/ping', (req, res) => {
+      res.inertia!('Ping', {})
+    })
+
+    // A stale version triggers 409 only if 'v42' was actually forwarded
+    const res = await request(app.express)
+      .get('/ping')
+      .set('X-Inertia', 'true')
+      .set('X-Inertia-Version', 'stale')
+
+    expect(res.status).toBe(409)
+    expect(res.headers['x-inertia-location']).toBe('/ping')
+  })
+
+  it('uses default version "1" when config.inertia.version is omitted', async () => {
+    const app = await createApp({ config, env, prisma: mockPrisma })
+
+    app.express.get('/ping', (req, res) => {
+      res.inertia!('Ping', {})
+    })
+
+    // Version "1" matches the middleware default — no mismatch, no 409
+    const res = await request(app.express)
+      .get('/ping')
+      .set('X-Inertia', 'true')
+      .set('X-Inertia-Version', '1')
+
+    expect(res.status).toBe(200)
+    expect(res.body.version).toBe('1')
   })
 })
 

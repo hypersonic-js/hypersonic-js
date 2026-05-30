@@ -67,7 +67,10 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
   })
   mountAuth(app, auth)
 
-  await createInertiaMiddleware(app, { ssr: config.inertia.ssr })
+  await createInertiaMiddleware(app, {
+  ssr: config.inertia.ssr,
+  version: config.inertia.version,
+  })
 
   const { start, stop } = createLifecycle(app, config)
 
