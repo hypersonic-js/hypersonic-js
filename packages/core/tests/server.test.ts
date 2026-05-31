@@ -30,6 +30,7 @@ const config: HypersonicConfig = {
   server: { port: 0, host: '127.0.0.1' },
   auth: { trustedOrigins: ['http://localhost:3000'] },
   inertia: { ssr: false },
+  database: { provider: 'postgresql' },
 }
 
 const env: Env = {

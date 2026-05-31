@@ -40,6 +40,14 @@ function resolveProviders(
 export async function createApp(options: CreateAppOptions): Promise<HypersonicApp> {
   const { config, env, prisma } = options
 
+  if (!config.database) {
+    throw new Error(
+      'Hypersonic: config.database is required. ' +
+        'Add a database block to your hypersonic.config.ts:\n' +
+        '  database: { provider: "yourdbname" }',
+    )
+  }
+
   const app = express()
 
   app.use(express.json())
