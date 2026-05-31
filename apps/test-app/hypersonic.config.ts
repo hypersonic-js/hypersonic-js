@@ -1,4 +1,4 @@
-import { defineConfig } from '@hypersonic/core'
+import { defineConfig } from '@hypersonic-js/core'
 
 export default defineConfig({
   server: {

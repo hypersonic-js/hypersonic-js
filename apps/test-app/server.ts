@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { PrismaClient, Prisma } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
-import { createApp, loadConfig } from '@hypersonic/core'
+import { createApp, loadConfig } from '@hypersonic-js/core'
 import { mountAdmin } from '@hypersonic-js/admin'
 import { registerRoutes } from './src/routes.ts'
 import type { PrismaRouteClient } from './src/types.ts'
