@@ -17,8 +17,8 @@ vi.mock('@prisma/client', () => ({ PrismaClient: vi.fn() }))
 import {
   runCreateAdmin,
   registerCreateAdmin,
-} from '../src/create-admin.js'
-import type { CreateAdminDeps, CreateAdminOptions } from '../src/create-admin.js'
+} from '../src/commands/admin/create-admin.js'
+import type { CreateAdminDeps, CreateAdminOptions } from '../src/commands/admin/create-admin.js'
 
 // ── Mock factory ──────────────────────────────────────────────────────────────
 
