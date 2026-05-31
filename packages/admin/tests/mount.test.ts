@@ -22,10 +22,14 @@ const mockPrisma = {
   post: makeDelegate(),
 } as unknown as PrismaClientLike
 
-const mockAuth = {
-  api: {
-    getSession: vi.fn().mockResolvedValue({ user: { email: 'admin@example.com' } }),
-  },
+function makeAuth(role: string | null) {
+  return {
+    api: {
+      getSession: vi.fn().mockResolvedValue(
+        role !== null ? { user: { role } } : null,
+      ),
+    },
+  }
 }
 
 const minimalDmmf = {
@@ -71,8 +75,7 @@ const minimalDmmf = {
 function baseOptions(overrides: Partial<AdminOptions> = {}): AdminOptions {
   return {
     dmmf: minimalDmmf,
-    auth: mockAuth,
-    adminEmails: ['admin@example.com'],
+    auth: makeAuth('admin'),
     ...overrides,
   }
 }
@@ -116,28 +119,23 @@ describe('mountAdmin', () => {
     expect(atDefault.status).toBe(404)
   })
 
-  it('applies auth middleware — returns 403 with no session', async () => {
-    const authNoSession = { api: { getSession: vi.fn().mockResolvedValue(null) } }
+  it('returns 403 when there is no active session', async () => {
     const app = express()
-    mountAdmin(app, mockPrisma, baseOptions({ auth: authNoSession }))
+    mountAdmin(app, mockPrisma, baseOptions({ auth: makeAuth(null) }))
 
     const res = await request(app).get('/admin')
     expect(res.status).toBe(403)
   })
 
-  it('returns 403 when the user is not in adminEmails', async () => {
-    const authWrongEmail = {
-      api: { getSession: vi.fn().mockResolvedValue({ user: { email: 'hacker@evil.com' } }) },
-    }
+  it('returns 403 when the session user does not have the admin role', async () => {
     const app = express()
-    mountAdmin(app, mockPrisma, baseOptions({ auth: authWrongEmail }))
+    mountAdmin(app, mockPrisma, baseOptions({ auth: makeAuth('user') }))
 
     const res = await request(app).get('/admin')
     expect(res.status).toBe(403)
   })
 
-  it('passes showAuthModels to parseDmmf', () => {
-    // With showAuthModels: true and a Session model, it should NOT throw
+  it('passes showAuthModels to parseDmmf without throwing', () => {
     const dmmfWithSession = {
       datamodel: {
         ...minimalDmmf.datamodel,
@@ -147,7 +145,19 @@ describe('mountAdmin', () => {
             name: 'Session',
             dbName: null,
             fields: [
-              { name: 'id', type: 'String', kind: 'scalar' as const, isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
+              {
+                name: 'id',
+                type: 'String',
+                kind: 'scalar' as const,
+                isRequired: true,
+                isUnique: false,
+                isId: true,
+                isList: false,
+                hasDefaultValue: false,
+                isReadOnly: false,
+                isGenerated: false,
+                isUpdatedAt: false,
+              },
             ],
           },
         ],
@@ -159,8 +169,13 @@ describe('mountAdmin', () => {
     ).not.toThrow()
   })
 
-  it('returns a function (does not throw during mount)', () => {
+  it('does not throw during mount', () => {
     const app = express()
     expect(() => mountAdmin(app, mockPrisma, baseOptions())).not.toThrow()
+  })
+
+  it('AdminOptions has no adminEmails field', () => {
+    const opts: AdminOptions = baseOptions()
+    expect((opts as Record<string, unknown>)['adminEmails']).toBeUndefined()
   })
 })

@@ -1,7 +1,6 @@
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
-import type { BetterAuthOptions } from 'better-auth'
-import type { SocialProviders } from 'better-auth/social-providers'
+import { admin } from 'better-auth/plugins'
 import { detectProvider } from '../utils/detect-provider.js'
 import type { AuthSetupOptions } from './types.js'
 
@@ -9,33 +8,35 @@ export type AuthInstance = ReturnType<typeof betterAuth>
 
 /**
  * Creates and returns a configured Better Auth instance.
- * OAuth social providers are only wired in when credentials are supplied.
  */
 export function createAuth(options: AuthSetupOptions): AuthInstance {
   const provider = detectProvider(options.databaseUrl)
 
-  const socialProviders: SocialProviders = {}
+  const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {}
 
   if (options.providers?.github !== undefined) {
-    socialProviders.github = options.providers.github as SocialProviders['github']
+    socialProviders['github'] = options.providers.github
   }
 
   if (options.providers?.google !== undefined) {
-    socialProviders.google = options.providers.google as SocialProviders['google']
+    socialProviders['google'] = options.providers.google
   }
 
   const hasSocialProviders = Object.keys(socialProviders).length > 0
 
-  const authOptions: BetterAuthOptions = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const authOptions: any = {
     secret: options.secret,
     trustedOrigins: options.trustedOrigins,
-    database: prismaAdapter(
-      options.prisma as Parameters<typeof prismaAdapter>[0],
-      { provider },
-    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    database: prismaAdapter(options.prisma as any, { provider }),
     emailAndPassword: { enabled: true },
-    ...(hasSocialProviders ? { socialProviders } : {}),
+    plugins: [admin()],
   }
 
-  return betterAuth(authOptions)
+  if (hasSocialProviders) {
+    authOptions.socialProviders = socialProviders
+  }
+
+  return betterAuth(authOptions) as AuthInstance
 }

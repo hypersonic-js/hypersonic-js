@@ -16,6 +16,11 @@ model User {
   image         String?
   createdAt     DateTime
   updatedAt     DateTime
+  // Better Auth admin plugin fields
+  role          String    @default("user")
+  banned        Boolean   @default(false)
+  banReason     String?
+  banExpires    DateTime?
   sessions      Session[]
   accounts      Account[]
   posts         Post[]

@@ -51,16 +51,45 @@ turbo dev --filter=@hypersonic/test-app
 
 The app starts at `http://localhost:3000`.
 
-| Route              | Auth required | Description                        |
-|--------------------|---------------|------------------------------------|
-| `GET /health`      | No            | Returns `{ status: "ok" }`         |
-| `GET /login`       | No            | Renders the `Auth/Login` Inertia page |
-| `GET /posts`       | Yes           | Inertia-rendered posts index page  |
-| `GET /posts/:id`   | Yes           | Inertia-rendered single post page  |
-| `POST /posts`      | Yes           | Creates a new post, redirects to `/posts` |
-| `DELETE /posts/:id`| Yes (owner)   | Deletes a post, redirects to `/posts` |
+| Route                 | Auth required        | Description                                     |
+|-----------------------|----------------------|-------------------------------------------------|
+| `GET /health`         | No                   | Returns `{ status: "ok" }`                      |
+| `GET /login`          | No                   | Renders the `Auth/Login` Inertia page           |
+| `GET /register`       | No                   | Renders the `Auth/Register` Inertia page        |
+| `GET /posts`          | Yes                  | Inertia-rendered posts index page               |
+| `GET /posts/:id`      | Yes                  | Inertia-rendered single post page               |
+| `POST /posts`         | Yes                  | Creates a new post, redirects to `/posts`       |
+| `DELETE /posts/:id`   | Yes (owner)          | Deletes a post, redirects to `/posts`           |
+| `GET /admin`          | Yes (admin email)    | Admin dashboard — lists all visible models      |
+| `GET /admin/:model`   | Yes (admin email)    | Paginated record list for a model               |
+| `GET /admin/:model/new` | Yes (admin email)  | Create form for a model                         |
+| `GET /admin/:model/:id` | Yes (admin email)  | Edit form for a record                          |
+| `POST /admin/:model`  | Yes (admin email)    | Creates a record, redirects to model index      |
+| `PATCH /admin/:model/:id` | Yes (admin email) | Updates a record, redirects to model index    |
+| `DELETE /admin/:model/:id` | Yes (admin email) | Deletes a record, redirects to model index  |
 
 Unauthenticated requests to protected routes redirect to `/login`.
+Admin routes return `403 Forbidden` for users whose email is not in `ADMIN_EMAILS`.
+
+## Environment variables
+
+| Variable        | Required | Description                                                      |
+|-----------------|----------|------------------------------------------------------------------|
+| `DATABASE_URL`  | Yes      | Postgres connection string                                       |
+| `BETTER_AUTH_SECRET` | Yes | Secret key for Better Auth (min 32 chars)                   |
+| `ADMIN_EMAILS`  | No       | Comma-separated list of emails granted access to `/admin`        |
+
+Example `.env`:
+
+```dotenv
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hypersonic_test"
+BETTER_AUTH_SECRET="change-me-to-a-random-32-char-secret!!"
+ADMIN_EMAILS="you@example.com"
+```
+
+> **Note:** The admin dashboard uses the scaffolded pages from `@hypersonic-js/admin`.
+> Run `hypersonic admin scaffold` once to generate
+> `resources/js/Pages/Admin/{Dashboard,ModelIndex,ModelForm}.tsx`.
 
 ## Running tests
 
@@ -83,6 +112,14 @@ Or directly from `apps/test-app` (requires the library to already be built):
 npm run test
 npm run test:coverage
 ```
+
+### Test files
+
+| File                       | What it covers                                              |
+|----------------------------|-------------------------------------------------------------|
+| `tests/routes.test.ts`     | All app routes and the `parseId` utility                    |
+| `tests/middleware.test.ts` | `createAuthGuard` — session checking and req patching       |
+| `tests/admin.test.ts`      | `mountAdmin` integration with the test-app's Prisma schema  |
 
 ## Database commands
 

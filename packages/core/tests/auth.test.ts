@@ -13,9 +13,14 @@ vi.mock('better-auth/node', () => ({
   toNodeHandler: vi.fn(() => vi.fn()),
 }))
 
+vi.mock('better-auth/plugins', () => ({
+  admin: vi.fn(() => ({ id: 'admin' })),
+}))
+
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { toNodeHandler } from 'better-auth/node'
+import { admin } from 'better-auth/plugins'
 import { createAuth } from '../src/auth/setup.js'
 import { mountAuth } from '../src/auth/middleware.js'
 import type { AuthSetupOptions } from '../src/auth/types.js'
@@ -59,6 +64,14 @@ describe('createAuth', () => {
     expect(betterAuth).toHaveBeenCalledWith(
       expect.objectContaining({ emailAndPassword: { enabled: true } }),
     )
+  })
+
+  it('always enables the admin plugin', () => {
+    createAuth(baseOptions)
+    expect(admin).toHaveBeenCalledOnce()
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(Array.isArray(call['plugins'])).toBe(true)
+    expect((call['plugins'] as Array<{ id: string }>).some((p) => p.id === 'admin')).toBe(true)
   })
 
   it('does not include socialProviders when none are configured', () => {

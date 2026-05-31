@@ -103,11 +103,12 @@ export interface PaginationParams {
 
 // ── Auth interface ───────────────────────────────────────────────────────────
 // Minimal structural interface — satisfied by Better Auth's auth instance
-// (i.e. the value returned by createApp().auth) without importing better-auth.
+// with the admin plugin enabled. The admin plugin adds a `role` field to the
+// session user; we check role === 'admin' instead of an email allowlist.
 
 export interface AdminAuthLike {
   api: {
-    getSession(opts: { headers: unknown }): Promise<{ user: { email: string } } | null>
+    getSession(opts: { headers: unknown }): Promise<{ user: { role: string } } | null>
   }
 }
 
@@ -123,10 +124,8 @@ export interface PrismaClientLike {
 export interface AdminOptions {
   /** Prisma DMMF document — pass `Prisma.dmmf` from `@prisma/client`. */
   dmmf: DmmfDocument
-  /** Better Auth instance — pass `app.auth` from `createApp()`. */
+  /** Better Auth instance with the admin plugin enabled — pass `app.auth`. */
   auth: AdminAuthLike
-  /** Email addresses granted admin access. */
-  adminEmails: string[]
   /** Route prefix for all admin routes. Defaults to '/admin'. */
   prefix?: string
   /** When true, shows the default hidden Better Auth tables. Defaults to false. */

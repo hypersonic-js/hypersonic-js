@@ -3,16 +3,9 @@ import type { AdminAuthLike } from '../types.js'
 
 /**
  * Returns an Express middleware that validates a Better Auth session and checks
- * whether the authenticated user's email is in the admin allowlist.
- *
- * Responds with 403 when:
- *   - There is no active session
- *   - The session user's email is not in adminEmails
+ * whether the authenticated user has the 'admin' role.
  */
-export function createAdminAuthMiddleware(
-  auth: AdminAuthLike,
-  adminEmails: string[],
-): RequestHandler {
+export function createAdminAuthMiddleware(auth: AdminAuthLike): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const session = await auth.api.getSession({
       headers: req.headers as unknown as Headers,
@@ -23,7 +16,7 @@ export function createAdminAuthMiddleware(
       return
     }
 
-    if (!adminEmails.includes(session.user.email)) {
+    if (session.user.role !== 'admin') {
       res.status(403).json({ error: 'Forbidden: not an admin' })
       return
     }
