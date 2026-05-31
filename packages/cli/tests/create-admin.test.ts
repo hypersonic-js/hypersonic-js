@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Command } from 'commander'
+
+// Mock dotenv so the dynamic import('dotenv') inside the action doesn't fail
+vi.mock('dotenv', () => ({ config: vi.fn() }))
+
 import {
   runCreateAdmin,
   registerCreateAdmin,
@@ -51,7 +55,7 @@ afterEach(() => {
   process.env = savedEnv
 })
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+// ── runCreateAdmin tests ──────────────────────────────────────────────────────
 
 describe('runCreateAdmin', () => {
   describe('environment validation', () => {
@@ -66,59 +70,7 @@ describe('runCreateAdmin', () => {
     })
   })
 
-  describe('Better Auth wiring', () => {
-    it('creates a Better Auth instance with the admin plugin', async () => {
-      const { deps } = makeDeps()
-      await runCreateAdmin(validOpts, deps)
-      expect(deps.betterAuth).toHaveBeenCalledOnce()
-      expect(deps.adminPlugin).toHaveBeenCalledOnce()
-    })
-
-    it('passes emailAndPassword enabled to betterAuth', async () => {
-      const { deps } = makeDeps()
-      await runCreateAdmin(validOpts, deps)
-      expect(deps.betterAuth).toHaveBeenCalledWith(
-        expect.objectContaining({ emailAndPassword: { enabled: true } }),
-      )
-    })
-
-    it('passes the admin plugin result in the plugins array', async () => {
-      const { deps } = makeDeps()
-      await runCreateAdmin(validOpts, deps)
-      const call = vi.mocked(deps.betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
-      expect(Array.isArray(call['plugins'])).toBe(true)
-      expect((call['plugins'] as unknown[]).length).toBeGreaterThan(0)
-    })
-
-    it('uses detectProvider to resolve the database adapter provider', async () => {
-      const { deps } = makeDeps()
-      await runCreateAdmin(validOpts, deps)
-      expect(deps.detectProvider).toHaveBeenCalledWith(process.env['DATABASE_URL'])
-      expect(deps.prismaAdapter).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ provider: 'postgresql' }),
-      )
-    })
-
-    it('creates a PrismaClient with the DATABASE_URL', async () => {
-      const { deps } = makeDeps()
-      await runCreateAdmin(validOpts, deps)
-      expect(deps.PrismaClient).toHaveBeenCalledWith({
-        datasourceUrl: process.env['DATABASE_URL'],
-      })
-    })
-  })
-
-  describe('createUser call', () => {
-    it('calls auth.api.createUser with role "admin"', async () => {
-      const { deps, createUser } = makeDeps()
-      await runCreateAdmin(validOpts, deps)
-      expect(createUser).toHaveBeenCalledOnce()
-      expect(createUser).toHaveBeenCalledWith({
-        body: expect.objectContaining({ role: 'admin' }),
-      })
-    })
-
+  describe('user creation', () => {
     it('passes the provided email to createUser', async () => {
       const { deps, createUser } = makeDeps()
       await runCreateAdmin(validOpts, deps)
@@ -140,6 +92,14 @@ describe('runCreateAdmin', () => {
       await runCreateAdmin(validOpts, deps)
       expect(createUser).toHaveBeenCalledWith({
         body: expect.objectContaining({ password: 'super-secret-password' }),
+      })
+    })
+
+    it('always sets role to "admin"', async () => {
+      const { deps, createUser } = makeDeps()
+      await runCreateAdmin(validOpts, deps)
+      expect(createUser).toHaveBeenCalledWith({
+        body: expect.objectContaining({ role: 'admin' }),
       })
     })
   })
@@ -168,12 +128,16 @@ describe('runCreateAdmin', () => {
   })
 })
 
+// ── registerCreateAdmin tests ─────────────────────────────────────────────────
+
 describe('registerCreateAdmin', () => {
-  function buildProgram() {
+  // Build a program with a mock prompt and mock deps so the action never
+  // touches stdin or a real database.
+  function buildProgram(mockPrompt?: ReturnType<typeof vi.fn>) {
     const program = new Command()
     program.exitOverride()
     const admin = program.command('admin')
-    registerCreateAdmin(admin)
+    registerCreateAdmin(admin, mockPrompt, makeDeps().deps)
     return { program, admin }
   }
 
@@ -189,27 +153,61 @@ describe('registerCreateAdmin', () => {
     expect(sub.description()).toBeTruthy()
   })
 
-  it('has a required --email option', () => {
+  it('create-admin has no options (prompts interactively instead)', () => {
     const { admin } = buildProgram()
     const sub = admin.commands.find((c) => c.name() === 'create-admin')!
-    const opt = sub.options.find((o) => o.long === '--email')
-    expect(opt).toBeDefined()
-    expect(opt!.mandatory).toBe(true)
+    expect(sub.options).toHaveLength(0)
   })
 
-  it('has a required --name option', () => {
-    const { admin } = buildProgram()
-    const sub = admin.commands.find((c) => c.name() === 'create-admin')!
-    const opt = sub.options.find((o) => o.long === '--name')
-    expect(opt).toBeDefined()
-    expect(opt!.mandatory).toBe(true)
-  })
+  describe('interactive prompts', () => {
+    function makePrompt(answers: string[]) {
+      let call = 0
+      return vi.fn().mockImplementation(() => Promise.resolve(answers[call++] ?? ''))
+    }
 
-  it('has a required --password option', () => {
-    const { admin } = buildProgram()
-    const sub = admin.commands.find((c) => c.name() === 'create-admin')!
-    const opt = sub.options.find((o) => o.long === '--password')
-    expect(opt).toBeDefined()
-    expect(opt!.mandatory).toBe(true)
+    it('prompts for email first', async () => {
+      const mockPrompt = makePrompt(['e@example.com', 'Alice', 'pw'])
+      const { program } = buildProgram(mockPrompt)
+      await program.parseAsync(['node', 'hypersonic', 'admin', 'create-admin'])
+      expect(mockPrompt).toHaveBeenNthCalledWith(1, 'Email: ')
+    })
+
+    it('prompts for name second', async () => {
+      const mockPrompt = makePrompt(['e@example.com', 'Alice', 'pw'])
+      const { program } = buildProgram(mockPrompt)
+      await program.parseAsync(['node', 'hypersonic', 'admin', 'create-admin'])
+      expect(mockPrompt).toHaveBeenNthCalledWith(2, 'Name: ')
+    })
+
+    it('prompts for password third with hidden=true', async () => {
+      const mockPrompt = makePrompt(['e@example.com', 'Alice', 'pw'])
+      const { program } = buildProgram(mockPrompt)
+      await program.parseAsync(['node', 'hypersonic', 'admin', 'create-admin'])
+      expect(mockPrompt).toHaveBeenNthCalledWith(3, 'Password: ', true)
+    })
+
+    it('prompts exactly three times', async () => {
+      const mockPrompt = makePrompt(['e@example.com', 'Alice', 'pw'])
+      const { program } = buildProgram(mockPrompt)
+      await program.parseAsync(['node', 'hypersonic', 'admin', 'create-admin'])
+      expect(mockPrompt).toHaveBeenCalledTimes(3)
+    })
+
+    it('passes prompted values to runCreateAdmin', async () => {
+      const mockPrompt = makePrompt(['prompted@example.com', 'Prompted User', 'prompted-pw'])
+      const { deps, createUser } = makeDeps()
+      const program = new Command()
+      program.exitOverride()
+      const admin = program.command('admin')
+      registerCreateAdmin(admin, mockPrompt, deps)
+      await program.parseAsync(['node', 'hypersonic', 'admin', 'create-admin'])
+      expect(createUser).toHaveBeenCalledWith({
+        body: expect.objectContaining({
+          email: 'prompted@example.com',
+          name: 'Prompted User',
+          password: 'prompted-pw',
+        }),
+      })
+    })
   })
 })

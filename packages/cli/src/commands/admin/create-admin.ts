@@ -1,5 +1,5 @@
 import type { Command } from 'commander'
-import { logger } from '../../utils/logger.js'
+import { prompt as defaultPrompt, type PromptFn } from '../../utils/prompt.js'
 
 // ── Public types ──────────────────────────────────────────────────────────────
 
@@ -29,6 +29,8 @@ export interface CreateAdminDeps {
   detectProvider(url: string): string
 }
 
+import { logger } from '../../utils/logger.js'
+
 // ── Implementation ────────────────────────────────────────────────────────────
 
 async function loadDeps(): Promise<CreateAdminDeps> {
@@ -47,6 +49,7 @@ async function loadDeps(): Promise<CreateAdminDeps> {
     detectProvider: core.detectProvider as CreateAdminDeps['detectProvider'],
   }
 }
+
 /**
  * Core logic for creating the first admin user.
  * Accepts an optional `deps` parameter so unit tests can inject mocks
@@ -97,28 +100,39 @@ export async function runCreateAdmin(
  * Registers the `hypersonic admin create-admin` subcommand.
  *
  * Usage:
- *   hypersonic admin create-admin --email <email> --name <name> --password <password>
+ *   hypersonic admin create-admin
  *
+ * Prompts interactively for email, name, and password (password is hidden).
  * Loads the project's .env file automatically before running so
  * DATABASE_URL and BETTER_AUTH_SECRET are available without the caller
  * having to export them manually.
+ *
+ * Optional `promptFn` and `deps` can be injected for testing without
+ * touching stdin or a real database.
  */
-export function registerCreateAdmin(adminCommand: Command): void {
+export function registerCreateAdmin(
+  adminCommand: Command,
+  promptFn?: PromptFn,
+  deps?: CreateAdminDeps,
+): void {
+  const ask = promptFn ?? defaultPrompt
+
   adminCommand
     .command('create-admin')
     .description(
       'Create the initial admin user. Run once after your first migration to bootstrap ' +
         'admin access. Subsequent admins can be promoted through the dashboard.',
     )
-    .requiredOption('--email <email>', 'Email address for the admin account')
-    .requiredOption('--name <name>', 'Display name for the admin account')
-    .requiredOption('--password <password>', 'Password for the admin account')
-    .action(async (opts: CreateAdminOptions) => {
+    .action(async () => {
       // Load .env from the project root so DATABASE_URL and BETTER_AUTH_SECRET
       // are available when the CLI is run from the project directory.
       const { config } = await import('dotenv')
       config()
 
-      await runCreateAdmin(opts)
+      const email = await ask('Email: ')
+      const name = await ask('Name: ')
+      const password = await ask('Password: ', true)
+
+      await runCreateAdmin({ email, name, password }, deps)
     })
 }
