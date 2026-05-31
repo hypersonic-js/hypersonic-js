@@ -1,3 +1,9 @@
+export type DatabaseProvider = 'postgresql' | 'sqlite'
+
+export interface DatabaseConfig {
+  provider: DatabaseProvider
+}
+
 export interface ServerConfig {
   port: number
   host: string
@@ -22,4 +28,5 @@ export interface HypersonicConfig {
   server: ServerConfig
   auth: AuthConfig
   inertia: InertiaConfig
+  database: DatabaseConfig
 }

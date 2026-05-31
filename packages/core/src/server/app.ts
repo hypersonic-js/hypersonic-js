@@ -36,17 +36,6 @@ function resolveProviders(
  * Creates and returns a fully wired Hypersonic application.
  * The auth instance created internally is returned on `app.auth` so
  * callers can pass it to route registration without creating a second instance.
- *
- * @example
- * ```ts
- * import { PrismaClient } from '@prisma/client'
- * import { createApp, loadConfig } from '@hypersonic/core'
- *
- * const { config, env } = await loadConfig()
- * const app = await createApp({ config, env, prisma: new PrismaClient() })
- * registerRoutes(app.express, prisma, app.auth)
- * await app.start()
- * ```
  */
 export async function createApp(options: CreateAppOptions): Promise<HypersonicApp> {
   const { config, env, prisma } = options
@@ -61,15 +50,15 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
   const auth = createAuth({
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: config.auth.trustedOrigins,
-    databaseUrl: env.DATABASE_URL,
+    provider: config.database.provider,
     prisma,
     providers: resolveProviders(config, env),
   })
   mountAuth(app, auth)
 
   await createInertiaMiddleware(app, {
-  ssr: config.inertia.ssr,
-  version: config.inertia.version,
+    ssr: config.inertia.ssr,
+    version: config.inertia.version,
   })
 
   const { start, stop } = createLifecycle(app, config)

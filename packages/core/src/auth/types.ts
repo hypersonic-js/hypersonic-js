@@ -1,3 +1,5 @@
+import type { DatabaseProvider } from '../config/types.js'
+
 export interface SocialProviderCredentials {
   clientId: string
   clientSecret: string
@@ -6,7 +8,8 @@ export interface SocialProviderCredentials {
 export interface AuthSetupOptions {
   secret: string
   trustedOrigins: string[]
-  databaseUrl: string
+  /** Database provider — used to configure the Better Auth Prisma adapter. */
+  provider: DatabaseProvider
   prisma: unknown
   providers?: {
     github?: SocialProviderCredentials

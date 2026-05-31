@@ -11,4 +11,7 @@ export default defineConfig({
   inertia: {
     ssr: false,
   },
+  database: {
+    provider: 'postgresql',
+  },
 })

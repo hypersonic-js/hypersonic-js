@@ -1,5 +1,7 @@
 import type { Command } from 'commander'
+
 import { prompt as defaultPrompt, type PromptFn } from '../../utils/prompt.js'
+import { logger } from '../../utils/logger.js'
 
 // ── Public types ──────────────────────────────────────────────────────────────
 
@@ -20,18 +22,25 @@ interface BetterAuthInstance {
   api: BetterAuthApi
 }
 
+interface LoadedConfig {
+  config: { database: { provider: string } }
+  env: { DATABASE_URL: string; BETTER_AUTH_SECRET: string }
+}
+
 /** Injectable dependency bag — swap out in tests to avoid real I/O. */
 export interface CreateAdminDeps {
   betterAuth(opts: unknown): BetterAuthInstance
   prismaAdapter(client: unknown, opts: { provider: string }): unknown
   adminPlugin(): unknown
-  PrismaClient: new (opts?: { datasourceUrl?: string }) => { $disconnect(): Promise<void> }
-  detectProvider(url: string): string
+  /** Prisma v7 requires an adapter — never constructed bare. */
+  PrismaClient: new (opts: { adapter: unknown }) => { $disconnect(): Promise<void> }
+  /** Reads hypersonic.config.ts and validates env — throws if either is missing. */
+  loadConfig(): Promise<LoadedConfig>
+  /** Creates the driver adapter for the given provider and DATABASE_URL. */
+  createDatabaseAdapter(provider: string, databaseUrl: string): Promise<unknown>
 }
 
-import { logger } from '../../utils/logger.js'
-
-// ── Implementation ────────────────────────────────────────────────────────────
+// ── Dependency loader ────────────────────────────────────────────────────────
 
 async function loadDeps(): Promise<CreateAdminDeps> {
   const [ba, pa, pl, pc, core] = await Promise.all([
@@ -46,38 +55,38 @@ async function loadDeps(): Promise<CreateAdminDeps> {
     prismaAdapter: pa.prismaAdapter as CreateAdminDeps['prismaAdapter'],
     adminPlugin: (pl as { admin: () => unknown }).admin,
     PrismaClient: pc.PrismaClient as unknown as CreateAdminDeps['PrismaClient'],
-    detectProvider: core.detectProvider as CreateAdminDeps['detectProvider'],
+    loadConfig: () => (core.loadConfig as () => Promise<LoadedConfig>)(),
+    createDatabaseAdapter: core.createDatabaseAdapter as CreateAdminDeps['createDatabaseAdapter'],
   }
 }
+
+// ── Core logic ───────────────────────────────────────────────────────────────
 
 /**
  * Core logic for creating the first admin user.
  * Accepts an optional `deps` parameter so unit tests can inject mocks
  * without touching the filesystem or a real database.
+ *
+ * Environment validation and config loading are handled by `loadConfig` —
+ * it will throw a descriptive error if DATABASE_URL, BETTER_AUTH_SECRET, or
+ * hypersonic.config.ts are missing.
  */
 export async function runCreateAdmin(
   opts: CreateAdminOptions,
   deps?: CreateAdminDeps,
 ): Promise<void> {
-  const databaseUrl = process.env['DATABASE_URL']
-  const secret = process.env['BETTER_AUTH_SECRET']
-
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL is not set. Add it to your .env file.')
-  }
-  if (!secret) {
-    throw new Error('BETTER_AUTH_SECRET is not set. Add it to your .env file.')
-  }
-
-  const { betterAuth, prismaAdapter, adminPlugin, PrismaClient, detectProvider } =
+  const { betterAuth, prismaAdapter, adminPlugin, PrismaClient, loadConfig, createDatabaseAdapter } =
     deps ?? (await loadDeps())
 
-  const prisma = new PrismaClient({ datasourceUrl: databaseUrl })
+  const { config, env } = await loadConfig()
+
+  const adapter = await createDatabaseAdapter(config.database.provider, env.DATABASE_URL)
+  const prisma = new PrismaClient({ adapter })
 
   try {
     const auth = betterAuth({
-      secret,
-      database: prismaAdapter(prisma, { provider: detectProvider(databaseUrl) }),
+      secret: env.BETTER_AUTH_SECRET,
+      database: prismaAdapter(prisma, { provider: config.database.provider }),
       emailAndPassword: { enabled: true },
       plugins: [adminPlugin()],
     })
@@ -98,9 +107,6 @@ export async function runCreateAdmin(
 
 /**
  * Registers the `hypersonic admin create-admin` subcommand.
- *
- * Usage:
- *   hypersonic admin create-admin
  *
  * Prompts interactively for email, name, and password (password is hidden).
  * Loads the project's .env file automatically before running so
