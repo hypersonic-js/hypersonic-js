@@ -12,7 +12,6 @@ export type {
   AdminFieldKind,
   AdminPaginationMeta,
   AdminAuthLike,
-  PrismaClientLike,
   DmmfDocument,
   DmmfModel,
   DmmfField,

@@ -188,6 +188,9 @@ importers:
 
   packages/complete:
     dependencies:
+      '@hypersonic-js/admin':
+        specifier: workspace:*
+        version: link:../admin
       '@hypersonic-js/core':
         specifier: workspace:*
         version: link:../core
