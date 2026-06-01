@@ -15,12 +15,17 @@ export function classifyField(field: DmmfField): AdminFieldKind {
 /**
  * Returns true for fields that are auto-managed by Prisma or the database
  * and should therefore be excluded from admin create/edit forms.
- * Covers @updatedAt, @default(autoincrement()), isGenerated, and common
- * convention-based names like createdAt/updatedAt.
+ * Covers:
+ *  - field.isReadOnly  — Prisma's authoritative flag, set on FK scalars and
+ *                        any other field Prisma considers unwritable directly
+ *  - field.isUpdatedAt — @updatedAt fields managed by the Prisma client
+ *  - AUTO_MANAGED_FIELD_NAMES — convention-based names (createdAt / updatedAt)
+ *                               for schemas where Prisma does not set the flags
+ *                               (e.g. Better Auth-managed timestamps)
  */
 export function isReadOnlyField(field: DmmfField): boolean {
+  if (field.isReadOnly) return true
   if (field.isUpdatedAt) return true
-  if (field.isGenerated === true) return true
   return (AUTO_MANAGED_FIELD_NAMES as readonly string[]).includes(field.name)
 }
 

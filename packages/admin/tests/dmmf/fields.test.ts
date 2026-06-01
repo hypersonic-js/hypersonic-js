@@ -68,12 +68,12 @@ describe('classifyField', () => {
 // ── isReadOnlyField ───────────────────────────────────────────────────────────
 
 describe('isReadOnlyField', () => {
-  it('returns true for @updatedAt fields', () => {
-    expect(isReadOnlyField(makeField({ isUpdatedAt: true }))).toBe(true)
+  it('returns true when Prisma marks the field isReadOnly (e.g. FK scalar)', () => {
+    expect(isReadOnlyField(makeField({ name: 'userId', isReadOnly: true }))).toBe(true)
   })
 
-  it('returns true for isGenerated fields', () => {
-    expect(isReadOnlyField(makeField({ isGenerated: true }))).toBe(true)
+  it('returns true for @updatedAt fields', () => {
+    expect(isReadOnlyField(makeField({ isUpdatedAt: true }))).toBe(true)
   })
 
   it('returns true for fields named createdAt by convention', () => {
@@ -86,17 +86,6 @@ describe('isReadOnlyField', () => {
 
   it('returns false for a regular writable field', () => {
     expect(isReadOnlyField(makeField({ name: 'title' }))).toBe(false)
-  })
-
-  it('returns false when isGenerated is explicitly false', () => {
-    expect(isReadOnlyField(makeField({ isGenerated: false, isUpdatedAt: false }))).toBe(false)
-  })
-
-  it('returns false when isGenerated is undefined', () => {
-    const field = makeField()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (field as any).isGenerated
-    expect(isReadOnlyField(field)).toBe(false)
   })
 })
 
@@ -227,6 +216,16 @@ describe('getFormFields', () => {
     expect(result[0]!.name).toBe('title')
   })
 
+  it('excludes FK scalar fields marked isReadOnly by Prisma', () => {
+    const fields = [
+      makeAdminField({ name: 'title' }),
+      makeAdminField({ name: 'userId', isReadOnly: true }),
+    ]
+    const result = getFormFields(fields)
+    expect(result).toHaveLength(1)
+    expect(result[0]!.name).toBe('title')
+  })
+
   it('excludes id fields that have a default value', () => {
     const fields = [
       makeAdminField({ name: 'id', isId: true, hasDefault: true }),
@@ -280,7 +279,15 @@ describe('mapField', () => {
     )
     expect(result.isId).toBe(true)
     expect(result.hasDefault).toBe(true)
-    expect(result.isReadOnly).toBe(false) // not auto-managed by name convention
+    expect(result.isReadOnly).toBe(false)
+  })
+
+  it('maps a FK scalar field as read-only via Prisma isReadOnly flag', () => {
+    const result = mapField(
+      makeField({ name: 'userId', type: 'String', isReadOnly: true }),
+      NO_ENUMS,
+    )
+    expect(result.isReadOnly).toBe(true)
   })
 
   it('maps a relation field and sets relationTo', () => {
@@ -310,13 +317,13 @@ describe('mapField', () => {
     expect(result.relationTo).toBeUndefined()
   })
 
-  it('maps an enum field with empty enumValues when enum is not found', () => {
+  it('maps an enum field with no enumValues when enum is not found', () => {
     const result = mapField(makeField({ name: 'status', type: 'Status', kind: 'enum' }), NO_ENUMS)
     expect(result.kind).toBe('enum')
     expect(result.enumValues).toBeUndefined()
   })
 
-  it('marks updatedAt as read-only', () => {
+  it('marks updatedAt as read-only via isUpdatedAt flag', () => {
     const result = mapField(makeField({ name: 'updatedAt', isUpdatedAt: true }), NO_ENUMS)
     expect(result.isReadOnly).toBe(true)
   })
