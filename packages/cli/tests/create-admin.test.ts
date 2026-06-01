@@ -20,6 +20,14 @@ import {
 } from '../src/commands/admin/create-admin.js'
 import type { CreateAdminDeps, CreateAdminOptions } from '../src/commands/admin/create-admin.js'
 
+// Static imports of the mocked modules — used only in the loadDeps describe block
+// below. Vitest hoists vi.mock() above all imports so these resolve to the mocks.
+import { loadConfig, createDatabaseAdapter } from '@hypersonic-js/core'
+import { betterAuth } from 'better-auth'
+import { prismaAdapter } from 'better-auth/adapters/prisma'
+import { admin as adminFn } from 'better-auth/plugins'
+import { PrismaClient } from '@prisma/client'
+
 // ── Mock factory ──────────────────────────────────────────────────────────────
 
 function makeDeps(): { deps: CreateAdminDeps; createUser: ReturnType<typeof vi.fn> } {
@@ -190,6 +198,90 @@ describe('runCreateAdmin', () => {
       vi.mocked(deps.createDatabaseAdapter).mockRejectedValue(new Error('adapter error'))
       await expect(runCreateAdmin(validOpts, deps)).rejects.toThrow('adapter error')
     })
+  })
+})
+
+// ── loadDeps (no-deps path) ──────────────────────────────────────────────────
+// These tests call runCreateAdmin WITHOUT injecting deps so that loadDeps()
+// actually executes. They catch import-path bugs such as using pc.default
+// (undefined at runtime) instead of pc.PrismaClient (the named export).
+// Because all modules are already mocked via vi.mock() above, loadDeps()
+// receives the same mock functions — we just need to configure return values.
+
+describe('loadDeps (no-deps path)', () => {
+  function setupModuleMocks(createUser = vi.fn().mockResolvedValue({ user: { id: '1', email: validOpts.email } })) {
+    const mockPrisma = { $disconnect: vi.fn().mockResolvedValue(undefined) }
+
+    vi.mocked(loadConfig).mockResolvedValue({
+      config: { database: { provider: 'postgresql' } },
+      env: { DATABASE_URL: 'postgresql://localhost:5432/test', BETTER_AUTH_SECRET: 'a'.repeat(32) },
+    })
+    vi.mocked(createDatabaseAdapter).mockResolvedValue({ _adapter: 'pg' })
+    vi.mocked(PrismaClient).mockImplementation(function () { return mockPrisma } as never)
+    vi.mocked(prismaAdapter).mockReturnValue({})
+    vi.mocked(adminFn).mockReturnValue({ id: 'admin' })
+    vi.mocked(betterAuth).mockReturnValue({ api: { createUser } } as never)
+
+    return { mockPrisma, createUser }
+  }
+
+  it('resolves PrismaClient from the named export (pc.PrismaClient, not pc.default)', async () => {
+    // If loadDeps() used pc.default it would be undefined → TypeError: not a constructor.
+    const { createUser } = setupModuleMocks()
+    await expect(runCreateAdmin(validOpts)).resolves.toBeUndefined()
+    expect(PrismaClient).toHaveBeenCalledOnce()
+    expect(createUser).toHaveBeenCalledOnce()
+  })
+
+  it('resolves betterAuth from the named export (ba.betterAuth)', async () => {
+    setupModuleMocks()
+    await runCreateAdmin(validOpts)
+    expect(betterAuth).toHaveBeenCalledOnce()
+  })
+
+  it('resolves prismaAdapter from the named export (pa.prismaAdapter)', async () => {
+    setupModuleMocks()
+    await runCreateAdmin(validOpts)
+    expect(prismaAdapter).toHaveBeenCalledOnce()
+  })
+
+  it('resolves admin plugin from the named export (pl.admin)', async () => {
+    setupModuleMocks()
+    await runCreateAdmin(validOpts)
+    expect(adminFn).toHaveBeenCalledOnce()
+  })
+
+  it('resolves loadConfig from @hypersonic-js/core', async () => {
+    setupModuleMocks()
+    await runCreateAdmin(validOpts)
+    expect(loadConfig).toHaveBeenCalledOnce()
+  })
+
+  it('resolves createDatabaseAdapter from @hypersonic-js/core', async () => {
+    setupModuleMocks()
+    await runCreateAdmin(validOpts)
+    expect(createDatabaseAdapter).toHaveBeenCalledOnce()
+  })
+
+  it('passes user options through when no deps are injected', async () => {
+    const { createUser } = setupModuleMocks()
+    await runCreateAdmin(validOpts)
+    expect(createUser).toHaveBeenCalledWith({
+      body: expect.objectContaining({
+        email: validOpts.email,
+        name: validOpts.name,
+        password: validOpts.password,
+        role: 'admin',
+      }),
+    })
+  })
+
+  it('disconnects Prisma even when loadDeps path throws in createUser', async () => {
+    const { mockPrisma } = setupModuleMocks(
+      vi.fn().mockRejectedValue(new Error('create failed')),
+    )
+    await expect(runCreateAdmin(validOpts)).rejects.toThrow('create failed')
+    expect(mockPrisma.$disconnect).toHaveBeenCalledOnce()
   })
 })
 

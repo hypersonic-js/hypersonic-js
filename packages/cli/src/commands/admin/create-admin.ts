@@ -54,7 +54,7 @@ async function loadDeps(): Promise<CreateAdminDeps> {
     betterAuth: ba.betterAuth as unknown as CreateAdminDeps['betterAuth'],
     prismaAdapter: pa.prismaAdapter as CreateAdminDeps['prismaAdapter'],
     adminPlugin: (pl as { admin: () => unknown }).admin,
-    PrismaClient: pc.default as unknown as CreateAdminDeps['PrismaClient'],
+    PrismaClient: pc.PrismaClient as unknown as CreateAdminDeps['PrismaClient'],
     loadConfig: () => (core.loadConfig as () => Promise<LoadedConfig>)(),
     createDatabaseAdapter: core.createDatabaseAdapter as CreateAdminDeps['createDatabaseAdapter'],
   }
