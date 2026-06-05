@@ -6,13 +6,13 @@ import { logger } from '../../utils/logger.js'
 import type { DmmfDocument } from '../../dmmf/types.js'
 
 export interface GenerateMetaDeps {
-  getDMMF: (opts: { datamodel: string }) => Promise<unknown>
+  getDMMF: (opts: { datamodel: string }) => unknown
   readFile: (path: string) => string
   writeFile: (path: string, content: string) => void
 }
 
 async function loadDeps(): Promise<GenerateMetaDeps> {
-  const { getDMMF } = await import('@prisma/internals')
+  const { getDMMF } = await import('@prisma/get-dmmf')
   return {
     getDMMF,
     readFile: (p) => readFileSync(p, 'utf-8'),

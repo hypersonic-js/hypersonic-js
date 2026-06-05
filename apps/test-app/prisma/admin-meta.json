@@ -1,0 +1,1277 @@
+[
+  {
+    "name": "User",
+    "urlSlug": "user",
+    "displayName": "Users",
+    "idField": "id",
+    "idType": "string",
+    "displayField": "name",
+    "fields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "name",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "email",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": true,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "emailVerified",
+        "prismaType": "Boolean",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "image",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "createdAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "updatedAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "role",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": true,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "banned",
+        "prismaType": "Boolean",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": true,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "banReason",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "banExpires",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "sessions",
+        "prismaType": "Session",
+        "kind": "relation",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": true,
+        "relationTo": "Session"
+      },
+      {
+        "name": "accounts",
+        "prismaType": "Account",
+        "kind": "relation",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": true,
+        "relationTo": "Account"
+      },
+      {
+        "name": "posts",
+        "prismaType": "Post",
+        "kind": "relation",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": true,
+        "relationTo": "Post"
+      }
+    ],
+    "listFields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "name",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "email",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": true,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "emailVerified",
+        "prismaType": "Boolean",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "image",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "createdAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      }
+    ],
+    "formFields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "name",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "email",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": true,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "emailVerified",
+        "prismaType": "Boolean",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "image",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "role",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": true,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "banned",
+        "prismaType": "Boolean",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": true,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "banReason",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "banExpires",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      }
+    ]
+  },
+  {
+    "name": "Session",
+    "urlSlug": "session",
+    "displayName": "Sessions",
+    "idField": "id",
+    "idType": "string",
+    "displayField": "id",
+    "fields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "expiresAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "token",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": true,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "createdAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "updatedAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "ipAddress",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "userAgent",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "userId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "user",
+        "prismaType": "User",
+        "kind": "relation",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false,
+        "relationTo": "User"
+      }
+    ],
+    "listFields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "expiresAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "token",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": true,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "createdAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "updatedAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "ipAddress",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      }
+    ],
+    "formFields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "expiresAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "token",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": true,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "ipAddress",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "userAgent",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      }
+    ]
+  },
+  {
+    "name": "Account",
+    "urlSlug": "account",
+    "displayName": "Accounts",
+    "idField": "id",
+    "idType": "string",
+    "displayField": "id",
+    "fields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "accountId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "providerId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "userId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "user",
+        "prismaType": "User",
+        "kind": "relation",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false,
+        "relationTo": "User"
+      },
+      {
+        "name": "accessToken",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "refreshToken",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "idToken",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "accessTokenExpiresAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "refreshTokenExpiresAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "scope",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "password",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "createdAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "updatedAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      }
+    ],
+    "listFields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "accountId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "providerId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "userId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "accessToken",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "refreshToken",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      }
+    ],
+    "formFields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "accountId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "providerId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "accessToken",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "refreshToken",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "idToken",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "accessTokenExpiresAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "refreshTokenExpiresAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "scope",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "password",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      }
+    ]
+  },
+  {
+    "name": "Verification",
+    "urlSlug": "verification",
+    "displayName": "Verifications",
+    "idField": "id",
+    "idType": "string",
+    "displayField": "id",
+    "fields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "identifier",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "value",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "expiresAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "createdAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "updatedAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      }
+    ],
+    "listFields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "identifier",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "value",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "expiresAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "createdAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "updatedAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": false,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      }
+    ],
+    "formFields": [
+      {
+        "name": "id",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "identifier",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "value",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "expiresAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      }
+    ]
+  },
+  {
+    "name": "Post",
+    "urlSlug": "post",
+    "displayName": "Posts",
+    "idField": "id",
+    "idType": "number",
+    "displayField": "title",
+    "fields": [
+      {
+        "name": "id",
+        "prismaType": "Int",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": true,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "title",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "body",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "userId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "user",
+        "prismaType": "User",
+        "kind": "relation",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false,
+        "relationTo": "User"
+      },
+      {
+        "name": "createdAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": true,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "updatedAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      }
+    ],
+    "listFields": [
+      {
+        "name": "id",
+        "prismaType": "Int",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": true,
+        "isUnique": false,
+        "hasDefault": true,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "title",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "userId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "createdAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": true,
+        "isReadOnly": true,
+        "isList": false
+      },
+      {
+        "name": "updatedAt",
+        "prismaType": "DateTime",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isList": false
+      }
+    ],
+    "formFields": [
+      {
+        "name": "title",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      },
+      {
+        "name": "body",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": false,
+        "isList": false
+      }
+    ]
+  }
+]

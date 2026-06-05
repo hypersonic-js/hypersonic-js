@@ -34,7 +34,7 @@
     "commander": "15.0.0",
     "dotenv": "17.4.2",
     "picocolors": "1.1.1",
-    "@prisma/internals": "7.8.0"
+    "@prisma/get-dmmf": "7.8.0"
   },
   "devDependencies": {
     "@hypersonic-js/core": "workspace:*",
