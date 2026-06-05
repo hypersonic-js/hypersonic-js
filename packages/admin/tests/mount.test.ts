@@ -20,6 +20,7 @@ function makeDelegate() {
 const mockPrisma = {
   $disconnect: vi.fn(),
   post: makeDelegate(),
+  session: makeDelegate(),
 } as unknown as PrismaClientLike
 
 function makeAuth(role: string | null) {

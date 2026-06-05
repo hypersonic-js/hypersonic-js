@@ -65,7 +65,27 @@ pnpm exec hypersonic admin scaffold
 This writes `resources/js/Pages/Admin/{Dashboard,ModelIndex,ModelForm}.tsx`.
 Pass `--force` to overwrite existing files.
 
-### 3. Create the first admin user
+### 3. Generate admin meta (run after every schema change)
+
+The admin dashboard reads static metadata derived from your Prisma schema. Generate
+it with:
+
+```bash
+pnpm exec hypersonic admin generate-meta
+```
+
+This reads `prisma/schema.prisma` and writes `prisma/admin-meta.json`. Commit
+`prisma/admin-meta.json` to your repository — it is the file `server.ts` imports
+at runtime. Re-run this command whenever you change your Prisma schema.
+
+Options (both have sensible defaults):
+
+```
+--schema <path>   Path to Prisma schema file  (default: prisma/schema.prisma)
+--output <path>   Output path for meta file   (default: prisma/admin-meta.json)
+```
+
+### 4. Create the first admin user
 
 Bootstrap admin access with the CLI. Run this after your first migration:
 
@@ -87,7 +107,7 @@ need to run it once — subsequent admins can be promoted through the dashboard.
 > **Note:** `DATABASE_URL` and `BETTER_AUTH_SECRET` must be set in your `.env`
 > before running this command.
 
-### 4. Access the admin dashboard
+### 5. Access the admin dashboard
 
 Start the app and sign in at `/login` using the credentials you just created.
 Then navigate to:
