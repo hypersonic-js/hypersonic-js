@@ -7,38 +7,25 @@ import {
   getFormFields,
   mapField,
 } from '../../src/dmmf/fields.js'
-import type { DmmfField, DmmfEnum, AdminFieldMeta } from '../../src/types.js'
+import type { DmmfField, DmmfEnum } from '../../src/dmmf/types.js'
+import type { AdminFieldMeta } from '@hypersonic-js/admin'
 
-// ── Fixtures ─────────────────────────────────────────────────────────────────
+// ── Fixtures ──────────────────────────────────────────────────────────────────
 
 function makeField(overrides: Partial<DmmfField> = {}): DmmfField {
   return {
-    name: 'title',
-    type: 'String',
-    kind: 'scalar',
-    isRequired: true,
-    isUnique: false,
-    isId: false,
-    isList: false,
-    hasDefaultValue: false,
-    isReadOnly: false,
-    isGenerated: false,
-    isUpdatedAt: false,
+    name: 'title', type: 'String', kind: 'scalar',
+    isRequired: true, isUnique: false, isId: false, isList: false,
+    hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false,
     ...overrides,
   }
 }
 
 function makeAdminField(overrides: Partial<AdminFieldMeta> = {}): AdminFieldMeta {
   return {
-    name: 'title',
-    prismaType: 'String',
-    kind: 'scalar',
-    isRequired: true,
-    isId: false,
-    isUnique: false,
-    hasDefault: false,
-    isReadOnly: false,
-    isList: false,
+    name: 'title', prismaType: 'String', kind: 'scalar',
+    isRequired: true, isId: false, isUnique: false,
+    hasDefault: false, isReadOnly: false, isList: false,
     ...overrides,
   }
 }
@@ -51,15 +38,12 @@ describe('classifyField', () => {
   it('returns scalar for scalar fields', () => {
     expect(classifyField(makeField({ kind: 'scalar' }))).toBe('scalar')
   })
-
   it('returns relation for object fields', () => {
     expect(classifyField(makeField({ kind: 'object' }))).toBe('relation')
   })
-
   it('returns enum for enum fields', () => {
     expect(classifyField(makeField({ kind: 'enum' }))).toBe('enum')
   })
-
   it('returns scalar for unsupported fields', () => {
     expect(classifyField(makeField({ kind: 'unsupported' }))).toBe('scalar')
   })
@@ -71,19 +55,15 @@ describe('isReadOnlyField', () => {
   it('returns true when Prisma marks the field isReadOnly (e.g. FK scalar)', () => {
     expect(isReadOnlyField(makeField({ name: 'userId', isReadOnly: true }))).toBe(true)
   })
-
   it('returns true for @updatedAt fields', () => {
     expect(isReadOnlyField(makeField({ isUpdatedAt: true }))).toBe(true)
   })
-
   it('returns true for fields named createdAt by convention', () => {
     expect(isReadOnlyField(makeField({ name: 'createdAt', isUpdatedAt: false }))).toBe(true)
   })
-
   it('returns true for fields named updatedAt by convention', () => {
     expect(isReadOnlyField(makeField({ name: 'updatedAt', isUpdatedAt: false }))).toBe(true)
   })
-
   it('returns false for a regular writable field', () => {
     expect(isReadOnlyField(makeField({ name: 'title' }))).toBe(false)
   })
@@ -100,48 +80,24 @@ describe('getDisplayField', () => {
     ]
     expect(getDisplayField(fields)).toBe('name')
   })
-
   it('falls back to title when name is absent', () => {
-    const fields = [
-      makeAdminField({ name: 'id', isId: true }),
-      makeAdminField({ name: 'title' }),
-    ]
-    expect(getDisplayField(fields)).toBe('title')
+    expect(getDisplayField([makeAdminField({ name: 'id', isId: true }), makeAdminField({ name: 'title' })])).toBe('title')
   })
-
   it('falls back to email when name and title are absent', () => {
-    const fields = [
-      makeAdminField({ name: 'id', isId: true }),
-      makeAdminField({ name: 'email' }),
-    ]
-    expect(getDisplayField(fields)).toBe('email')
+    expect(getDisplayField([makeAdminField({ name: 'id', isId: true }), makeAdminField({ name: 'email' })])).toBe('email')
   })
-
   it('falls back to label when higher priority candidates are absent', () => {
-    const fields = [
-      makeAdminField({ name: 'id', isId: true }),
-      makeAdminField({ name: 'label' }),
-    ]
-    expect(getDisplayField(fields)).toBe('label')
+    expect(getDisplayField([makeAdminField({ name: 'id', isId: true }), makeAdminField({ name: 'label' })])).toBe('label')
   })
-
   it('falls back to slug when higher priority candidates are absent', () => {
-    const fields = [
-      makeAdminField({ name: 'id', isId: true }),
-      makeAdminField({ name: 'slug' }),
-    ]
-    expect(getDisplayField(fields)).toBe('slug')
+    expect(getDisplayField([makeAdminField({ name: 'id', isId: true }), makeAdminField({ name: 'slug' })])).toBe('slug')
   })
-
   it('falls back to the id field when no candidate is found', () => {
-    const fields = [makeAdminField({ name: 'id', isId: true })]
-    expect(getDisplayField(fields)).toBe('id')
+    expect(getDisplayField([makeAdminField({ name: 'id', isId: true })])).toBe('id')
   })
-
   it('returns "id" when there are no fields at all', () => {
     expect(getDisplayField([])).toBe('id')
   })
-
   it('skips relation fields even if they match a candidate name', () => {
     const fields = [
       makeAdminField({ name: 'name', kind: 'relation' }),
@@ -164,32 +120,21 @@ describe('getListFields', () => {
     expect(getListFields(fields)).toHaveLength(1)
     expect(getListFields(fields)[0]!.name).toBe('id')
   })
-
   it('excludes known large text fields', () => {
     const fields = [
       makeAdminField({ name: 'id' }),
-      makeAdminField({ name: 'body' }),
-      makeAdminField({ name: 'content' }),
-      makeAdminField({ name: 'description' }),
-      makeAdminField({ name: 'text' }),
-      makeAdminField({ name: 'html' }),
-      makeAdminField({ name: 'markdown' }),
+      ...['body','content','description','text','html','markdown'].map(n => makeAdminField({ name: n })),
     ]
     const result = getListFields(fields)
     expect(result).toHaveLength(1)
     expect(result[0]!.name).toBe('id')
   })
-
   it('caps the result at 6 fields', () => {
-    const fields = Array.from({ length: 10 }, (_, i) =>
-      makeAdminField({ name: `field${i}` }),
-    )
+    const fields = Array.from({ length: 10 }, (_, i) => makeAdminField({ name: `field${i}` }))
     expect(getListFields(fields)).toHaveLength(6)
   })
-
   it('returns an empty array when all fields are relations', () => {
-    const fields = [makeAdminField({ name: 'user', kind: 'relation' })]
-    expect(getListFields(fields)).toHaveLength(0)
+    expect(getListFields([makeAdminField({ name: 'user', kind: 'relation' })])).toHaveLength(0)
   })
 })
 
@@ -197,60 +142,29 @@ describe('getListFields', () => {
 
 describe('getFormFields', () => {
   it('excludes relation fields', () => {
-    const fields = [
-      makeAdminField({ name: 'title' }),
-      makeAdminField({ name: 'user', kind: 'relation' }),
-    ]
-    const result = getFormFields(fields)
+    const result = getFormFields([makeAdminField({ name: 'title' }), makeAdminField({ name: 'user', kind: 'relation' })])
     expect(result).toHaveLength(1)
     expect(result[0]!.name).toBe('title')
   })
-
   it('excludes read-only fields', () => {
-    const fields = [
-      makeAdminField({ name: 'title' }),
-      makeAdminField({ name: 'createdAt', isReadOnly: true }),
-    ]
-    const result = getFormFields(fields)
+    const result = getFormFields([makeAdminField({ name: 'title' }), makeAdminField({ name: 'createdAt', isReadOnly: true })])
     expect(result).toHaveLength(1)
-    expect(result[0]!.name).toBe('title')
   })
-
   it('excludes FK scalar fields marked isReadOnly by Prisma', () => {
-    const fields = [
-      makeAdminField({ name: 'title' }),
-      makeAdminField({ name: 'userId', isReadOnly: true }),
-    ]
-    const result = getFormFields(fields)
+    const result = getFormFields([makeAdminField({ name: 'title' }), makeAdminField({ name: 'userId', isReadOnly: true })])
     expect(result).toHaveLength(1)
     expect(result[0]!.name).toBe('title')
   })
-
   it('excludes id fields that have a default value', () => {
-    const fields = [
-      makeAdminField({ name: 'id', isId: true, hasDefault: true }),
-      makeAdminField({ name: 'title' }),
-    ]
-    const result = getFormFields(fields)
+    const result = getFormFields([makeAdminField({ name: 'id', isId: true, hasDefault: true }), makeAdminField({ name: 'title' })])
     expect(result).toHaveLength(1)
     expect(result[0]!.name).toBe('title')
   })
-
   it('includes id fields that do NOT have a default (user-provided ids)', () => {
-    const fields = [
-      makeAdminField({ name: 'id', isId: true, hasDefault: false }),
-      makeAdminField({ name: 'title' }),
-    ]
-    const result = getFormFields(fields)
-    expect(result).toHaveLength(2)
+    expect(getFormFields([makeAdminField({ name: 'id', isId: true, hasDefault: false }), makeAdminField({ name: 'title' })])).toHaveLength(2)
   })
-
   it('returns all editable fields when nothing is excluded', () => {
-    const fields = [
-      makeAdminField({ name: 'title' }),
-      makeAdminField({ name: 'body' }),
-    ]
-    expect(getFormFields(fields)).toHaveLength(2)
+    expect(getFormFields([makeAdminField({ name: 'title' }), makeAdminField({ name: 'body' })])).toHaveLength(2)
   })
 })
 
@@ -271,65 +185,38 @@ describe('mapField', () => {
     expect(result.relationTo).toBeUndefined()
     expect(result.enumValues).toBeUndefined()
   })
-
   it('maps an id field with auto-increment default', () => {
-    const result = mapField(
-      makeField({ name: 'id', type: 'Int', isId: true, hasDefaultValue: true }),
-      NO_ENUMS,
-    )
+    const result = mapField(makeField({ name: 'id', type: 'Int', isId: true, hasDefaultValue: true }), NO_ENUMS)
     expect(result.isId).toBe(true)
     expect(result.hasDefault).toBe(true)
     expect(result.isReadOnly).toBe(false)
   })
-
   it('maps a FK scalar field as read-only via Prisma isReadOnly flag', () => {
-    const result = mapField(
-      makeField({ name: 'userId', type: 'String', isReadOnly: true }),
-      NO_ENUMS,
-    )
+    const result = mapField(makeField({ name: 'userId', type: 'String', isReadOnly: true }), NO_ENUMS)
     expect(result.isReadOnly).toBe(true)
   })
-
   it('maps a relation field and sets relationTo', () => {
-    const result = mapField(
-      makeField({ name: 'author', type: 'User', kind: 'object', isRequired: true }),
-      NO_ENUMS,
-    )
+    const result = mapField(makeField({ name: 'author', type: 'User', kind: 'object', isRequired: true }), NO_ENUMS)
     expect(result.kind).toBe('relation')
     expect(result.relationTo).toBe('User')
     expect(result.enumValues).toBeUndefined()
   })
-
   it('maps an enum field and resolves enumValues', () => {
-    const enums: DmmfEnum[] = [
-      {
-        name: 'Role',
-        values: [{ name: 'ADMIN', dbName: null }, { name: 'USER', dbName: null }],
-        dbName: null,
-      },
-    ]
-    const result = mapField(
-      makeField({ name: 'role', type: 'Role', kind: 'enum' }),
-      enums,
-    )
+    const enums: DmmfEnum[] = [{ name: 'Role', values: [{ name: 'ADMIN', dbName: null }, { name: 'USER', dbName: null }], dbName: null }]
+    const result = mapField(makeField({ name: 'role', type: 'Role', kind: 'enum' }), enums)
     expect(result.kind).toBe('enum')
     expect(result.enumValues).toEqual(['ADMIN', 'USER'])
     expect(result.relationTo).toBeUndefined()
   })
-
   it('maps an enum field with no enumValues when enum is not found', () => {
     const result = mapField(makeField({ name: 'status', type: 'Status', kind: 'enum' }), NO_ENUMS)
     expect(result.kind).toBe('enum')
     expect(result.enumValues).toBeUndefined()
   })
-
   it('marks updatedAt as read-only via isUpdatedAt flag', () => {
-    const result = mapField(makeField({ name: 'updatedAt', isUpdatedAt: true }), NO_ENUMS)
-    expect(result.isReadOnly).toBe(true)
+    expect(mapField(makeField({ name: 'updatedAt', isUpdatedAt: true }), NO_ENUMS).isReadOnly).toBe(true)
   })
-
   it('marks createdAt as read-only by name convention', () => {
-    const result = mapField(makeField({ name: 'createdAt' }), NO_ENUMS)
-    expect(result.isReadOnly).toBe(true)
+    expect(mapField(makeField({ name: 'createdAt' }), NO_ENUMS).isReadOnly).toBe(true)
   })
 })

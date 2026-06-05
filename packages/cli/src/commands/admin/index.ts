@@ -1,10 +1,10 @@
 import type { Command } from 'commander'
 import { registerAdminScaffold } from './scaffold.js'
 import { registerCreateAdmin } from './create-admin.js'
+import { registerGenerateMeta } from './generate-meta.js'
 
 /**
  * Registers the `hypersonic admin` command group and all its subcommands.
- * Add future admin subcommands here (e.g. seed, export).
  */
 export function registerAdminCommands(program: Command): void {
   const admin = program
@@ -13,4 +13,5 @@ export function registerAdminCommands(program: Command): void {
 
   registerAdminScaffold(admin)
   registerCreateAdmin(admin)
+  registerGenerateMeta(admin)
 }

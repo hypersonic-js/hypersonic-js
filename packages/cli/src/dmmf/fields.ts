@@ -1,9 +1,6 @@
-import type { DmmfField, DmmfEnum, AdminFieldMeta, AdminFieldKind } from '../types.js'
-import {
-  DISPLAY_FIELD_CANDIDATES,
-  AUTO_MANAGED_FIELD_NAMES,
-  LARGE_TEXT_FIELD_NAMES,
-} from '../constants.js'
+import type { AdminFieldMeta, AdminFieldKind } from '@hypersonic-js/admin'
+import type { DmmfField, DmmfEnum } from './types.js'
+import { DISPLAY_FIELD_CANDIDATES, AUTO_MANAGED_FIELD_NAMES, LARGE_TEXT_FIELD_NAMES } from './constants.js'
 
 /** Maps a DMMF field kind to our simplified AdminFieldKind. */
 export function classifyField(field: DmmfField): AdminFieldKind {
@@ -29,10 +26,7 @@ export function isReadOnlyField(field: DmmfField): boolean {
   return (AUTO_MANAGED_FIELD_NAMES as readonly string[]).includes(field.name)
 }
 
-/**
- * Chooses the most human-readable field name for list view labels.
- * Tries a priority list of common names; falls back to the id field.
- */
+/** Chooses the most human-readable field name for list view labels. */
 export function getDisplayField(fields: AdminFieldMeta[]): string {
   for (const candidate of DISPLAY_FIELD_CANDIDATES) {
     const found = fields.find((f) => f.name === candidate && f.kind === 'scalar')
@@ -42,11 +36,7 @@ export function getDisplayField(fields: AdminFieldMeta[]): string {
   return idField?.name ?? 'id'
 }
 
-/**
- * Returns the subset of fields suitable for table list columns.
- * Excludes relations, list fields, and overly long text fields.
- * Capped at 6 columns to keep tables readable.
- */
+/** Returns the subset of fields suitable for table list columns. Capped at 6. */
 export function getListFields(fields: AdminFieldMeta[]): AdminFieldMeta[] {
   return fields
     .filter((f) => f.kind === 'scalar' && !f.isList)
@@ -54,10 +44,7 @@ export function getListFields(fields: AdminFieldMeta[]): AdminFieldMeta[] {
     .slice(0, 6)
 }
 
-/**
- * Returns the subset of fields to show in create/edit forms.
- * Excludes relations, read-only fields, and auto-id fields.
- */
+/** Returns the subset of fields to show in create/edit forms. */
 export function getFormFields(fields: AdminFieldMeta[]): AdminFieldMeta[] {
   return fields.filter((f) => {
     if (f.kind === 'relation') return false
@@ -67,10 +54,7 @@ export function getFormFields(fields: AdminFieldMeta[]): AdminFieldMeta[] {
   })
 }
 
-/**
- * Maps a raw DMMF field to an AdminFieldMeta, looking up enum values
- * from the provided enum definitions.
- */
+/** Maps a raw DMMF field to an AdminFieldMeta, resolving enum values. */
 export function mapField(field: DmmfField, enums: DmmfEnum[]): AdminFieldMeta {
   const kind = classifyField(field)
   const enumDef = kind === 'enum' ? enums.find((e) => e.name === field.type) : undefined
