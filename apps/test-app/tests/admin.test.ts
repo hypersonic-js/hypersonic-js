@@ -4,72 +4,133 @@ import type { Request, Response, NextFunction } from 'express'
 import request from 'supertest'
 
 import { mountAdmin } from '@hypersonic-js/admin'
-import type { DmmfDocument, AdminOptions, PrismaClientLike } from '@hypersonic-js/admin'
+import type { AdminModelMeta, AdminOptions, PrismaClientLike } from '@hypersonic-js/admin'
 
-// ─── Test-app DMMF ────────────────────────────────────────────────────────────
+// ─── Test-app meta ────────────────────────────────────────────────────────────
 //
-// Mirrors the test-app's Prisma schema exactly, including the Better Auth admin
-// plugin fields (role, banned, banReason, banExpires) added by the migration.
+// Pre-computed AdminModelMeta[] that mirrors the test-app's Prisma schema,
+// equivalent to what `hypersonic admin generate-meta` produces from the schema.
+// Includes the Better Auth admin plugin fields (role, banned, banReason,
+// banExpires) and the Post model with its relation to User.
 
-const testAppDmmf: DmmfDocument = {
-  datamodel: {
-    models: [
-      {
-        name: 'User',
-        dbName: null,
-        fields: [
-          { name: 'id', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'name', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'email', type: 'String', kind: 'scalar', isRequired: true, isUnique: true, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'emailVerified', type: 'Boolean', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'image', type: 'String', kind: 'scalar', isRequired: false, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'role', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: true, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'banned', type: 'Boolean', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: true, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'banReason', type: 'String', kind: 'scalar', isRequired: false, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'banExpires', type: 'DateTime', kind: 'scalar', isRequired: false, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'createdAt', type: 'DateTime', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'updatedAt', type: 'DateTime', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: true },
-        ],
-      },
-      {
-        name: 'Session',
-        dbName: null,
-        fields: [
-          { name: 'id', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'token', type: 'String', kind: 'scalar', isRequired: true, isUnique: true, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-        ],
-      },
-      {
-        name: 'Account',
-        dbName: null,
-        fields: [
-          { name: 'id', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-        ],
-      },
-      {
-        name: 'Verification',
-        dbName: null,
-        fields: [
-          { name: 'id', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-        ],
-      },
-      {
-        name: 'Post',
-        dbName: null,
-        fields: [
-          { name: 'id', type: 'Int', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'title', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'body', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'userId', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: true, isGenerated: false, isUpdatedAt: false },
-          { name: 'user', type: 'User', kind: 'object', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: false, relationName: 'PostToUser' },
-          { name: 'createdAt', type: 'DateTime', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: true, isReadOnly: false, isGenerated: false, isUpdatedAt: false },
-          { name: 'updatedAt', type: 'DateTime', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isGenerated: false, isUpdatedAt: true },
-        ],
-      },
+const testAppMeta: AdminModelMeta[] = [
+  {
+    name: 'User',
+    urlSlug: 'user',
+    displayName: 'Users',
+    idField: 'id',
+    idType: 'string',
+    displayField: 'name',
+    fields: [
+      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+      { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'email', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: true, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'emailVerified', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'image', prismaType: 'String', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'role', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+      { name: 'banned', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+      { name: 'banReason', prismaType: 'String', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'banExpires', prismaType: 'DateTime', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'createdAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isList: false },
+      { name: 'updatedAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isList: false },
     ],
-    enums: [],
+    listFields: [
+      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+      { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'email', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: true, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'emailVerified', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'image', prismaType: 'String', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'role', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+    ],
+    formFields: [
+      { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'email', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: true, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'emailVerified', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'image', prismaType: 'String', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'role', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+      { name: 'banned', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+      { name: 'banReason', prismaType: 'String', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'banExpires', prismaType: 'DateTime', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+    ],
   },
-}
+  {
+    name: 'Session',
+    urlSlug: 'session',
+    displayName: 'Sessions',
+    idField: 'id',
+    idType: 'string',
+    displayField: 'id',
+    fields: [
+      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+      { name: 'token', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: true, hasDefault: false, isReadOnly: false, isList: false },
+    ],
+    listFields: [
+      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+      { name: 'token', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: true, hasDefault: false, isReadOnly: false, isList: false },
+    ],
+    formFields: [
+      { name: 'token', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: true, hasDefault: false, isReadOnly: false, isList: false },
+    ],
+  },
+  {
+    name: 'Account',
+    urlSlug: 'account',
+    displayName: 'Accounts',
+    idField: 'id',
+    idType: 'string',
+    displayField: 'id',
+    fields: [
+      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+    ],
+    listFields: [
+      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+    ],
+    formFields: [],
+  },
+  {
+    name: 'Verification',
+    urlSlug: 'verification',
+    displayName: 'Verifications',
+    idField: 'id',
+    idType: 'string',
+    displayField: 'id',
+    fields: [
+      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+    ],
+    listFields: [
+      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+    ],
+    formFields: [],
+  },
+  {
+    name: 'Post',
+    urlSlug: 'post',
+    displayName: 'Posts',
+    idField: 'id',
+    idType: 'number',
+    displayField: 'title',
+    fields: [
+      { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+      { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'body', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'userId', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isList: false },
+      { name: 'user', prismaType: 'User', kind: 'relation', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false, relationTo: 'User' },
+      { name: 'createdAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: true, isList: false },
+      { name: 'updatedAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isList: false },
+    ],
+    listFields: [
+      { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isList: false },
+      { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'userId', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isList: false },
+      { name: 'createdAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: true, isList: false },
+      { name: 'updatedAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isList: false },
+    ],
+    formFields: [
+      { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'body', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+    ],
+  },
+]
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -105,7 +166,7 @@ const mockPrisma = {
 
 function baseOptions(overrides: Partial<AdminOptions> = {}): AdminOptions {
   return {
-    dmmf: testAppDmmf,
+    meta: testAppMeta,
     auth: makeAuth('admin'),
     ...overrides,
   }
@@ -140,7 +201,7 @@ beforeEach(() => {
 
 describe('mountAdmin with test-app schema', () => {
   describe('does not throw during mount', () => {
-    it('mounts without error using the full test-app DMMF', () => {
+    it('mounts without error using the full test-app meta', () => {
       const app = express()
       expect(() => mountAdmin(app, mockPrisma, baseOptions())).not.toThrow()
     })
