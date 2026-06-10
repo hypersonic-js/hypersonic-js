@@ -1,11 +1,8 @@
 import { Command } from 'commander'
 import { registerAdminCommands } from './commands/admin/index.js'
+import pkg from '../package.json' with { type: 'json' }
 
-/**
- * Current CLI version — keep in sync with package.json.
- * Updated automatically by changeset releases.
- */
-export const CLI_VERSION = '0.1.2'
+export const CLI_VERSION: string = pkg.version
 
 /**
  * Builds and returns the configured Commander program.
