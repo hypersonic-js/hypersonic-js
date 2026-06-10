@@ -9,8 +9,10 @@ import {
   updateRecord,
   deleteRecord,
   fetchRelatedOptions,
+  type RelatedOption,
 } from './query.js'
 import { parsePaginationParams, buildPaginationMeta } from './pagination.js'
+import { MAX_RELATED_OPTIONS } from '../constants.js'
 
 /** Minimal nav item passed to every Inertia page for the sidebar. */
 interface NavModel {
@@ -22,18 +24,24 @@ type InertiaResponse = Response & {
   inertia?: (component: string, props?: Record<string, unknown>) => void
 }
 
+/** Shape of a single FK field's options bundle passed to Inertia and the JSON endpoint. */
+interface RelatedOptionsBundle {
+  options: RelatedOption[]
+  hasMore: boolean
+}
+
 /**
- * Fetches <select> options for every FK field present in the model's formFields.
- * Uses allMeta (the full unfiltered metadata) so hidden models (e.g. User when
- * showAuthModels is false) can still be queried for their dropdown values.
+ * Fetches the first page of <select> options for every FK field in the model's
+ * formFields. Uses allMeta (the full unfiltered metadata) so hidden models (e.g.
+ * User when showAuthModels is false) can still be queried for their dropdown values.
  *
- * Returns a map of { [fkFieldName]: RelatedOption[] }.
+ * Returns a map of { [fkFieldName]: { options, hasMore } }.
  */
 async function buildRelatedOptions(
   prisma: PrismaClientLike,
   model: AdminModelMeta,
   allMeta: AdminModelMeta[],
-): Promise<Record<string, { id: unknown; label: string }[]>> {
+): Promise<Record<string, RelatedOptionsBundle>> {
   const fkFields = model.formFields.filter(
     (f) => f.isForeignKey && f.relatedModelName !== undefined,
   )
@@ -42,9 +50,9 @@ async function buildRelatedOptions(
   const entries = await Promise.all(
     fkFields.map(async (f) => {
       const relatedMeta = allMeta.find((m) => m.name === f.relatedModelName)
-      if (relatedMeta === undefined) return [f.name, []] as const
-      const options = await fetchRelatedOptions(prisma, relatedMeta)
-      return [f.name, options] as const
+      if (relatedMeta === undefined) return [f.name, { options: [], hasMore: false }] as const
+      const options = await fetchRelatedOptions(prisma, relatedMeta, 0)
+      return [f.name, { options, hasMore: options.length === MAX_RELATED_OPTIONS }] as const
     }),
   )
 
@@ -63,13 +71,14 @@ async function buildRelatedOptions(
  *                  queried even when not shown in the nav. Defaults to models.
  *
  * Routes (all relative to mount prefix):
- *   GET  /                  → Admin/Dashboard
- *   GET  /:model            → Admin/ModelIndex  (paginated list)
- *   GET  /:model/new        → Admin/ModelForm   (create form)
- *   GET  /:model/:id        → Admin/ModelForm   (edit form)
- *   POST /:model            → create record, redirect to list
- *   PATCH /:model/:id       → update record, redirect to list
- *   DELETE /:model/:id      → delete record, redirect to list
+ *   GET  /                              -> Admin/Dashboard
+ *   GET  /related-options/:relatedModel -> JSON { options, hasMore } for FK load-more
+ *   GET  /:model                        -> Admin/ModelIndex  (paginated list)
+ *   GET  /:model/new                    -> Admin/ModelForm   (create form)
+ *   GET  /:model/:id                    -> Admin/ModelForm   (edit form)
+ *   POST /:model                        -> create record, redirect to list
+ *   PATCH /:model/:id                   -> update record, redirect to list
+ *   DELETE /:model/:id                  -> delete record, redirect to list
  */
 export function createAdminRouter(
   prisma: PrismaClientLike,
@@ -80,10 +89,11 @@ export function createAdminRouter(
   const router = Router()
 
   const modelMap = new Map<string, AdminModelMeta>(models.map((m) => [m.urlSlug, m]))
+  const allMetaMap = new Map<string, AdminModelMeta>(allMeta.map((m) => [m.urlSlug, m]))
 
   const navModels: NavModel[] = models.map((m) => ({ name: m.name, urlSlug: m.urlSlug }))
 
-  // GET / — Dashboard
+  // GET / -- Dashboard
   router.get('/', async (_req, res: InertiaResponse, next: NextFunction) => {
     try {
       const modelCounts = await Promise.all(
@@ -98,7 +108,26 @@ export function createAdminRouter(
     }
   })
 
-  // GET /:model/new — Create form
+  // GET /related-options/:relatedModel -- paginated FK dropdown options
+  // Registered before /:model/* routes so the literal "related-options" segment
+  // is matched before any dynamic model slug.
+  router.get('/related-options/:relatedModel', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const meta = allMetaMap.get(req.params['relatedModel'] as string)
+      if (meta === undefined) { res.status(404).json({ error: 'Not Found' }); return }
+
+      const rawPage = Number(req.query['page'] ?? 1)
+      const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1
+      const skip = (page - 1) * MAX_RELATED_OPTIONS
+
+      const options = await fetchRelatedOptions(prisma, meta, skip)
+      res.json({ options, hasMore: options.length === MAX_RELATED_OPTIONS })
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // GET /:model/new -- Create form
   // Must be registered BEFORE /:model/:id so "new" is not matched as an id.
   router.get('/:model/new', async (req: Request, res: InertiaResponse, next: NextFunction) => {
     try {
@@ -111,7 +140,7 @@ export function createAdminRouter(
     }
   })
 
-  // GET /:model/:id — Edit form
+  // GET /:model/:id -- Edit form
   router.get('/:model/:id', async (req: Request, res: InertiaResponse, next: NextFunction) => {
     try {
       const model = modelMap.get(req.params['model'] as string)
@@ -127,7 +156,7 @@ export function createAdminRouter(
     }
   })
 
-  // GET /:model — Paginated list
+  // GET /:model -- Paginated list
   router.get('/:model', async (req: Request, res: InertiaResponse, next: NextFunction) => {
     try {
       const model = modelMap.get(req.params['model'] as string)
@@ -149,7 +178,7 @@ export function createAdminRouter(
     }
   })
 
-  // POST /:model — Create
+  // POST /:model -- Create
   router.post('/:model', async (req: Request, res: Response, next: NextFunction) => {
     try {
       const model = modelMap.get(req.params['model'] as string)
@@ -162,7 +191,7 @@ export function createAdminRouter(
     }
   })
 
-  // PATCH /:model/:id — Update
+  // PATCH /:model/:id -- Update
   router.patch('/:model/:id', async (req: Request, res: Response, next: NextFunction) => {
     try {
       const model = modelMap.get(req.params['model'] as string)
@@ -175,7 +204,7 @@ export function createAdminRouter(
     }
   })
 
-  // DELETE /:model/:id — Delete
+  // DELETE /:model/:id -- Delete
   router.delete('/:model/:id', async (req: Request, res: Response, next: NextFunction) => {
     try {
       const model = modelMap.get(req.params['model'] as string)
@@ -188,7 +217,7 @@ export function createAdminRouter(
     }
   })
 
-  // Error handler — returns a clean 500 without leaking internals
+  // Error handler -- returns a clean 500 without leaking internals
   const errorHandler: ErrorRequestHandler = (_err, _req, res, _next) => {
     res.status(500).json({ error: 'Internal Server Error' })
   }

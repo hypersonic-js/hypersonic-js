@@ -1,4 +1,5 @@
 import type { PrismaClientLike, AdminModelMeta } from '../types.js'
+import { MAX_RELATED_OPTIONS } from '../constants.js'
 
 // ── Internal Prisma delegate interface ───────────────────────────────────────
 // Matches the shape of a Prisma model delegate at runtime.
@@ -28,6 +29,15 @@ export function getDelegate(prisma: PrismaClientLike, modelName: string): Prisma
   }
 
   return delegate as PrismaDelegate
+}
+
+/**
+ * Parses a URL-segment id string to a number.
+ * Returns null for non-numeric strings, preventing NaN from reaching Prisma.
+ */
+function parseNumericId(id: string): number | null {
+  const parsed = parseInt(id, 10)
+  return isNaN(parsed) ? null : parsed
 }
 
 /**
@@ -74,16 +84,19 @@ export interface RelatedOption {
 }
 
 /**
- * Fetches all records of a related model and maps them to { id, label } pairs
- * for use in a <select> dropdown on the admin form.
+ * Fetches a bounded page of related model records and maps them to { id, label }
+ * pairs for use in a <select> dropdown on the admin form.
  * The label uses the model's displayField; falls back to the idField value.
+ *
+ * @param skip  Number of records to skip — used for load-more pagination.
  */
 export async function fetchRelatedOptions(
   prisma: PrismaClientLike,
   model: AdminModelMeta,
+  skip = 0,
 ): Promise<RelatedOption[]> {
   const delegate = getDelegate(prisma, model.name)
-  const records = (await delegate.findMany({})) as Record<string, unknown>[]
+  const records = (await delegate.findMany({ take: MAX_RELATED_OPTIONS, skip })) as Record<string, unknown>[]
   return records.map((r) => ({
     id: r[model.idField],
     label: String(r[model.displayField] ?? r[model.idField] ?? ''),
@@ -120,18 +133,23 @@ export async function countRecords(
 
 /**
  * Fetches a single record by its primary key.
- * Coerces the id string to a number if the model's idType is 'number'.
+ * Returns null for non-numeric id strings on number-type models instead of
+ * passing NaN to Prisma.
  */
 export async function findUnique(
   prisma: PrismaClientLike,
   model: AdminModelMeta,
   id: string,
 ): Promise<unknown> {
-  const delegate = getDelegate(prisma, model.name)
-  const idValue: unknown =
-    model.idType === 'number' ? parseInt(id, 10) : id
+  if (model.idType === 'number') {
+    const idValue = parseNumericId(id)
+    if (idValue === null) return null
+    const delegate = getDelegate(prisma, model.name)
+    return delegate.findUnique({ where: { [model.idField]: idValue } })
+  }
 
-  return delegate.findUnique({ where: { [model.idField]: idValue } })
+  const delegate = getDelegate(prisma, model.name)
+  return delegate.findUnique({ where: { [model.idField]: id } })
 }
 
 /** Creates a new record, coercing form values to correct types. */
@@ -144,32 +162,46 @@ export async function createRecord(
   return delegate.create({ data: coerceData(data, model) })
 }
 
-/** Updates an existing record by primary key, coercing form values. */
+/**
+ * Updates an existing record by primary key, coercing form values.
+ * Returns null without calling Prisma for non-numeric id strings on number-type
+ * models.
+ */
 export async function updateRecord(
   prisma: PrismaClientLike,
   model: AdminModelMeta,
   id: string,
   data: Record<string, unknown>,
 ): Promise<unknown> {
-  const delegate = getDelegate(prisma, model.name)
-  const idValue: unknown =
-    model.idType === 'number' ? parseInt(id, 10) : id
+  if (model.idType === 'number') {
+    const idValue = parseNumericId(id)
+    if (idValue === null) return null
+    const delegate = getDelegate(prisma, model.name)
+    return delegate.update({ where: { [model.idField]: idValue }, data: coerceData(data, model) })
+  }
 
-  return delegate.update({
-    where: { [model.idField]: idValue },
-    data: coerceData(data, model),
-  })
+  const delegate = getDelegate(prisma, model.name)
+  return delegate.update({ where: { [model.idField]: id }, data: coerceData(data, model) })
 }
 
-/** Deletes a record by primary key. */
+/**
+ * Deletes a record by primary key.
+ * Returns early without calling Prisma for non-numeric id strings on number-type
+ * models.
+ */
 export async function deleteRecord(
   prisma: PrismaClientLike,
   model: AdminModelMeta,
   id: string,
 ): Promise<void> {
-  const delegate = getDelegate(prisma, model.name)
-  const idValue: unknown =
-    model.idType === 'number' ? parseInt(id, 10) : id
+  if (model.idType === 'number') {
+    const idValue = parseNumericId(id)
+    if (idValue === null) return
+    const delegate = getDelegate(prisma, model.name)
+    await delegate.delete({ where: { [model.idField]: idValue } })
+    return
+  }
 
-  await delegate.delete({ where: { [model.idField]: idValue } })
+  const delegate = getDelegate(prisma, model.name)
+  await delegate.delete({ where: { [model.idField]: id } })
 }

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useForm, Link } from '@inertiajs/react'
 
 type FieldKind = 'scalar' | 'relation' | 'enum'
@@ -20,13 +21,25 @@ interface ModelMeta {
   formFields: FieldMeta[]
 }
 
+interface FkOption {
+  id: string
+  label: string
+}
+
+interface FieldOptionsState {
+  options: FkOption[]
+  hasMore: boolean
+  page: number
+  loading: boolean
+}
+
 interface Props {
   model: ModelMeta
   record: Record<string, unknown> | null
   models: Array<{ name: string; urlSlug: string }>
   errors: Record<string, string>
   prefix: string
-  relatedOptions: Record<string, Array<{ id: string; label: string }>>
+  relatedOptions: Record<string, { options: FkOption[]; hasMore: boolean }>
 }
 
 function buildInitialData(
@@ -48,6 +61,46 @@ export default function AdminModelForm({ model, record, models, errors, prefix, 
     buildInitialData(model.formFields, record),
   )
 
+  const [fkOptions, setFkOptions] = useState<Record<string, FieldOptionsState>>(() =>
+    Object.fromEntries(
+      Object.entries(relatedOptions).map(([key, val]) => [
+        key,
+        { options: val.options, hasMore: val.hasMore, page: 1, loading: false },
+      ]),
+    ),
+  )
+
+  async function loadMore(fieldName: string, relatedModelName: string): Promise<void> {
+    const current = fkOptions[fieldName]
+    if (current === undefined || current.loading) return
+
+    setFkOptions((prev) => ({
+      ...prev,
+      [fieldName]: { ...prev[fieldName]!, loading: true },
+    }))
+
+    try {
+      const slug = relatedModelName.charAt(0).toLowerCase() + relatedModelName.slice(1)
+      const nextPage = current.page + 1
+      const res = await fetch(`${prefix}/related-options/${slug}?page=${nextPage}`)
+      const payload = (await res.json()) as { options: FkOption[]; hasMore: boolean }
+      setFkOptions((prev) => ({
+        ...prev,
+        [fieldName]: {
+          options: [...prev[fieldName]!.options, ...payload.options],
+          hasMore: payload.hasMore,
+          page: nextPage,
+          loading: false,
+        },
+      }))
+    } catch {
+      setFkOptions((prev) => ({
+        ...prev,
+        [fieldName]: { ...prev[fieldName]!, loading: false },
+      }))
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (isEdit) {
@@ -64,18 +117,30 @@ export default function AdminModelForm({ model, record, models, errors, prefix, 
     const errorClass = error ? ' border-red-500' : ' border-gray-300'
 
     if (field.isForeignKey) {
-      const options = relatedOptions[field.name] ?? []
+      const state = fkOptions[field.name] ?? { options: [], hasMore: false, page: 1, loading: false }
       return (
-        <select
-          value={value}
-          onChange={(e) => setData(field.name, e.target.value)}
-          className={baseClass + errorClass}
-        >
-          {!field.isRequired && <option value="">— select —</option>}
-          {options.map((opt) => (
-            <option key={opt.id} value={opt.id}>{opt.label}</option>
-          ))}
-        </select>
+        <div>
+          <select
+            value={value}
+            onChange={(e) => setData(field.name, e.target.value)}
+            className={baseClass + errorClass}
+          >
+            {!field.isRequired && <option value="">— select —</option>}
+            {state.options.map((opt) => (
+              <option key={String(opt.id)} value={String(opt.id)}>{opt.label}</option>
+            ))}
+          </select>
+          {state.hasMore && (
+            <button
+              type="button"
+              onClick={() => void loadMore(field.name, field.relatedModelName!)}
+              disabled={state.loading}
+              className="mt-1 text-xs text-blue-600 hover:underline disabled:opacity-50"
+            >
+              {state.loading ? 'Loading…' : 'Load more'}
+            </button>
+          )}
+        </div>
       )
     }
 

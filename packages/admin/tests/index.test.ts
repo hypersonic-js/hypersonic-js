@@ -24,4 +24,9 @@ describe('@hypersonic-js/admin public exports', () => {
     expect(typeof pkg.DEFAULT_PER_PAGE).toBe('number')
     expect(pkg.DEFAULT_PER_PAGE).toBeGreaterThan(0)
   })
+
+  it('exports MAX_RELATED_OPTIONS as a positive number', () => {
+    expect(typeof pkg.MAX_RELATED_OPTIONS).toBe('number')
+    expect(pkg.MAX_RELATED_OPTIONS).toBeGreaterThan(0)
+  })
 })

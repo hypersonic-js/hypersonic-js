@@ -3,8 +3,9 @@ import express from 'express'
 import request from 'supertest'
 import { createAdminRouter } from '../../src/crud/router.js'
 import type { AdminModelMeta, PrismaClientLike } from '../../src/types.js'
+import { MAX_RELATED_OPTIONS } from '../../src/constants.js'
 
-// ── Fixtures ─────────────────────────────────────────────────────────────────
+// -- Fixtures -----------------------------------------------------------------
 
 function makeDelegate() {
   return {
@@ -88,9 +89,9 @@ function buildApp(
   return app
 }
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
+// -- Dashboard ----------------------------------------------------------------
 
-describe('GET /admin — Dashboard', () => {
+describe('GET /admin -- Dashboard', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('renders Admin/Dashboard with model counts', async () => {
@@ -112,9 +113,9 @@ describe('GET /admin — Dashboard', () => {
   })
 })
 
-// ── ModelIndex ────────────────────────────────────────────────────────────────
+// -- ModelIndex ---------------------------------------------------------------
 
-describe('GET /admin/:model — ModelIndex', () => {
+describe('GET /admin/:model -- ModelIndex', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('renders Admin/ModelIndex with records and pagination', async () => {
@@ -141,9 +142,9 @@ describe('GET /admin/:model — ModelIndex', () => {
   })
 })
 
-// ── Create form ───────────────────────────────────────────────────────────────
+// -- Create form --------------------------------------------------------------
 
-describe('GET /admin/:model/new — Create form', () => {
+describe('GET /admin/:model/new -- Create form', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('renders Admin/ModelForm with null record', async () => {
@@ -168,22 +169,23 @@ describe('GET /admin/:model/new — Create form', () => {
     userDelegate.findMany.mockResolvedValue([{ id: 'u1', name: 'Alice' }, { id: 'u2', name: 'Bob' }])
     const app = buildApp()
     const res = await request(app).get('/admin/post/new')
-    const userOptions = res.body.props.relatedOptions['userId']
+    const { options: userOptions, hasMore } = res.body.props.relatedOptions['userId']
     expect(userOptions).toHaveLength(2)
     expect(userOptions[0]).toEqual({ id: 'u1', label: 'Alice' })
     expect(userOptions[1]).toEqual({ id: 'u2', label: 'Bob' })
+    expect(hasMore).toBe(false)
   })
 
   it('returns empty options when the related model is not in allMeta', async () => {
-    const app = buildApp([postModel], [postModel]) // allMeta without userModel
+    const app = buildApp([postModel], [postModel])
     const res = await request(app).get('/admin/post/new')
-    expect(res.body.props.relatedOptions['userId']).toEqual([])
+    expect(res.body.props.relatedOptions['userId']).toEqual({ options: [], hasMore: false })
   })
 
   it('returns empty relatedOptions for a model with no FK fields', async () => {
     const plainModel: AdminModelMeta = {
       ...postModel,
-      formFields: [postModel.formFields[0]!], // only title, no userId
+      formFields: [postModel.formFields[0]!],
     }
     const app = buildApp([plainModel], [plainModel])
     const res = await request(app).get('/admin/post/new')
@@ -197,9 +199,9 @@ describe('GET /admin/:model/new — Create form', () => {
   })
 })
 
-// ── Edit form ─────────────────────────────────────────────────────────────────
+// -- Edit form ----------------------------------------------------------------
 
-describe('GET /admin/:model/:id — Edit form', () => {
+describe('GET /admin/:model/:id -- Edit form', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('renders Admin/ModelForm with the record', async () => {
@@ -215,7 +217,7 @@ describe('GET /admin/:model/:id — Edit form', () => {
     const app = buildApp()
     const res = await request(app).get('/admin/post/1')
     expect(res.body.props.relatedOptions).toBeDefined()
-    expect(res.body.props.relatedOptions['userId']).toHaveLength(1)
+    expect(res.body.props.relatedOptions['userId'].options).toHaveLength(1)
   })
 
   it('queries with numeric id for number idType', async () => {
@@ -238,9 +240,9 @@ describe('GET /admin/:model/:id — Edit form', () => {
   })
 })
 
-// ── POST create ───────────────────────────────────────────────────────────────
+// -- POST create --------------------------------------------------------------
 
-describe('POST /admin/:model — Create', () => {
+describe('POST /admin/:model -- Create', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('creates a record and redirects to the list', async () => {
@@ -260,9 +262,9 @@ describe('POST /admin/:model — Create', () => {
   })
 })
 
-// ── PATCH update ──────────────────────────────────────────────────────────────
+// -- PATCH update -------------------------------------------------------------
 
-describe('PATCH /admin/:model/:id — Update', () => {
+describe('PATCH /admin/:model/:id -- Update', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('updates a record and redirects to the list', async () => {
@@ -282,9 +284,9 @@ describe('PATCH /admin/:model/:id — Update', () => {
   })
 })
 
-// ── DELETE ────────────────────────────────────────────────────────────────────
+// -- DELETE -------------------------------------------------------------------
 
-describe('DELETE /admin/:model/:id — Delete', () => {
+describe('DELETE /admin/:model/:id -- Delete', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('deletes a record and redirects to the list', async () => {
@@ -300,9 +302,11 @@ describe('DELETE /admin/:model/:id — Delete', () => {
     const res = await request(app).delete('/admin/nonexistent/1')
     expect(res.status).toBe(404)
   })
-})// ── Error handling — Prisma throws ───────────────────────────────────────────
+})
 
-describe('error handling — Prisma throws', () => {
+// -- Error handling -- Prisma throws ------------------------------------------
+
+describe('error handling -- Prisma throws', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('GET / returns 500 when countRecords throws', async () => {
@@ -357,6 +361,70 @@ describe('error handling — Prisma throws', () => {
     postDelegate.delete.mockRejectedValueOnce(new Error('DB error'))
     const app = buildApp()
     const res = await request(app).delete('/admin/post/1')
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
+})
+
+// -- Related options endpoint -------------------------------------------------
+
+describe('GET /admin/related-options/:relatedModel', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns options and hasMore: false when result is under the limit', async () => {
+    userDelegate.findMany.mockResolvedValueOnce([{ id: 'u1', name: 'Alice' }])
+    const app = buildApp()
+    const res = await request(app).get('/admin/related-options/user')
+    expect(res.status).toBe(200)
+    expect(res.body.options).toEqual([{ id: 'u1', label: 'Alice' }])
+    expect(res.body.hasMore).toBe(false)
+  })
+
+  it('returns hasMore: true when result count equals MAX_RELATED_OPTIONS', async () => {
+    const hundredUsers = Array.from({ length: MAX_RELATED_OPTIONS }, (_, i) => ({ id: `u${i}`, name: `User ${i}` }))
+    userDelegate.findMany.mockResolvedValueOnce(hundredUsers)
+    const app = buildApp()
+    const res = await request(app).get('/admin/related-options/user')
+    expect(res.status).toBe(200)
+    expect(res.body.hasMore).toBe(true)
+  })
+
+  it('passes skip based on page query param', async () => {
+    const app = buildApp()
+    await request(app).get('/admin/related-options/user?page=3')
+    expect(userDelegate.findMany).toHaveBeenCalledWith({
+      take: MAX_RELATED_OPTIONS,
+      skip: MAX_RELATED_OPTIONS * 2,
+    })
+  })
+
+  it('defaults to page 1 when page param is absent', async () => {
+    const app = buildApp()
+    await request(app).get('/admin/related-options/user')
+    expect(userDelegate.findMany).toHaveBeenCalledWith({
+      take: MAX_RELATED_OPTIONS,
+      skip: 0,
+    })
+  })
+
+  it('uses allMeta so hidden models can still be queried', async () => {
+    userDelegate.findMany.mockResolvedValueOnce([{ id: 'u1', name: 'Alice' }])
+    const app = buildApp([postModel], [postModel, userModel])
+    const res = await request(app).get('/admin/related-options/user')
+    expect(res.status).toBe(200)
+    expect(res.body.options).toHaveLength(1)
+  })
+
+  it('returns 404 for an unknown related model', async () => {
+    const app = buildApp()
+    const res = await request(app).get('/admin/related-options/nonexistent')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 500 when Prisma throws', async () => {
+    userDelegate.findMany.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app).get('/admin/related-options/user')
     expect(res.status).toBe(500)
     expect(res.body.error).toBe('Internal Server Error')
   })

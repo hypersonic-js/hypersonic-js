@@ -2,3 +2,4 @@ export const DEFAULT_HIDDEN_MODELS = ['Session', 'Account', 'Verification'] as c
 export const DEFAULT_PREFIX = '/admin'
 export const DEFAULT_PER_PAGE = 20
 export const MAX_PER_PAGE = 100
+export const MAX_RELATED_OPTIONS = 100

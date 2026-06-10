@@ -11,6 +11,7 @@ import {
   fetchRelatedOptions,
 } from '../../src/crud/query.js'
 import type { AdminModelMeta, PrismaClientLike } from '../../src/types.js'
+import { MAX_RELATED_OPTIONS } from '../../src/constants.js'
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -135,7 +136,7 @@ describe('coerceData', () => {
 describe('fetchRelatedOptions', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('calls findMany with no args and returns id/label pairs', async () => {
+  it('calls findMany with take and skip=0 and returns id/label pairs', async () => {
     const { prisma, delegate } = makePrisma('user')
     delegate.findMany.mockResolvedValue([
       { id: 'u1', name: 'Alice' },
@@ -143,11 +144,19 @@ describe('fetchRelatedOptions', () => {
     ])
     const userModel = makeModel({ name: 'User', urlSlug: 'user', idField: 'id', displayField: 'name' })
     const result = await fetchRelatedOptions(prisma, userModel)
-    expect(delegate.findMany).toHaveBeenCalledWith({})
+    expect(delegate.findMany).toHaveBeenCalledWith({ take: MAX_RELATED_OPTIONS, skip: 0 })
     expect(result).toEqual([
       { id: 'u1', label: 'Alice' },
       { id: 'u2', label: 'Bob' },
     ])
+  })
+
+  it('passes skip when fetching subsequent pages', async () => {
+    const { prisma, delegate } = makePrisma('user')
+    delegate.findMany.mockResolvedValue([{ id: 'u101', name: 'Charlie' }])
+    const model = makeModel({ name: 'User', urlSlug: 'user', idField: 'id', displayField: 'name' })
+    await fetchRelatedOptions(prisma, model, MAX_RELATED_OPTIONS)
+    expect(delegate.findMany).toHaveBeenCalledWith({ take: MAX_RELATED_OPTIONS, skip: MAX_RELATED_OPTIONS })
   })
 
   it('uses displayField for the label', async () => {
@@ -228,6 +237,13 @@ describe('findUnique', () => {
     const result = await findUnique(prisma, makeModel(), '1')
     expect(result).toEqual({ id: 1, title: 'Test' })
   })
+
+  it('returns null without calling the delegate for a non-numeric id on a number model', async () => {
+    const { prisma, delegate } = makePrisma()
+    const result = await findUnique(prisma, makeModel({ idType: 'number' }), 'abc')
+    expect(result).toBeNull()
+    expect(delegate.findUnique).not.toHaveBeenCalled()
+  })
 })
 
 // ── createRecord ──────────────────────────────────────────────────────────────
@@ -273,6 +289,13 @@ describe('updateRecord', () => {
       data: expect.any(Object),
     })
   })
+
+  it('returns null without calling the delegate for a non-numeric id on a number model', async () => {
+    const { prisma, delegate } = makePrisma()
+    const result = await updateRecord(prisma, makeModel({ idType: 'number' }), 'abc', { title: 'x' })
+    expect(result).toBeNull()
+    expect(delegate.update).not.toHaveBeenCalled()
+  })
 })
 
 // ── deleteRecord ──────────────────────────────────────────────────────────────
@@ -288,5 +311,11 @@ describe('deleteRecord', () => {
     const { prisma, delegate } = makePrisma('user')
     await deleteRecord(prisma, makeModel({ name: 'User', urlSlug: 'user', idType: 'string' }), 'xyz')
     expect(delegate.delete).toHaveBeenCalledWith({ where: { id: 'xyz' } })
+  })
+
+  it('returns without calling the delegate for a non-numeric id on a number model', async () => {
+    const { prisma, delegate } = makePrisma()
+    await deleteRecord(prisma, makeModel({ idType: 'number' }), 'abc')
+    expect(delegate.delete).not.toHaveBeenCalled()
   })
 })

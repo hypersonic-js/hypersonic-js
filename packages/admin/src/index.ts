@@ -12,4 +12,4 @@ export type {
   ScaffoldResult,
 } from './types.js'
 
-export { DEFAULT_HIDDEN_MODELS, DEFAULT_PREFIX, DEFAULT_PER_PAGE } from './constants.js'
+export { DEFAULT_HIDDEN_MODELS, DEFAULT_PREFIX, DEFAULT_PER_PAGE, MAX_RELATED_OPTIONS } from './constants.js'
