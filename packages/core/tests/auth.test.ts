@@ -18,13 +18,9 @@ vi.mock('better-auth/plugins', () => ({
 
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
-import { toNodeHandler } from 'better-auth/node'
 import { admin } from 'better-auth/plugins'
 import { createAuth } from '../src/auth/setup.js'
 import type { AuthSetupOptions } from '../src/auth/types.js'
-
-// Stub mountAuth inline — not testing it here
-function mountAuth(app: unknown, auth: unknown) { void app; void auth }
 
 const mockPrisma = { $disconnect: vi.fn() }
 

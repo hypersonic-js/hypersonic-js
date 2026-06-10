@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import express from 'express'
-import type { Request, Response, NextFunction } from 'express'
+import type { Request, Response } from 'express'
 import request from 'supertest'
 
 import { createAuthGuard } from '../src/middleware.js'

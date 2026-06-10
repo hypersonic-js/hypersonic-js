@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Command } from 'commander'
 import { registerAdminScaffold } from '../../../src/commands/admin/scaffold.js'
 

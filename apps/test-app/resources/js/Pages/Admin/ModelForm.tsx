@@ -43,7 +43,7 @@ function buildInitialData(
   )
 }
 
-export default function AdminModelForm({ model, record, models, errors, prefix, relatedOptions }: Props) {
+export default function AdminModelForm({ model, record, errors, prefix, relatedOptions }: Props) {
   const isEdit = record !== null
   const { data, setData, post, patch, processing } = useForm(
     buildInitialData(model.formFields, record),
