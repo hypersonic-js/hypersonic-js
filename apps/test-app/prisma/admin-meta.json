@@ -14,7 +14,7 @@
         "isRequired": true,
         "isId": true,
         "isUnique": false,
-        "hasDefault": false,
+        "hasDefault": true,
         "isReadOnly": false,
         "isForeignKey": false,
         "isList": false
@@ -93,15 +93,19 @@
       },
       {
         "name": "role",
-        "prismaType": "String",
-        "kind": "scalar",
+        "prismaType": "Role",
+        "kind": "enum",
         "isRequired": true,
         "isId": false,
         "isUnique": false,
         "hasDefault": true,
         "isReadOnly": false,
         "isForeignKey": false,
-        "isList": false
+        "isList": false,
+        "enumValues": [
+          "user",
+          "admin"
+        ]
       },
       {
         "name": "banned",
@@ -187,7 +191,7 @@
         "isRequired": true,
         "isId": true,
         "isUnique": false,
-        "hasDefault": false,
+        "hasDefault": true,
         "isReadOnly": false,
         "isForeignKey": false,
         "isList": false
@@ -255,18 +259,6 @@
     ],
     "formFields": [
       {
-        "name": "id",
-        "prismaType": "String",
-        "kind": "scalar",
-        "isRequired": true,
-        "isId": true,
-        "isUnique": false,
-        "hasDefault": false,
-        "isReadOnly": false,
-        "isForeignKey": false,
-        "isList": false
-      },
-      {
         "name": "name",
         "prismaType": "String",
         "kind": "scalar",
@@ -316,15 +308,19 @@
       },
       {
         "name": "role",
-        "prismaType": "String",
-        "kind": "scalar",
+        "prismaType": "Role",
+        "kind": "enum",
         "isRequired": true,
         "isId": false,
         "isUnique": false,
         "hasDefault": true,
         "isReadOnly": false,
         "isForeignKey": false,
-        "isList": false
+        "isList": false,
+        "enumValues": [
+          "user",
+          "admin"
+        ]
       },
       {
         "name": "banned",
