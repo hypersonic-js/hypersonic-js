@@ -1,21 +1,10 @@
 import type { Application } from 'express'
 import type { AdminOptions, PrismaClientLike } from './types.js'
+import { createAdminAuthMiddleware } from './middleware/auth.js'
+import { createAdminRouter } from './crud/router.js'
 
 const DEFAULT_HIDDEN_MODELS = ['Session', 'Account', 'Verification', 'JwksKey']
 const DEFAULT_PREFIX = '/admin'
-
-function createAdminAuthMiddleware(auth: AdminOptions['auth']) {
-  return async (req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => {
-    const session = await auth.api.getSession({ headers: req.headers })
-    if (session === null || session === undefined || session.user.role !== 'admin') {
-      res.status(403).json({ error: 'Forbidden' })
-      return
-    }
-    next()
-  }
-}
-
-import { createAdminRouter } from './crud/router.js'
 
 export function mountAdmin(
   app: Application,
