@@ -5,7 +5,7 @@ packages:
   - "docs"
 allowBuilds:
   '@prisma/engines': false
-  better-sqlite3: set this to true or false
+  better-sqlite3: true
   esbuild: true
   prisma: false
 minimumReleaseAgeExclude:
