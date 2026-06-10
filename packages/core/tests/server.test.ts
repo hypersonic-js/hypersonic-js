@@ -130,6 +130,45 @@ describe('createApp', () => {
     expect(res.status).toBe(200)
     expect(res.body.version).toBe('1')
   })
+
+  // ── Security headers (helmet) ──────────────────────────────────────────────
+
+  describe('security headers (helmet)', () => {
+    it('sets X-Frame-Options to guard against clickjacking', async () => {
+      const app = await createApp({ config, env, prisma: mockPrisma })
+      app.express.get('/h', (_req, res) => res.json({ ok: true }))
+      const res = await request(app.express).get('/h')
+      expect(res.headers['x-frame-options']).toBeDefined()
+    })
+
+    it('sets X-Content-Type-Options: nosniff', async () => {
+      const app = await createApp({ config, env, prisma: mockPrisma })
+      app.express.get('/h', (_req, res) => res.json({ ok: true }))
+      const res = await request(app.express).get('/h')
+      expect(res.headers['x-content-type-options']).toBe('nosniff')
+    })
+
+    it('sets Referrer-Policy', async () => {
+      const app = await createApp({ config, env, prisma: mockPrisma })
+      app.express.get('/h', (_req, res) => res.json({ ok: true }))
+      const res = await request(app.express).get('/h')
+      expect(res.headers['referrer-policy']).toBeDefined()
+    })
+
+    it('removes X-Powered-By to avoid fingerprinting the server', async () => {
+      const app = await createApp({ config, env, prisma: mockPrisma })
+      app.express.get('/h', (_req, res) => res.json({ ok: true }))
+      const res = await request(app.express).get('/h')
+      expect(res.headers['x-powered-by']).toBeUndefined()
+    })
+
+    it('does not set Content-Security-Policy (intentionally omitted for beta)', async () => {
+      const app = await createApp({ config, env, prisma: mockPrisma })
+      app.express.get('/h', (_req, res) => res.json({ ok: true }))
+      const res = await request(app.express).get('/h')
+      expect(res.headers['content-security-policy']).toBeUndefined()
+    })
+  })
 })
 
 describe('lifecycle — via createLifecycle', () => {

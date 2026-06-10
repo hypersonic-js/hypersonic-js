@@ -1,4 +1,5 @@
 import express from 'express'
+import helmet from 'helmet'
 import { setPrismaClient } from '../database/client.js'
 import { createAuth } from '../auth/setup.js'
 import { mountAuth } from '../auth/middleware.js'
@@ -49,6 +50,11 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
   }
 
   const app = express()
+
+  // Security headers — CSP is intentionally omitted here as it requires
+  // app-specific configuration. Refer to the docs for guidance on adding
+  // a Content-Security-Policy suited to your application.
+  app.use(helmet({ contentSecurityPolicy: false }))
 
   app.use(express.json())
   app.use(express.urlencoded({ extended: true }))
