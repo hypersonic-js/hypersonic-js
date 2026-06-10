@@ -1,10 +1,33 @@
 import type { Application, Request, Response, NextFunction, RequestHandler } from 'express'
 import type { InertiaPage, InertiaOptions } from './types.js'
+import { randomBytes } from 'node:crypto'
 import { createViteSetup } from './vite.js'
 import { HttpError } from '../utils/errors.js'
 
 const INERTIA_HEADER = 'x-inertia'
 const INERTIA_VERSION_HEADER = 'x-inertia-version'
+const CSRF_COOKIE = 'XSRF-TOKEN'
+const CSRF_HEADER = 'x-xsrf-token'
+const CSRF_MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+function generateCsrfToken(): string {
+  return randomBytes(32).toString('hex')
+}
+
+/**
+ * Parses the raw Cookie request header into a key→value map.
+ * Splits on ';', finds the first '=' in each pair, and URL-decodes the value.
+ */
+function parseCookieHeader(cookieHeader: string | undefined): Record<string, string> {
+  if (!cookieHeader) return {}
+  const result: Record<string, string> = {}
+  for (const pair of cookieHeader.split(';')) {
+    const eqIdx = pair.indexOf('=')
+    if (eqIdx === -1) continue
+    result[pair.slice(0, eqIdx).trim()] = decodeURIComponent(pair.slice(eqIdx + 1).trim())
+  }
+  return result
+}
 
 function escapeJson(str: string): string {
   return str
@@ -66,6 +89,18 @@ export function createInertiaErrorHandler(): (
 /**
  * Mounts the Inertia middleware + Vite integration onto the Express app.
  * This must be called before routes are registered.
+ *
+ * Also installs two CSRF middlewares that apply to every route:
+ *
+ * - **csrfSetter** — sets a fresh `XSRF-TOKEN` cookie on every response so
+ *   the Inertia client always has a valid token to send on its next request.
+ *
+ * - **csrfValidator** — on POST/PUT/PATCH/DELETE requests, verifies that the
+ *   `X-XSRF-TOKEN` request header matches the `XSRF-TOKEN` request cookie.
+ *   Returns 419 if they are absent or do not match.
+ *
+ * Note: `/api/auth/*` routes are handled by Better Auth before reaching this
+ * middleware, so they are naturally excluded from CSRF validation.
  */
 export async function createInertiaMiddleware(
   app: Application,
@@ -76,6 +111,45 @@ export async function createInertiaMiddleware(
 
   // Mount Vite dev server or static file serving
   app.use(vite.middleware as RequestHandler)
+
+  // CSRF token setter — sets a fresh XSRF-TOKEN cookie on every response.
+  // httpOnly must be false so the Inertia JS client can read it.
+  const csrfSetter: RequestHandler = (_req: Request, res: Response, next: NextFunction): void => {
+    res.cookie(CSRF_COOKIE, generateCsrfToken(), {
+      httpOnly: false,
+      sameSite: 'strict',
+      secure: process.env['NODE_ENV'] === 'production',
+      path: '/',
+    })
+    next()
+  }
+
+  // CSRF validator — rejects mutation requests where the X-XSRF-TOKEN header
+  // does not match the XSRF-TOKEN cookie that was set on a prior response.
+  const csrfValidator: RequestHandler = (req: Request, res: Response, next: NextFunction): void => {
+    if (!CSRF_MUTATION_METHODS.has(req.method)) {
+      next()
+      return
+    }
+
+    const cookies = parseCookieHeader(req.headers.cookie)
+    const cookieToken = cookies[CSRF_COOKIE]
+    const headerToken = req.headers[CSRF_HEADER]
+
+    if (
+      typeof cookieToken !== 'string' ||
+      cookieToken.length === 0 ||
+      cookieToken !== headerToken
+    ) {
+      res.status(419).json({ error: 'CSRF token mismatch' })
+      return
+    }
+
+    next()
+  }
+
+  app.use(csrfSetter)
+  app.use(csrfValidator)
 
   // Inertia protocol middleware
   const inertiaMiddleware: RequestHandler = (
