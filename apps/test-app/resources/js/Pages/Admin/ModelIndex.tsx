@@ -35,7 +35,7 @@ function displayValue(value: unknown): string {
   return String(value)
 }
 
-export default function AdminModelIndex({ model, records, pagination, prefix }: Props) {
+export default function AdminModelIndex({ model, records, pagination, models, prefix }: Props) {
   function handleDelete(id: unknown) {
     if (window.confirm(`Delete this ${model.name}?`)) {
       router.delete(`${prefix}/${model.urlSlug}/${String(id)}`)

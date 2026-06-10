@@ -1,17 +1,11 @@
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import type { ScaffoldOptions, ScaffoldResult } from '../types.js'
-import {
-  DASHBOARD_TEMPLATE,
-  MODEL_INDEX_TEMPLATE,
-  MODEL_FORM_TEMPLATE,
-} from './templates.js'
 
-const SCAFFOLD_FILES = [
-  { name: 'Dashboard.tsx', content: DASHBOARD_TEMPLATE },
-  { name: 'ModelIndex.tsx', content: MODEL_INDEX_TEMPLATE },
-  { name: 'ModelForm.tsx', content: MODEL_FORM_TEMPLATE },
-] as const
+const TEMPLATES_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../templates')
+
+const SCAFFOLD_FILES = ['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx'] as const
 
 /**
  * Copies the three generic admin page components into the user's project.
@@ -33,16 +27,17 @@ export async function scaffoldAdmin(options: ScaffoldOptions = {}): Promise<Scaf
   const written: string[] = []
   const skipped: string[] = []
 
-  for (const file of SCAFFOLD_FILES) {
-    const filePath = join(adminDir, file.name)
+  for (const name of SCAFFOLD_FILES) {
+    const filePath = join(adminDir, name)
 
     if (existsSync(filePath) && !force) {
-      skipped.push(file.name)
+      skipped.push(name)
       continue
     }
 
-    writeFileSync(filePath, file.content, 'utf-8')
-    written.push(file.name)
+    const content = readFileSync(join(TEMPLATES_DIR, name), 'utf-8')
+    writeFileSync(filePath, content, 'utf-8')
+    written.push(name)
   }
 
   return { written, skipped }

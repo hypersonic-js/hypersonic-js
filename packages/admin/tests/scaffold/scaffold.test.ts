@@ -1,13 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import { scaffoldAdmin } from '../../src/scaffold/index.js'
-import {
-  DASHBOARD_TEMPLATE,
-  MODEL_INDEX_TEMPLATE,
-  MODEL_FORM_TEMPLATE,
-} from '../../src/scaffold/templates.js'
+
+const TEMPLATES_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../templates')
 
 // ── Temp directory setup ──────────────────────────────────────────────────────
 
@@ -38,46 +36,44 @@ describe('scaffoldAdmin', () => {
 
   it('writes the correct Dashboard.tsx content', async () => {
     await scaffoldAdmin({ targetDir: tmpDir })
-    const content = readFileSync(join(tmpDir, 'Admin', 'Dashboard.tsx'), 'utf-8')
-    expect(content).toBe(DASHBOARD_TEMPLATE)
+    const written = readFileSync(join(tmpDir, 'Admin', 'Dashboard.tsx'), 'utf-8')
+    const source = readFileSync(join(TEMPLATES_DIR, 'Dashboard.tsx'), 'utf-8')
+    expect(written).toBe(source)
   })
 
   it('writes the correct ModelIndex.tsx content', async () => {
     await scaffoldAdmin({ targetDir: tmpDir })
-    const content = readFileSync(join(tmpDir, 'Admin', 'ModelIndex.tsx'), 'utf-8')
-    expect(content).toBe(MODEL_INDEX_TEMPLATE)
+    const written = readFileSync(join(tmpDir, 'Admin', 'ModelIndex.tsx'), 'utf-8')
+    const source = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(written).toBe(source)
   })
 
   it('writes the correct ModelForm.tsx content', async () => {
     await scaffoldAdmin({ targetDir: tmpDir })
-    const content = readFileSync(join(tmpDir, 'Admin', 'ModelForm.tsx'), 'utf-8')
-    expect(content).toBe(MODEL_FORM_TEMPLATE)
+    const written = readFileSync(join(tmpDir, 'Admin', 'ModelForm.tsx'), 'utf-8')
+    const source = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(written).toBe(source)
   })
 
   it('skips all files when they already exist and force is false', async () => {
-    // Write once
     await scaffoldAdmin({ targetDir: tmpDir })
-    // Write again
     const result = await scaffoldAdmin({ targetDir: tmpDir, force: false })
     expect(result.written).toEqual([])
     expect(result.skipped).toEqual(['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx'])
   })
 
   it('overwrites existing files when force is true', async () => {
-    // Write initial files
     await scaffoldAdmin({ targetDir: tmpDir })
-    // Corrupt one file to verify it gets replaced
     writeFileSync(join(tmpDir, 'Admin', 'Dashboard.tsx'), 'stale content', 'utf-8')
-    // Overwrite with force
     const result = await scaffoldAdmin({ targetDir: tmpDir, force: true })
     expect(result.written).toEqual(['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx'])
     expect(result.skipped).toEqual([])
-    const content = readFileSync(join(tmpDir, 'Admin', 'Dashboard.tsx'), 'utf-8')
-    expect(content).toBe(DASHBOARD_TEMPLATE)
+    const written = readFileSync(join(tmpDir, 'Admin', 'Dashboard.tsx'), 'utf-8')
+    const source = readFileSync(join(TEMPLATES_DIR, 'Dashboard.tsx'), 'utf-8')
+    expect(written).toBe(source)
   })
 
   it('skips existing files but writes new ones in a mixed scenario', async () => {
-    // Pre-create only Dashboard
     const adminDir = join(tmpDir, 'Admin')
     await scaffoldAdmin({ targetDir: tmpDir })
     rmSync(join(adminDir, 'ModelIndex.tsx'))
@@ -90,14 +86,11 @@ describe('scaffoldAdmin', () => {
   })
 
   it('accepts no arguments and returns a ScaffoldResult (uses default targetDir)', async () => {
-    // scaffoldAdmin() defaults to 'resources/js/Pages'; mkdirSync recursive
-    // creates all parent directories, so this must not throw.
     const result = await scaffoldAdmin()
     expect(result).toHaveProperty('written')
     expect(result).toHaveProperty('skipped')
     expect(Array.isArray(result.written)).toBe(true)
     expect(Array.isArray(result.skipped)).toBe(true)
-    // Clean up the created default directory
     rmSync('resources', { recursive: true, force: true })
   })
 
@@ -111,23 +104,29 @@ describe('scaffoldAdmin', () => {
 
 describe('template content', () => {
   it('Dashboard template contains required React imports', () => {
-    expect(DASHBOARD_TEMPLATE).toContain("from '@inertiajs/react'")
-    expect(DASHBOARD_TEMPLATE).toContain('export default function AdminDashboard')
+    const content = readFileSync(join(TEMPLATES_DIR, 'Dashboard.tsx'), 'utf-8')
+    expect(content).toContain("from '@inertiajs/react'")
+    expect(content).toContain('export default function AdminDashboard')
   })
 
   it('ModelIndex template contains required React and Inertia imports', () => {
-    expect(MODEL_INDEX_TEMPLATE).toContain("from '@inertiajs/react'")
-    expect(MODEL_INDEX_TEMPLATE).toContain('export default function AdminModelIndex')
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).toContain("from '@inertiajs/react'")
+    expect(content).toContain('export default function AdminModelIndex')
   })
 
   it('ModelForm template contains useForm import', () => {
-    expect(MODEL_FORM_TEMPLATE).toContain('useForm')
-    expect(MODEL_FORM_TEMPLATE).toContain('export default function AdminModelForm')
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('useForm')
+    expect(content).toContain('export default function AdminModelForm')
   })
 
-  it('all templates are non-empty strings', () => {
-    expect(DASHBOARD_TEMPLATE.length).toBeGreaterThan(100)
-    expect(MODEL_INDEX_TEMPLATE.length).toBeGreaterThan(100)
-    expect(MODEL_FORM_TEMPLATE.length).toBeGreaterThan(100)
+  it('all templates are non-empty files', () => {
+    const dashboard = readFileSync(join(TEMPLATES_DIR, 'Dashboard.tsx'), 'utf-8')
+    const modelIndex = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    const modelForm = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(dashboard.length).toBeGreaterThan(100)
+    expect(modelIndex.length).toBeGreaterThan(100)
+    expect(modelForm.length).toBeGreaterThan(100)
   })
 })
