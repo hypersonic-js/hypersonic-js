@@ -42,6 +42,17 @@ interface Props {
   relatedOptions: Record<string, { options: FkOption[]; hasMore: boolean }>
 }
 
+function toLocalDateTimeString(date: Date): string {
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  return (
+    `${date.getFullYear()}-` +
+    `${pad(date.getMonth() + 1)}-` +
+    `${pad(date.getDate())}T` +
+    `${pad(date.getHours())}:` +
+    `${pad(date.getMinutes())}`
+  )
+}
+
 function buildInitialData(
   formFields: FieldMeta[],
   record: Record<string, unknown> | null,
@@ -49,7 +60,7 @@ function buildInitialData(
   return Object.fromEntries(
     formFields.map((f) => {
       const value = record?.[f.name]
-      if (value instanceof Date) return [f.name, value.toISOString().slice(0, 16)]
+      if (value instanceof Date) return [f.name, toLocalDateTimeString(value)]
       return [f.name, value !== null && value !== undefined ? String(value) : '']
     }),
   )

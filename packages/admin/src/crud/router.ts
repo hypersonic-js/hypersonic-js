@@ -218,9 +218,17 @@ export function createAdminRouter(
   })
 
   // Error handler -- returns a clean 500 without leaking internals
-  const errorHandler: ErrorRequestHandler = (_err, _req, res, _next) => {
-    res.status(500).json({ error: 'Internal Server Error' })
+  const errorHandler: ErrorRequestHandler = (_err, req, res, _next) => {
+      if (req.headers['x-inertia']) {
+        const referer = req.headers['referer']
+        const redirectUrl =
+          typeof referer === 'string' && referer.length > 0 ? referer : `${prefix}/`
+        res.redirect(303, redirectUrl)
+        return
+      }
+      res.status(500).json({ error: 'Internal Server Error' })
   }
+
   router.use(errorHandler)
 
   return router

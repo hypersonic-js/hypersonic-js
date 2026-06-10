@@ -309,6 +309,41 @@ describe('DELETE /admin/:model/:id -- Delete', () => {
 describe('error handling -- Prisma throws', () => {
   beforeEach(() => vi.clearAllMocks())
 
+  it('POST /:model redirects back to Referer for an Inertia request when createRecord throws', async () => {
+  postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
+  const app = buildApp()
+  const res = await request(app)
+    .post('/admin/post')
+    .send({ title: 'Fail' })
+    .set('X-Inertia', 'true')
+    .set('Referer', '/admin/post/new')
+  expect(res.status).toBe(303)
+  expect(res.headers['location']).toBe('/admin/post/new')
+    })
+
+    it('POST /:model redirects to admin root when no Referer on an Inertia request', async () => {
+      postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
+      const app = buildApp()
+      const res = await request(app)
+        .post('/admin/post')
+        .send({ title: 'Fail' })
+        .set('X-Inertia', 'true')
+      expect(res.status).toBe(303)
+      expect(res.headers['location']).toBe('/admin/')
+    })
+
+    it('PATCH /:model/:id redirects back to Referer for an Inertia request when updateRecord throws', async () => {
+      postDelegate.update.mockRejectedValueOnce(new Error('DB error'))
+      const app = buildApp()
+      const res = await request(app)
+        .patch('/admin/post/1')
+        .send({ title: 'Fail' })
+        .set('X-Inertia', 'true')
+        .set('Referer', '/admin/post/1')
+      expect(res.status).toBe(303)
+      expect(res.headers['location']).toBe('/admin/post/1')
+    })
+
   it('GET / returns 500 when countRecords throws', async () => {
     postDelegate.count.mockRejectedValueOnce(new Error('DB error'))
     const app = buildApp()

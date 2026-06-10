@@ -129,4 +129,28 @@ describe('template content', () => {
     expect(modelIndex.length).toBeGreaterThan(100)
     expect(modelForm.length).toBeGreaterThan(100)
   })
+
+  it('ModelForm template does not use toISOString().slice(0, 16)', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).not.toContain("toISOString().slice(0, 16)")
+  })
+
+  it('ModelForm template contains the toLocalDateTimeString helper', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('function toLocalDateTimeString(date: Date): string')
+  })
+
+  it('ModelForm template calls toLocalDateTimeString inside buildInitialData', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('toLocalDateTimeString(value)')
+  })
+
+  it('ModelForm toLocalDateTimeString reads local time components, not UTC', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('getFullYear()')
+    expect(content).toContain('getMonth()')
+    expect(content).toContain('getDate()')
+    expect(content).toContain('getHours()')
+    expect(content).toContain('getMinutes()')
+  })
 })
