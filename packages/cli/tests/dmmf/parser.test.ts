@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { toDisplayName, parseDmmf } from '../../src/dmmf/parser.js'
-import type { DmmfDocument } from '../../src/dmmf/types.js'
+import type { DmmfDocument, DmmfField } from '../../src/dmmf/types.js'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -21,6 +21,30 @@ function makeMinimalDmmf(overrides: Partial<DmmfDocument['datamodel']> = {}): Dm
       ...overrides,
     },
   }
+}
+
+// A reusable DMMF document with Post having a FK relation to User
+const POST_WITH_USER_FK: DmmfDocument = {
+  datamodel: {
+    models: [
+      {
+        name: 'Post',
+        dbName: null,
+        fields: [
+          { name: 'id', type: 'Int', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+          { name: 'title', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false },
+          { name: 'userId', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: true, isUpdatedAt: false },
+          {
+            name: 'user', type: 'User', kind: 'object',
+            isRequired: true, isUnique: false, isId: false, isList: false,
+            hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false,
+            relationName: 'PostToUser', relationFromFields: ['userId'], relationToFields: ['id'],
+          } as DmmfField,
+        ],
+      },
+    ],
+    enums: [],
+  },
 }
 
 // ── toDisplayName ─────────────────────────────────────────────────────────────
@@ -129,5 +153,91 @@ describe('parseDmmf', () => {
       enums: [],
     })
     expect(parseDmmf(dmmf)).toHaveLength(2)
+  })
+
+  it('all AdminFieldMeta objects carry an isForeignKey boolean', () => {
+    const models = parseDmmf(makeMinimalDmmf())
+    for (const f of models.flatMap((m) => m.fields)) {
+      expect(typeof f.isForeignKey).toBe('boolean')
+    }
+  })
+
+  // ── FK scalar detection ──────────────────────────────────────────────────
+
+  it('marks FK scalar fields isForeignKey:true', () => {
+    const [model] = parseDmmf(POST_WITH_USER_FK)
+    const userId = model!.fields.find((f) => f.name === 'userId')
+    expect(userId!.isForeignKey).toBe(true)
+  })
+
+  it('sets relatedModelName on FK scalar', () => {
+    const [model] = parseDmmf(POST_WITH_USER_FK)
+    const userId = model!.fields.find((f) => f.name === 'userId')
+    expect(userId!.relatedModelName).toBe('User')
+  })
+
+  it('FK scalar fields appear in formFields', () => {
+    const [model] = parseDmmf(POST_WITH_USER_FK)
+    expect(model!.formFields.map((f) => f.name)).toContain('userId')
+  })
+
+  it('relation object field does NOT appear in formFields', () => {
+    const [model] = parseDmmf(POST_WITH_USER_FK)
+    expect(model!.formFields.map((f) => f.name)).not.toContain('user')
+  })
+
+  it('relatedModelName is set on FK scalar in formFields', () => {
+    const [model] = parseDmmf(POST_WITH_USER_FK)
+    const userId = model!.formFields.find((f) => f.name === 'userId')
+    expect(userId!.relatedModelName).toBe('User')
+  })
+
+  it('auto-managed timestamp fields are NOT in formFields', () => {
+    const dmmf: DmmfDocument = {
+      datamodel: {
+        models: [{
+          name: 'Post', dbName: null,
+          fields: [
+            { name: 'id', type: 'Int', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+            { name: 'title', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false },
+            { name: 'createdAt', type: 'DateTime', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+            { name: 'updatedAt', type: 'DateTime', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: true },
+          ],
+        }],
+        enums: [],
+      },
+    }
+    const [model] = parseDmmf(dmmf)
+    const names = model!.formFields.map((f) => f.name)
+    expect(names).not.toContain('createdAt')
+    expect(names).not.toContain('updatedAt')
+    expect(names).toContain('title')
+  })
+
+  it('non-FK isReadOnly scalars stay excluded from formFields', () => {
+    const dmmf: DmmfDocument = {
+      datamodel: {
+        models: [{
+          name: 'Post', dbName: null,
+          fields: [
+            { name: 'id', type: 'Int', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+            { name: 'title', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false },
+            { name: 'computedSlug', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: true, isUpdatedAt: false },
+          ],
+        }],
+        enums: [],
+      },
+    }
+    const [model] = parseDmmf(dmmf)
+    const names = model!.formFields.map((f) => f.name)
+    expect(names).not.toContain('computedSlug')
+    expect(names).toContain('title')
+  })
+
+  it('regular (non-FK) scalars have isForeignKey:false and no relatedModelName', () => {
+    const [model] = parseDmmf(POST_WITH_USER_FK)
+    const title = model!.fields.find((f) => f.name === 'title')
+    expect(title!.isForeignKey).toBe(false)
+    expect(title!.relatedModelName).toBeUndefined()
   })
 })

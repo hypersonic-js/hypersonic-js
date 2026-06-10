@@ -26,6 +26,22 @@ const mockPrisma = {
   user: userDelegate,
 } as unknown as PrismaClientLike
 
+const userModel: AdminModelMeta = {
+  name: 'User',
+  urlSlug: 'user',
+  displayName: 'Users',
+  idField: 'id',
+  idType: 'string',
+  displayField: 'name',
+  fields: [],
+  listFields: [
+    { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+  ],
+  formFields: [
+    { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+  ],
+}
+
 const postModel: AdminModelMeta = {
   name: 'Post',
   urlSlug: 'post',
@@ -35,22 +51,25 @@ const postModel: AdminModelMeta = {
   displayField: 'title',
   fields: [],
   listFields: [
-    { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isList: false },
-    { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+    { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
   ],
   formFields: [
-    { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+    { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'userId', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isForeignKey: true, relatedModelName: 'User', isList: false },
   ],
 }
 
 const PREFIX = '/admin'
 
-function buildApp(models: AdminModelMeta[] = [postModel]) {
+function buildApp(
+  models: AdminModelMeta[] = [postModel],
+  allMeta: AdminModelMeta[] = [postModel, userModel],
+) {
   const app = express()
   app.use(express.json())
   app.use(express.urlencoded({ extended: false }))
 
-  // Mock res.inertia so route handlers can call it
   app.use((_req, res, next) => {
     ;(res as unknown as Record<string, unknown>)['inertia'] = (
       component: string,
@@ -61,10 +80,9 @@ function buildApp(models: AdminModelMeta[] = [postModel]) {
     next()
   })
 
-  const router = createAdminRouter(mockPrisma, models, PREFIX)
+  const router = createAdminRouter(mockPrisma, models, PREFIX, allMeta)
   app.use(PREFIX, router)
 
-  // 404 fallback
   app.use((_req, res) => res.status(404).json({ error: 'Not Found' }))
 
   return app
@@ -126,6 +144,8 @@ describe('GET /admin/:model — ModelIndex', () => {
 // ── Create form ───────────────────────────────────────────────────────────────
 
 describe('GET /admin/:model/new — Create form', () => {
+  beforeEach(() => vi.clearAllMocks())
+
   it('renders Admin/ModelForm with null record', async () => {
     const app = buildApp()
     const res = await request(app).get('/admin/post/new')
@@ -134,6 +154,40 @@ describe('GET /admin/:model/new — Create form', () => {
     expect(res.body.props.record).toBeNull()
     expect(res.body.props.model.name).toBe('Post')
     expect(res.body.props.errors).toEqual({})
+  })
+
+  it('includes relatedOptions in props', async () => {
+    userDelegate.findMany.mockResolvedValue([{ id: 'u1', name: 'Alice' }])
+    const app = buildApp()
+    const res = await request(app).get('/admin/post/new')
+    expect(res.body.props.relatedOptions).toBeDefined()
+    expect(res.body.props.relatedOptions['userId']).toBeDefined()
+  })
+
+  it('fetches options from the related model for each FK field', async () => {
+    userDelegate.findMany.mockResolvedValue([{ id: 'u1', name: 'Alice' }, { id: 'u2', name: 'Bob' }])
+    const app = buildApp()
+    const res = await request(app).get('/admin/post/new')
+    const userOptions = res.body.props.relatedOptions['userId']
+    expect(userOptions).toHaveLength(2)
+    expect(userOptions[0]).toEqual({ id: 'u1', label: 'Alice' })
+    expect(userOptions[1]).toEqual({ id: 'u2', label: 'Bob' })
+  })
+
+  it('returns empty options when the related model is not in allMeta', async () => {
+    const app = buildApp([postModel], [postModel]) // allMeta without userModel
+    const res = await request(app).get('/admin/post/new')
+    expect(res.body.props.relatedOptions['userId']).toEqual([])
+  })
+
+  it('returns empty relatedOptions for a model with no FK fields', async () => {
+    const plainModel: AdminModelMeta = {
+      ...postModel,
+      formFields: [postModel.formFields[0]!], // only title, no userId
+    }
+    const app = buildApp([plainModel], [plainModel])
+    const res = await request(app).get('/admin/post/new')
+    expect(res.body.props.relatedOptions).toEqual({})
   })
 
   it('returns 404 for an unknown model', async () => {
@@ -154,6 +208,14 @@ describe('GET /admin/:model/:id — Edit form', () => {
     expect(res.status).toBe(200)
     expect(res.body.component).toBe('Admin/ModelForm')
     expect(res.body.props.record).toEqual({ id: 1, title: 'Post 1' })
+  })
+
+  it('includes relatedOptions for edit form', async () => {
+    userDelegate.findMany.mockResolvedValue([{ id: 'u1', name: 'Alice' }])
+    const app = buildApp()
+    const res = await request(app).get('/admin/post/1')
+    expect(res.body.props.relatedOptions).toBeDefined()
+    expect(res.body.props.relatedOptions['userId']).toHaveLength(1)
   })
 
   it('queries with numeric id for number idType', async () => {
@@ -185,7 +247,7 @@ describe('POST /admin/:model — Create', () => {
     const app = buildApp()
     const res = await request(app)
       .post('/admin/post')
-      .send({ title: 'Brand New Post' })
+      .send({ title: 'Brand New Post', userId: 'u1' })
     expect(res.status).toBe(303)
     expect(res.headers['location']).toBe('/admin/post')
     expect(postDelegate.create).toHaveBeenCalledOnce()

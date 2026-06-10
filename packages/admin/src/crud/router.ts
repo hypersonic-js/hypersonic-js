@@ -8,6 +8,7 @@ import {
   createRecord,
   updateRecord,
   deleteRecord,
+  fetchRelatedOptions,
 } from './query.js'
 import { parsePaginationParams, buildPaginationMeta } from './pagination.js'
 
@@ -22,8 +23,44 @@ type InertiaResponse = Response & {
 }
 
 /**
+ * Fetches <select> options for every FK field present in the model's formFields.
+ * Uses allMeta (the full unfiltered metadata) so hidden models (e.g. User when
+ * showAuthModels is false) can still be queried for their dropdown values.
+ *
+ * Returns a map of { [fkFieldName]: RelatedOption[] }.
+ */
+async function buildRelatedOptions(
+  prisma: PrismaClientLike,
+  model: AdminModelMeta,
+  allMeta: AdminModelMeta[],
+): Promise<Record<string, { id: unknown; label: string }[]>> {
+  const fkFields = model.formFields.filter(
+    (f) => f.isForeignKey && f.relatedModelName !== undefined,
+  )
+  if (fkFields.length === 0) return {}
+
+  const entries = await Promise.all(
+    fkFields.map(async (f) => {
+      const relatedMeta = allMeta.find((m) => m.name === f.relatedModelName)
+      if (relatedMeta === undefined) return [f.name, []] as const
+      const options = await fetchRelatedOptions(prisma, relatedMeta)
+      return [f.name, options] as const
+    }),
+  )
+
+  return Object.fromEntries(entries)
+}
+
+/**
  * Builds an Express Router containing all admin CRUD routes.
  * The router should be mounted at the admin prefix via app.use(prefix, authMiddleware, router).
+ *
+ * @param prisma    Prisma client instance.
+ * @param models    Filtered model list (nav-visible models only).
+ * @param prefix    Route prefix the router is mounted at.
+ * @param allMeta   Full unfiltered model metadata — used when fetching FK
+ *                  dropdown options so hidden models (e.g. User) can still be
+ *                  queried even when not shown in the nav. Defaults to models.
  *
  * Routes (all relative to mount prefix):
  *   GET  /                  → Admin/Dashboard
@@ -38,6 +75,7 @@ export function createAdminRouter(
   prisma: PrismaClientLike,
   models: AdminModelMeta[],
   prefix: string,
+  allMeta: AdminModelMeta[] = models,
 ): Router {
   const router = Router()
 
@@ -58,10 +96,11 @@ export function createAdminRouter(
 
   // GET /:model/new — Create form
   // Must be registered BEFORE /:model/:id so "new" is not matched as an id.
-  router.get('/:model/new', (req: Request, res: InertiaResponse, next) => {
+  router.get('/:model/new', async (req: Request, res: InertiaResponse, next) => {
     const model = modelMap.get(req.params['model'] as string)
     if (model === undefined) { next(); return }
-    res.inertia!('Admin/ModelForm', { model, record: null, models: navModels, errors: {}, prefix })
+    const relatedOptions = await buildRelatedOptions(prisma, model, allMeta)
+    res.inertia!('Admin/ModelForm', { model, record: null, models: navModels, errors: {}, prefix, relatedOptions })
   })
 
   // GET /:model/:id — Edit form
@@ -72,7 +111,8 @@ export function createAdminRouter(
     const record = await findUnique(prisma, model, req.params['id'] as string)
     if (record === null || record === undefined) { next(); return }
 
-    res.inertia!('Admin/ModelForm', { model, record, models: navModels, errors: {}, prefix })
+    const relatedOptions = await buildRelatedOptions(prisma, model, allMeta)
+    res.inertia!('Admin/ModelForm', { model, record, models: navModels, errors: {}, prefix, relatedOptions })
   })
 
   // GET /:model — Paginated list

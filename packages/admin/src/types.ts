@@ -12,6 +12,20 @@ export interface AdminFieldMeta {
   isUnique: boolean
   hasDefault: boolean
   isReadOnly: boolean
+  /**
+   * True when this scalar field is a FK column backing a Prisma relation
+   * (e.g. `userId` for a `user User @relation(…)` field).
+   * Prisma marks FK scalars isReadOnly in its DMMF, but admins still need to
+   * set them when creating/editing records. The router renders them as a
+   * <select> dropdown populated from the related model.
+   */
+  isForeignKey: boolean
+  /**
+   * For FK scalar fields, the name of the related Prisma model
+   * (e.g. `'User'` for `userId`). Used by the admin router to fetch
+   * <select> options when rendering the create/edit form.
+   */
+  relatedModelName?: string
   isList: boolean
   relationTo?: string
   enumValues?: string[]

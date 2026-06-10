@@ -8,6 +8,7 @@ import {
   createRecord,
   updateRecord,
   deleteRecord,
+  fetchRelatedOptions,
 } from '../../src/crud/query.js'
 import type { AdminModelMeta, PrismaClientLike } from '../../src/types.js'
 
@@ -40,11 +41,11 @@ function makeModel(overrides: Partial<AdminModelMeta> = {}): AdminModelMeta {
     fields: [],
     listFields: [],
     formFields: [
-      { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
-      { name: 'published', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
-      { name: 'score', prismaType: 'Int', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
-      { name: 'weight', prismaType: 'Float', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
-      { name: 'publishedAt', prismaType: 'DateTime', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isList: false },
+      { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+      { name: 'published', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+      { name: 'score', prismaType: 'Int', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+      { name: 'weight', prismaType: 'Float', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+      { name: 'publishedAt', prismaType: 'DateTime', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
     ],
     ...overrides,
   }
@@ -126,6 +127,50 @@ describe('coerceData', () => {
 
   it('handles undefined values the same as null for optional fields', () => {
     expect(coerceData({ score: undefined }, model)).toEqual({ score: null })
+  })
+})
+
+// ── fetchRelatedOptions ───────────────────────────────────────────────────────
+
+describe('fetchRelatedOptions', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('calls findMany with no args and returns id/label pairs', async () => {
+    const { prisma, delegate } = makePrisma('user')
+    delegate.findMany.mockResolvedValue([
+      { id: 'u1', name: 'Alice' },
+      { id: 'u2', name: 'Bob' },
+    ])
+    const userModel = makeModel({ name: 'User', urlSlug: 'user', idField: 'id', displayField: 'name' })
+    const result = await fetchRelatedOptions(prisma, userModel)
+    expect(delegate.findMany).toHaveBeenCalledWith({})
+    expect(result).toEqual([
+      { id: 'u1', label: 'Alice' },
+      { id: 'u2', label: 'Bob' },
+    ])
+  })
+
+  it('uses displayField for the label', async () => {
+    const { prisma, delegate } = makePrisma('user')
+    delegate.findMany.mockResolvedValue([{ id: 1, email: 'a@b.com', name: 'Alice' }])
+    const model = makeModel({ name: 'User', urlSlug: 'user', idField: 'id', displayField: 'email' })
+    const result = await fetchRelatedOptions(prisma, model)
+    expect(result[0]!.label).toBe('a@b.com')
+  })
+
+  it('falls back to idField when displayField is missing from record', async () => {
+    const { prisma, delegate } = makePrisma('user')
+    delegate.findMany.mockResolvedValue([{ id: 42 }])
+    const model = makeModel({ name: 'User', urlSlug: 'user', idField: 'id', displayField: 'name' })
+    const result = await fetchRelatedOptions(prisma, model)
+    expect(result[0]!.label).toBe('42')
+  })
+
+  it('returns an empty array when there are no records', async () => {
+    const { prisma, delegate } = makePrisma('user')
+    delegate.findMany.mockResolvedValue([])
+    const model = makeModel({ name: 'User', urlSlug: 'user', idField: 'id', displayField: 'name' })
+    expect(await fetchRelatedOptions(prisma, model)).toEqual([])
   })
 })
 

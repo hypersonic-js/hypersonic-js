@@ -16,6 +16,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -27,6 +28,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -38,6 +40,7 @@
         "isUnique": true,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -49,6 +52,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -60,6 +64,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -71,6 +76,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -82,6 +88,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -93,6 +100,7 @@
         "isUnique": false,
         "hasDefault": true,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -104,6 +112,7 @@
         "isUnique": false,
         "hasDefault": true,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -115,6 +124,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -126,6 +136,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -137,6 +148,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": true,
         "relationTo": "Session"
       },
@@ -149,6 +161,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": true,
         "relationTo": "Account"
       },
@@ -161,6 +174,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": true,
         "relationTo": "Post"
       }
@@ -175,6 +189,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -186,6 +201,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -197,6 +213,7 @@
         "isUnique": true,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -208,6 +225,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -219,6 +237,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -230,6 +249,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       }
     ],
@@ -243,6 +263,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -254,6 +275,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -265,6 +287,7 @@
         "isUnique": true,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -276,6 +299,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -287,6 +311,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -298,6 +323,7 @@
         "isUnique": false,
         "hasDefault": true,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -309,6 +335,7 @@
         "isUnique": false,
         "hasDefault": true,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -320,6 +347,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -331,6 +359,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       }
     ]
@@ -352,6 +381,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -363,6 +393,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -374,6 +405,7 @@
         "isUnique": true,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -385,6 +417,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -396,6 +429,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -407,6 +441,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -418,6 +453,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -429,6 +465,8 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": true,
+        "relatedModelName": "User",
         "isList": false
       },
       {
@@ -440,6 +478,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false,
         "relationTo": "User"
       }
@@ -454,6 +493,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -465,6 +505,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -476,6 +517,7 @@
         "isUnique": true,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -487,6 +529,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -498,6 +541,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -509,6 +553,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       }
     ],
@@ -522,6 +567,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -533,6 +579,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -544,6 +591,7 @@
         "isUnique": true,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -555,6 +603,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -566,6 +615,20 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
+        "isList": false
+      },
+      {
+        "name": "userId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isForeignKey": true,
+        "relatedModelName": "User",
         "isList": false
       }
     ]
@@ -587,6 +650,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -598,6 +662,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -609,6 +674,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -620,6 +686,8 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": true,
+        "relatedModelName": "User",
         "isList": false
       },
       {
@@ -631,6 +699,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false,
         "relationTo": "User"
       },
@@ -643,6 +712,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -654,6 +724,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -665,6 +736,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -676,6 +748,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -687,6 +760,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -698,6 +772,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -709,6 +784,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -720,6 +796,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -731,6 +808,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       }
     ],
@@ -744,6 +822,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -755,6 +834,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -766,6 +846,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -777,6 +858,8 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": true,
+        "relatedModelName": "User",
         "isList": false
       },
       {
@@ -788,6 +871,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -799,6 +883,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       }
     ],
@@ -812,6 +897,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -823,6 +909,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -834,6 +921,20 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
+        "isList": false
+      },
+      {
+        "name": "userId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isForeignKey": true,
+        "relatedModelName": "User",
         "isList": false
       },
       {
@@ -845,6 +946,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -856,6 +958,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -867,6 +970,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -878,6 +982,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -889,6 +994,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -900,6 +1006,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -911,6 +1018,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       }
     ]
@@ -932,6 +1040,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -943,6 +1052,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -954,6 +1064,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -965,6 +1076,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -976,6 +1088,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -987,6 +1100,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       }
     ],
@@ -1000,6 +1114,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1011,6 +1126,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1022,6 +1138,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1033,6 +1150,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1044,6 +1162,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1055,6 +1174,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       }
     ],
@@ -1068,6 +1188,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1079,6 +1200,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1090,6 +1212,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1101,6 +1224,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       }
     ]
@@ -1122,6 +1246,7 @@
         "isUnique": false,
         "hasDefault": true,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1133,6 +1258,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1144,6 +1270,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1155,6 +1282,8 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": true,
+        "relatedModelName": "User",
         "isList": false
       },
       {
@@ -1166,6 +1295,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false,
         "relationTo": "User"
       },
@@ -1178,6 +1308,7 @@
         "isUnique": false,
         "hasDefault": true,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1189,6 +1320,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       }
     ],
@@ -1202,6 +1334,7 @@
         "isUnique": false,
         "hasDefault": true,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1213,6 +1346,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1224,6 +1358,8 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": true,
+        "relatedModelName": "User",
         "isList": false
       },
       {
@@ -1235,6 +1371,7 @@
         "isUnique": false,
         "hasDefault": true,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1246,6 +1383,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": true,
+        "isForeignKey": false,
         "isList": false
       }
     ],
@@ -1259,6 +1397,7 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
         "isList": false
       },
       {
@@ -1270,6 +1409,20 @@
         "isUnique": false,
         "hasDefault": false,
         "isReadOnly": false,
+        "isForeignKey": false,
+        "isList": false
+      },
+      {
+        "name": "userId",
+        "prismaType": "String",
+        "kind": "scalar",
+        "isRequired": true,
+        "isId": false,
+        "isUnique": false,
+        "hasDefault": false,
+        "isReadOnly": true,
+        "isForeignKey": true,
+        "relatedModelName": "User",
         "isList": false
       }
     ]

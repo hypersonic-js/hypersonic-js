@@ -192,6 +192,7 @@ export default function AdminModelIndex({ model, records, pagination, models, pr
  * Template source for resources/js/Pages/Admin/ModelForm.tsx.
  * Renders a create or edit form for any model using Inertia's useForm hook.
  * The mode (create vs edit) is determined by whether 'record' is null.
+ * FK scalar fields are rendered as <select> dropdowns populated from relatedOptions.
  */
 export const MODEL_FORM_TEMPLATE = `import { useForm } from '@inertiajs/react'
 import { Link } from '@inertiajs/react'
@@ -203,6 +204,8 @@ interface FieldMeta {
   prismaType: string
   kind: FieldKind
   isRequired: boolean
+  isForeignKey: boolean
+  relatedModelName?: string
   enumValues?: string[]
 }
 
@@ -220,6 +223,7 @@ interface Props {
   models: Array<{ name: string; urlSlug: string }>
   errors: Record<string, string>
   prefix: string
+  relatedOptions: Record<string, Array<{ id: string; label: string }>>
 }
 
 function buildInitialData(
@@ -235,7 +239,7 @@ function buildInitialData(
   )
 }
 
-export default function AdminModelForm({ model, record, models, errors, prefix }: Props) {
+export default function AdminModelForm({ model, record, models, errors, prefix, relatedOptions }: Props) {
   const isEdit = record !== null
   const { data, setData, post, patch, processing } = useForm(
     buildInitialData(model.formFields, record),
@@ -255,6 +259,22 @@ export default function AdminModelForm({ model, record, models, errors, prefix }
     const error = errors[field.name]
     const baseClass = 'w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
     const errorClass = error ? ' border-red-500' : ' border-gray-300'
+
+    if (field.isForeignKey) {
+      const options = relatedOptions[field.name] ?? []
+      return (
+        <select
+          value={value}
+          onChange={(e) => setData(field.name, e.target.value)}
+          className={baseClass + errorClass}
+        >
+          {!field.isRequired && <option value="">— select —</option>}
+          {options.map((opt) => (
+            <option key={opt.id} value={opt.id}>{opt.label}</option>
+          ))}
+        </select>
+      )
+    }
 
     if (field.kind === 'enum' && field.enumValues) {
       return (

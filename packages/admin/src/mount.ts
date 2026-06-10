@@ -1,13 +1,22 @@
 import type { Application } from 'express'
 import type { AdminOptions, PrismaClientLike } from './types.js'
-import { DEFAULT_HIDDEN_MODELS, DEFAULT_PREFIX } from './constants.js'
-import { createAdminAuthMiddleware } from './middleware/auth.js'
+
+const DEFAULT_HIDDEN_MODELS = ['Session', 'Account', 'Verification', 'JwksKey']
+const DEFAULT_PREFIX = '/admin'
+
+function createAdminAuthMiddleware(auth: AdminOptions['auth']) {
+  return async (req: import('express').Request, res: import('express').Response, next: import('express').NextFunction) => {
+    const session = await auth.api.getSession({ headers: req.headers })
+    if (session === null || session === undefined || session.user.role !== 'admin') {
+      res.status(403).json({ error: 'Forbidden' })
+      return
+    }
+    next()
+  }
+}
+
 import { createAdminRouter } from './crud/router.js'
 
-/**
- * Mounts the auto-generated admin dashboard onto an Express application.
- * Filters models at runtime using showAuthModels and hiddenModels options.
- */
 export function mountAdmin(
   app: Application,
   prisma: PrismaClientLike,
@@ -22,7 +31,7 @@ export function mountAdmin(
   const models = options.meta.filter((m) => !hidden.has(m.name))
 
   const authMiddleware = createAdminAuthMiddleware(options.auth)
-  const router = createAdminRouter(prisma, models, prefix)
+  const router = createAdminRouter(prisma, models, prefix, options.meta)
 
   app.use(prefix, authMiddleware, router)
 }

@@ -21,7 +21,19 @@ export function toDisplayName(name: string): string {
  */
 export function parseDmmf(dmmf: DmmfDocument): AdminModelMeta[] {
   return dmmf.datamodel.models.map((model) => {
-    const fields = model.fields.map((f) => mapField(f, dmmf.datamodel.enums))
+    // Build a map of FK scalar name → related model name.
+    // Each relation (object) field lists its FK scalars in relationFromFields
+    // and its type is the related model name.
+    // e.g. `user User @relation(fields: [userId], …)` → { 'userId' → 'User' }
+    const fkToModel = new Map<string, string>(
+      model.fields
+        .filter((f) => f.kind === 'object')
+        .flatMap((f) =>
+          (f.relationFromFields ?? []).map((scalar) => [scalar, f.type] as [string, string]),
+        ),
+    )
+
+    const fields = model.fields.map((f) => mapField(f, dmmf.datamodel.enums, fkToModel))
 
     const idField = fields.find((f) => f.isId) ?? fields[0]
     if (idField === undefined) {

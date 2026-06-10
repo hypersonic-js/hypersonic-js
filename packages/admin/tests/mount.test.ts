@@ -43,6 +43,7 @@ function makeField(name: string, overrides: Partial<AdminModelMeta['fields'][num
     isUnique: false,
     hasDefault: false,
     isReadOnly: false,
+    isForeignKey: false,
     isList: false,
     ...overrides,
   }

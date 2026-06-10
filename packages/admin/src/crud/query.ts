@@ -68,6 +68,28 @@ export function coerceData(
   return result
 }
 
+export interface RelatedOption {
+  id: unknown
+  label: string
+}
+
+/**
+ * Fetches all records of a related model and maps them to { id, label } pairs
+ * for use in a <select> dropdown on the admin form.
+ * The label uses the model's displayField; falls back to the idField value.
+ */
+export async function fetchRelatedOptions(
+  prisma: PrismaClientLike,
+  model: AdminModelMeta,
+): Promise<RelatedOption[]> {
+  const delegate = getDelegate(prisma, model.name)
+  const records = (await delegate.findMany({})) as Record<string, unknown>[]
+  return records.map((r) => ({
+    id: r[model.idField],
+    label: String(r[model.displayField] ?? r[model.idField] ?? ''),
+  }))
+}
+
 export interface FindManyResult {
   records: unknown[]
   total: number
