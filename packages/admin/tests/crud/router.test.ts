@@ -300,4 +300,64 @@ describe('DELETE /admin/:model/:id — Delete', () => {
     const res = await request(app).delete('/admin/nonexistent/1')
     expect(res.status).toBe(404)
   })
+})// ── Error handling — Prisma throws ───────────────────────────────────────────
+
+describe('error handling — Prisma throws', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('GET / returns 500 when countRecords throws', async () => {
+    postDelegate.count.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app).get('/admin')
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
+
+  it('GET /:model/new returns 500 when buildRelatedOptions throws', async () => {
+    userDelegate.findMany.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app).get('/admin/post/new')
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
+
+  it('GET /:model/:id returns 500 when findUnique throws', async () => {
+    postDelegate.findUnique.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app).get('/admin/post/1')
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
+
+  it('GET /:model returns 500 when findMany throws', async () => {
+    postDelegate.findMany.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app).get('/admin/post')
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
+
+  it('POST /:model returns 500 when createRecord throws', async () => {
+    postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app).post('/admin/post').send({ title: 'Fail' })
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
+
+  it('PATCH /:model/:id returns 500 when updateRecord throws', async () => {
+    postDelegate.update.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app).patch('/admin/post/1').send({ title: 'Fail' })
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
+
+  it('DELETE /:model/:id returns 500 when deleteRecord throws', async () => {
+    postDelegate.delete.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app).delete('/admin/post/1')
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
 })

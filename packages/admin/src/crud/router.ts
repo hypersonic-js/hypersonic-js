@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import type { Response, Request } from 'express'
+import type { Response, Request, NextFunction, ErrorRequestHandler } from 'express'
 import type { PrismaClientLike, AdminModelMeta } from '../types.js'
 import {
   findMany,
@@ -84,81 +84,115 @@ export function createAdminRouter(
   const navModels: NavModel[] = models.map((m) => ({ name: m.name, urlSlug: m.urlSlug }))
 
   // GET / — Dashboard
-  router.get('/', async (_req, res: InertiaResponse) => {
-    const modelCounts = await Promise.all(
-      models.map(async (m) => {
-        const count = await countRecords(prisma, m)
-        return { name: m.name, urlSlug: m.urlSlug, recordCount: count }
-      }),
-    )
-    res.inertia!('Admin/Dashboard', { models: modelCounts, prefix })
+  router.get('/', async (_req, res: InertiaResponse, next: NextFunction) => {
+    try {
+      const modelCounts = await Promise.all(
+        models.map(async (m) => {
+          const count = await countRecords(prisma, m)
+          return { name: m.name, urlSlug: m.urlSlug, recordCount: count }
+        }),
+      )
+      res.inertia!('Admin/Dashboard', { models: modelCounts, prefix })
+    } catch (err) {
+      next(err)
+    }
   })
 
   // GET /:model/new — Create form
   // Must be registered BEFORE /:model/:id so "new" is not matched as an id.
-  router.get('/:model/new', async (req: Request, res: InertiaResponse, next) => {
-    const model = modelMap.get(req.params['model'] as string)
-    if (model === undefined) { next(); return }
-    const relatedOptions = await buildRelatedOptions(prisma, model, allMeta)
-    res.inertia!('Admin/ModelForm', { model, record: null, models: navModels, errors: {}, prefix, relatedOptions })
+  router.get('/:model/new', async (req: Request, res: InertiaResponse, next: NextFunction) => {
+    try {
+      const model = modelMap.get(req.params['model'] as string)
+      if (model === undefined) { next(); return }
+      const relatedOptions = await buildRelatedOptions(prisma, model, allMeta)
+      res.inertia!('Admin/ModelForm', { model, record: null, models: navModels, errors: {}, prefix, relatedOptions })
+    } catch (err) {
+      next(err)
+    }
   })
 
   // GET /:model/:id — Edit form
-  router.get('/:model/:id', async (req: Request, res: InertiaResponse, next) => {
-    const model = modelMap.get(req.params['model'] as string)
-    if (model === undefined) { next(); return }
+  router.get('/:model/:id', async (req: Request, res: InertiaResponse, next: NextFunction) => {
+    try {
+      const model = modelMap.get(req.params['model'] as string)
+      if (model === undefined) { next(); return }
 
-    const record = await findUnique(prisma, model, req.params['id'] as string)
-    if (record === null || record === undefined) { next(); return }
+      const record = await findUnique(prisma, model, req.params['id'] as string)
+      if (record === null || record === undefined) { next(); return }
 
-    const relatedOptions = await buildRelatedOptions(prisma, model, allMeta)
-    res.inertia!('Admin/ModelForm', { model, record, models: navModels, errors: {}, prefix, relatedOptions })
+      const relatedOptions = await buildRelatedOptions(prisma, model, allMeta)
+      res.inertia!('Admin/ModelForm', { model, record, models: navModels, errors: {}, prefix, relatedOptions })
+    } catch (err) {
+      next(err)
+    }
   })
 
   // GET /:model — Paginated list
-  router.get('/:model', async (req: Request, res: InertiaResponse, next) => {
-    const model = modelMap.get(req.params['model'] as string)
-    if (model === undefined) { next(); return }
+  router.get('/:model', async (req: Request, res: InertiaResponse, next: NextFunction) => {
+    try {
+      const model = modelMap.get(req.params['model'] as string)
+      if (model === undefined) { next(); return }
 
-    const pagination = parsePaginationParams(req.query as Record<string, unknown>)
-    const { records, total } = await findMany(prisma, model, pagination)
-    const paginationMeta = buildPaginationMeta(pagination.page, pagination.perPage, total)
+      const pagination = parsePaginationParams(req.query as Record<string, unknown>)
+      const { records, total } = await findMany(prisma, model, pagination)
+      const paginationMeta = buildPaginationMeta(pagination.page, pagination.perPage, total)
 
-    res.inertia!('Admin/ModelIndex', {
-      model,
-      records,
-      pagination: paginationMeta,
-      models: navModels,
-      prefix,
-    })
+      res.inertia!('Admin/ModelIndex', {
+        model,
+        records,
+        pagination: paginationMeta,
+        models: navModels,
+        prefix,
+      })
+    } catch (err) {
+      next(err)
+    }
   })
 
   // POST /:model — Create
-  router.post('/:model', async (req: Request, res, next) => {
-    const model = modelMap.get(req.params['model'] as string)
-    if (model === undefined) { next(); return }
+  router.post('/:model', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const model = modelMap.get(req.params['model'] as string)
+      if (model === undefined) { next(); return }
 
-    await createRecord(prisma, model, req.body as Record<string, unknown>)
-    res.redirect(303, `${prefix}/${model.urlSlug}`)
+      await createRecord(prisma, model, req.body as Record<string, unknown>)
+      res.redirect(303, `${prefix}/${model.urlSlug}`)
+    } catch (err) {
+      next(err)
+    }
   })
 
   // PATCH /:model/:id — Update
-  router.patch('/:model/:id', async (req: Request, res, next) => {
-    const model = modelMap.get(req.params['model'] as string)
-    if (model === undefined) { next(); return }
+  router.patch('/:model/:id', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const model = modelMap.get(req.params['model'] as string)
+      if (model === undefined) { next(); return }
 
-    await updateRecord(prisma, model, req.params['id'] as string, req.body as Record<string, unknown>)
-    res.redirect(303, `${prefix}/${model.urlSlug}`)
+      await updateRecord(prisma, model, req.params['id'] as string, req.body as Record<string, unknown>)
+      res.redirect(303, `${prefix}/${model.urlSlug}`)
+    } catch (err) {
+      next(err)
+    }
   })
 
   // DELETE /:model/:id — Delete
-  router.delete('/:model/:id', async (req: Request, res, next) => {
-    const model = modelMap.get(req.params['model'] as string)
-    if (model === undefined) { next(); return }
+  router.delete('/:model/:id', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const model = modelMap.get(req.params['model'] as string)
+      if (model === undefined) { next(); return }
 
-    await deleteRecord(prisma, model, req.params['id'] as string)
-    res.redirect(303, `${prefix}/${model.urlSlug}`)
+      await deleteRecord(prisma, model, req.params['id'] as string)
+      res.redirect(303, `${prefix}/${model.urlSlug}`)
+    } catch (err) {
+      next(err)
+    }
   })
+
+  // Error handler — returns a clean 500 without leaking internals
+  const errorHandler: ErrorRequestHandler = (_err, _req, res, _next) => {
+    res.status(500).json({ error: 'Internal Server Error' })
+  }
+  router.use(errorHandler)
 
   return router
 }
