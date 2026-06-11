@@ -26,6 +26,8 @@ interface FkOption {
   label: string
 }
 
+type RelatedOptionsMap = Record<string, { options: FkOption[]; hasMore: boolean }>
+
 interface FieldOptionsState {
   options: FkOption[]
   hasMore: boolean
@@ -39,7 +41,7 @@ interface Props {
   models: Array<{ name: string; urlSlug: string }>
   errors: Record<string, string>
   prefix: string
-  relatedOptions: Record<string, { options: FkOption[]; hasMore: boolean }>
+  relatedOptions: RelatedOptionsMap
 }
 
 function toLocalDateTimeString(date: Date): string {
@@ -56,6 +58,7 @@ function toLocalDateTimeString(date: Date): string {
 function buildInitialData(
   formFields: FieldMeta[],
   record: Record<string, unknown> | null,
+  relatedOptions: RelatedOptionsMap = {},
 ): Record<string, string> {
   return Object.fromEntries(
     formFields.map((f) => {
@@ -69,6 +72,19 @@ function buildInitialData(
       if (f.kind === 'enum' && f.enumValues !== undefined && f.enumValues.length > 0) {
         return [f.name, f.enumValues[0]!]
       }
+
+      // For required FK fields on create forms, default to the first available
+      // option so the controlled <select> value matches what the browser renders
+      // as visually selected. Without this the select appears to have a valid
+      // selection but the underlying form value is '', which coerceData converts
+      // to undefined for required fields, causing a Prisma validation error.
+      if (f.isForeignKey && f.isRequired) {
+        const firstOption = relatedOptions[f.name]?.options[0]
+        if (firstOption !== undefined) {
+          return [f.name, String(firstOption.id)]
+        }
+      }
+
       return [f.name, '']
     }),
   )
@@ -77,7 +93,7 @@ function buildInitialData(
 export default function AdminModelForm({ model, record, errors, prefix, relatedOptions }: Props) {
   const isEdit = record !== null
   const { data, setData, post, patch, processing } = useForm(
-    buildInitialData(model.formFields, record),
+    buildInitialData(model.formFields, record, relatedOptions),
   )
 
   const [fkOptions, setFkOptions] = useState<Record<string, FieldOptionsState>>(() =>

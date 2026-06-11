@@ -1,9 +1,9 @@
 # Third-Party Licenses
 
 All dependencies used by Hypersonic.js and their respective licenses.
-635 packages across 13 license types.
+650 packages across 13 license types.
 
-_Generated: 2026-06-10_
+_Generated: 2026-06-11_
 
 ---
 
@@ -461,7 +461,7 @@ _License text not found in package distribution._
 
 ## ISC
 
-### Packages (24)
+### Packages (25)
 
 - **@prisma/dev@0.24.3** — Igal Klebanov
 - **@ungap/structured-clone@1.3.1** — Andrea Giammarchi — https://github.com/ungap/structured-clone#readme
@@ -470,6 +470,7 @@ _License text not found in package distribution._
 - **fastq@1.20.1** — Matteo Collina — https://github.com/mcollina/fastq#readme
 - **flatted@3.4.2** — Andrea Giammarchi — https://github.com/WebReflection/flatted#readme
 - **foreground-child@3.3.1** — Isaac Z. Schlueter — https://github.com/tapjs/foreground-child#readme
+- **get-caller-file@2.0.5** — Stefan Penner — https://github.com/stefanpenner/get-caller-file#readme
 - **glob-parent@5.1.2** — Gulp Team — https://github.com/gulpjs/glob-parent#readme
 - **glob-parent@6.0.2** — Gulp Team — https://github.com/gulpjs/glob-parent#readme
 - **graceful-fs@4.2.11** — Copyright (c) 2011-2022 Isaac Z. Schlueter, Ben Noordhuis, and Contributors — https://github.com/isaacs/node-graceful-fs#readme
@@ -512,7 +513,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ## MIT
 
-### Packages (540)
+### Packages (554)
 
 - **@algolia/abtesting@1.18.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/abtesting#readme
 - **@algolia/autocomplete-core@1.17.7** — Algolia, Inc. — https://github.com/algolia/autocomplete
@@ -600,6 +601,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@nodelib/fs.walk@1.2.8** — https://github.com/nodelib/nodelib/tree/master#readme
 - **@oxc-project/types@0.132.0** — Boshen and oxc contributors — https://oxc.rs
 - **@paralleldrive/cuid2@2.3.1** — Eric Elliott — https://github.com/ericelliott/cuid2#readme
+- **@pinojs/redact@0.4.0** — Matteo Collina — https://github.com/pinojs/redact#readme
 - **@radix-ui/primitive@1.1.3** — Copyright (c) 2022 WorkOS — https://radix-ui.com/primitives
 - **@radix-ui/react-compose-refs@1.1.2** — https://radix-ui.com/primitives
 - **@radix-ui/react-primitive@2.1.3** — Copyright (c) 2022 WorkOS — https://radix-ui.com/primitives
@@ -708,6 +710,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **assertion-error@2.0.1** — Jake Luer — https://github.com/chaijs/assertion-error#readme
 - **ast-v8-to-istanbul@1.0.2** — Ari Perkkiö — https://github.com/AriPerkkio/ast-v8-to-istanbul
 - **asynckit@0.4.0** — Alex Indigo — https://github.com/alexindigo/asynckit#readme
+- **atomic-sleep@1.0.0** — David Mark Clements — https://github.com/davidmarkclements/atomic-sleep#readme
 - **aws-ssl-profiles@1.1.2** — https://github.com/wellwelwel — https://github.com/mysqljs/aws-ssl-profiles#readme
 - **balanced-match@4.0.4** — https://github.com/juliangruber/balanced-match#readme
 - **base64-js@1.5.1** — T. Jameson Little — https://github.com/beatgammit/base64-js
@@ -906,6 +909,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **object-inspect@1.13.4** — James Halliday — https://github.com/inspect-js/object-inspect
 - **obug@2.1.1** — Kevin Deng — https://github.com/sxzz/obug#readme
 - **ohash@2.0.11** — https://github.com/unjs/ohash#readme
+- **on-exit-leak-free@2.1.2** — Matteo Collina — https://github.com/mcollina/on-exit-or-gc#readme
 - **on-finished@2.4.1** — Copyright (c) 2013 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/on-finished#readme
 - **oniguruma-to-es@3.1.1** — Steven Levithan — https://github.com/slevithan/oniguruma-to-es#readme
 - **optionator@0.9.4** — George Zahariev — https://github.com/gkz/optionator
@@ -936,6 +940,10 @@ PERFORMANCE OF THIS SOFTWARE.
 - **picomatch@2.3.2** — Jon Schlinkert — https://github.com/micromatch/picomatch
 - **picomatch@4.0.4** — Jon Schlinkert — https://github.com/micromatch/picomatch
 - **pify@4.0.1** — Sindre Sorhus — https://github.com/sindresorhus/pify#readme
+- **pino@10.3.1** — Matteo Collina — https://getpino.io
+- **pino-abstract-transport@3.0.0** — Matteo Collina — https://github.com/pinojs/pino-abstract-transport#readme
+- **pino-http@11.0.0** — David Mark Clements — https://github.com/pinojs/pino-http#readme
+- **pino-std-serializers@7.1.0** — James Sumners — https://github.com/pinojs/pino-std-serializers#readme
 - **pkg-types@2.3.1** — https://github.com/unjs/pkg-types#readme
 - **pluralize@8.0.0** — Blake Embrey — https://github.com/blakeembrey/pluralize#readme
 - **postcss@8.5.15** — Andrey Sitnik — https://postcss.org/
@@ -948,6 +956,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **prebuild-install@7.1.3** — Mathias Buus — https://github.com/prebuild/prebuild-install
 - **prelude-ls@1.2.1** — George Zahariev — http://preludels.com
 - **prettier@2.8.8** — James Long — https://prettier.io
+- **process-warning@5.0.0** — Tomas Della Vedova — https://github.com/fastify/fastify-warning#readme
 - **proper-lockfile@4.1.2** — André Cruz — https://github.com/moxystudio/node-proper-lockfile
 - **property-information@7.1.0** — Titus Wormer — https://github.com/wooorm/property-information#readme
 - **proxy-addr@2.0.7** — Douglas Christopher Wilson — https://github.com/jshttp/proxy-addr#readme
@@ -956,6 +965,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **pure-rand@6.1.0** — Nicolas DUBIEN — https://github.com/dubzzz/pure-rand#readme
 - **quansync@0.2.11** — Anthony Fu — https://github.com/quansync-dev/quansync#readme
 - **queue-microtask@1.2.3** — Feross Aboukhadijeh — https://github.com/feross/queue-microtask
+- **quick-format-unescaped@4.0.4** — David Mark Clements — https://github.com/davidmarkclements/quick-format#readme
 - **range-parser@1.2.1** — TJ Holowaychuk — https://github.com/jshttp/range-parser#readme
 - **raw-body@3.0.2** — Jonathan Ong — https://github.com/stream-utils/raw-body#readme
 - **rc9@3.0.1** — Copyright (c) 2014, Hugh Kennedy — https://github.com/unjs/rc9#readme
@@ -964,6 +974,8 @@ PERFORMANCE OF THIS SOFTWARE.
 - **read-yaml-file@1.1.0** — Zoltan Kochan — https://github.com/zkochan/packages/tree/master#readme
 - **readable-stream@3.6.2** — https://github.com/nodejs/readable-stream#readme
 - **readdirp@5.0.0** — Thorsten Lorenz — https://github.com/paulmillr/readdirp
+- **real-require@0.2.0** — Paolo Insogna — https://github.com/pinojs/real-require
+- **real-require@1.0.0** — Paolo Insogna — https://github.com/pinojs/real-require
 - **regex@6.1.0** — Steven Levithan — https://github.com/slevithan/regex#readme
 - **regex-recursion@6.0.2** — Steven Levithan — https://github.com/slevithan/regex-recursion#readme
 - **regex-utilities@2.3.0** — Steven Levithan — https://github.com/slevithan/regex-utilities#readme
@@ -979,6 +991,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **router@2.2.0** — Douglas Christopher Wilson — https://github.com/pillarjs/router#readme
 - **run-parallel@1.2.0** — Feross Aboukhadijeh — https://github.com/feross/run-parallel
 - **safe-buffer@5.2.1** — Feross Aboukhadijeh — https://github.com/feross/safe-buffer
+- **safe-stable-stringify@2.5.0** — Ruben Bridgewater — https://github.com/BridgeAR/safe-stable-stringify#readme
 - **safer-buffer@2.1.2** — Nikita Skovoroda — https://github.com/ChALkeR/safer-buffer#readme
 - **scheduler@0.27.0** — https://react.dev/
 - **search-insights@2.17.3** — Algolia — https://github.com/algolia/search-insights.js#readme
@@ -996,6 +1009,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **simple-concat@1.0.1** — Feross Aboukhadijeh — https://github.com/feross/simple-concat
 - **simple-get@4.0.1** — Feross Aboukhadijeh — https://github.com/feross/simple-get
 - **slash@3.0.0** — Sindre Sorhus — https://github.com/sindresorhus/slash#readme
+- **sonic-boom@4.2.1** — Matteo Collina — https://github.com/pinojs/sonic-boom#readme
 - **space-separated-tokens@2.0.2** — Titus Wormer — https://github.com/wooorm/space-separated-tokens#readme
 - **sqlstring@2.3.3** — Copyright (c) 2012 Felix Geisendörfer (felix@debuggable.com) and contributors — https://github.com/mysqljs/sqlstring#readme
 - **stackback@0.0.2** — Roman Shtylman — https://github.com/shtylman/node-stackback#readme
@@ -1017,6 +1031,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **tar-fs@2.1.4** — Mathias Buus — https://github.com/mafintosh/tar-fs
 - **tar-stream@2.2.0** — Mathias Buus — https://github.com/mafintosh/tar-stream
 - **term-size@2.2.1** — Sindre Sorhus — https://github.com/sindresorhus/term-size#readme
+- **thread-stream@4.2.0** — Matteo Collina — https://github.com/mcollina/thread-stream#readme
 - **tinybench@2.9.0** — Copyright (c) 2022 Tinylibs — https://github.com/tinylibs/tinybench#readme
 - **tinyexec@1.2.2** — James Garbutt — https://github.com/tinylibs/tinyexec#readme
 - **tinyglobby@0.2.16** — Superchupu — https://superchupu.dev/tinyglobby
