@@ -59,9 +59,48 @@ export interface PaginationParams {
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Minimal auth interface satisfied by any Better Auth instance.
+ *
+ * The three optional admin methods (`createUser`, `adminUpdateUser`,
+ * `removeUser`) are present when the Better Auth admin plugin is enabled.
+ * When they exist, the admin router routes User model mutations through Better
+ * Auth instead of calling Prisma directly — ensuring password hashing,
+ * session cleanup, and other auth lifecycle hooks are respected.
+ */
 export interface AdminAuthLike {
   api: {
     getSession(opts: { headers: unknown }): Promise<{ user: { role: string } } | null>
+
+    /** Creates a user via the Better Auth admin plugin. */
+    createUser?: (opts: {
+      body: {
+        email: string
+        name: string
+        password: string
+        role?: string
+        data?: Record<string, unknown>
+      }
+    }) => Promise<{ user: unknown }>
+
+    /**
+     * Updates a user via the Better Auth admin plugin.
+     * Requires the calling admin's session headers for permission checks.
+     */
+    adminUpdateUser?: (opts: {
+      body: { userId: string; data: Record<string, unknown> }
+      headers: unknown
+    }) => Promise<unknown>
+
+    /**
+     * Deletes a user via the Better Auth admin plugin.
+     * Also revokes all active sessions for that user.
+     * Requires the calling admin's session headers for permission checks.
+     */
+    removeUser?: (opts: {
+      body: { userId: string }
+      headers: unknown
+    }) => Promise<unknown>
   }
 }
 
@@ -90,22 +129,27 @@ export interface LoggerLike {
 export interface AdminOptions {
   /** Pre-generated admin model metadata — pass the content of prisma/admin-meta.json. */
   meta: AdminModelMeta[]
-  /** Better Auth instance with the admin plugin enabled. */
+  /** Better Auth instance. When the admin plugin is enabled, user CRUD is routed through it. */
   auth: AdminAuthLike
   /** Route prefix for all admin routes. Defaults to '/admin'. */
   prefix?: string
   /** When true, shows the default hidden Better Auth tables. Defaults to false. */
   showAuthModels?: boolean
-  /** Additional model names to hide on top of the built-in hidden list. */
+  /** Additional model names to hide from the admin nav. */
   hiddenModels?: string[]
-  /**
-   * Structured logger for server-side error visibility.
-   * Pass `app.logger` from createApp() to route admin errors through the
-   * same Pino instance used by the rest of the framework.
-   * When omitted, errors are silently handled (no output).
-   */
+  /** Optional structured logger — pass `app.logger` from createApp(). */
   logger?: LoggerLike
+  /**
+   * Name of the Better Auth user model in your Prisma schema.
+   * When `auth.api.createUser` is present, all create / update / delete
+   * operations on this model are routed through the Better Auth admin API
+   * instead of calling Prisma directly.
+   * Defaults to `'User'`.
+   */
+  betterAuthUserModel?: string
 }
+
+// ── Scaffold ──────────────────────────────────────────────────────────────────
 
 export interface ScaffoldOptions {
   targetDir?: string

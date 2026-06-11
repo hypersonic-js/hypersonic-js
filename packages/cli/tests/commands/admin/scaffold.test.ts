@@ -53,7 +53,7 @@ describe('admin scaffold command', () => {
   describe('success — files written', () => {
     beforeEach(() => {
       mockScaffoldAdmin.mockResolvedValue({
-        written: ['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx'],
+        written: ['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx', 'UserCreate.tsx'],
         skipped: [],
       })
     })
@@ -98,7 +98,7 @@ describe('admin scaffold command', () => {
 
     it('logs success for each written file', async () => {
       await runScaffold([])
-      expect(mockLogger.success).toHaveBeenCalledTimes(3)
+      expect(mockLogger.success).toHaveBeenCalledTimes(4)
       expect(mockLogger.success).toHaveBeenCalledWith(
         expect.stringContaining('Dashboard.tsx'),
       )
@@ -107,6 +107,9 @@ describe('admin scaffold command', () => {
       )
       expect(mockLogger.success).toHaveBeenCalledWith(
         expect.stringContaining('ModelForm.tsx'),
+      )
+      expect(mockLogger.success).toHaveBeenCalledWith(
+        expect.stringContaining('UserCreate.tsx'),
       )
     })
 
@@ -145,13 +148,13 @@ describe('admin scaffold command', () => {
     beforeEach(() => {
       mockScaffoldAdmin.mockResolvedValue({
         written: [],
-        skipped: ['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx'],
+        skipped: ['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx', 'UserCreate.tsx'],
       })
     })
 
     it('logs a warning for each skipped file', async () => {
       await runScaffold([])
-      expect(mockLogger.warn).toHaveBeenCalledTimes(3)
+      expect(mockLogger.warn).toHaveBeenCalledTimes(4)
       expect(mockLogger.success).not.toHaveBeenCalled()
     })
   })

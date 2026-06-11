@@ -28,9 +28,9 @@ describe('scaffoldAdmin', () => {
     expect(existsSync(join(targetDir, 'Admin'))).toBe(true)
   })
 
-  it('writes all three template files by default', async () => {
+  it('writes all four template files by default', async () => {
     const result = await scaffoldAdmin({ targetDir: tmpDir })
-    expect(result.written).toEqual(['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx'])
+    expect(result.written).toEqual(['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx', 'UserCreate.tsx'])
     expect(result.skipped).toEqual([])
   })
 
@@ -55,18 +55,25 @@ describe('scaffoldAdmin', () => {
     expect(written).toBe(source)
   })
 
+  it('writes the correct UserCreate.tsx content', async () => {
+    await scaffoldAdmin({ targetDir: tmpDir })
+    const written = readFileSync(join(tmpDir, 'Admin', 'UserCreate.tsx'), 'utf-8')
+    const source = readFileSync(join(TEMPLATES_DIR, 'UserCreate.tsx'), 'utf-8')
+    expect(written).toBe(source)
+  })
+
   it('skips all files when they already exist and force is false', async () => {
     await scaffoldAdmin({ targetDir: tmpDir })
     const result = await scaffoldAdmin({ targetDir: tmpDir, force: false })
     expect(result.written).toEqual([])
-    expect(result.skipped).toEqual(['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx'])
+    expect(result.skipped).toEqual(['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx', 'UserCreate.tsx'])
   })
 
   it('overwrites existing files when force is true', async () => {
     await scaffoldAdmin({ targetDir: tmpDir })
     writeFileSync(join(tmpDir, 'Admin', 'Dashboard.tsx'), 'stale content', 'utf-8')
     const result = await scaffoldAdmin({ targetDir: tmpDir, force: true })
-    expect(result.written).toEqual(['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx'])
+    expect(result.written).toEqual(['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx', 'UserCreate.tsx'])
     expect(result.skipped).toEqual([])
     const written = readFileSync(join(tmpDir, 'Admin', 'Dashboard.tsx'), 'utf-8')
     const source = readFileSync(join(TEMPLATES_DIR, 'Dashboard.tsx'), 'utf-8')
@@ -81,6 +88,7 @@ describe('scaffoldAdmin', () => {
 
     const result = await scaffoldAdmin({ targetDir: tmpDir })
     expect(result.skipped).toContain('Dashboard.tsx')
+    expect(result.skipped).toContain('UserCreate.tsx')
     expect(result.written).toContain('ModelIndex.tsx')
     expect(result.written).toContain('ModelForm.tsx')
   })
@@ -96,7 +104,7 @@ describe('scaffoldAdmin', () => {
 
   it('uses the provided targetDir option', async () => {
     const result = await scaffoldAdmin({ targetDir: tmpDir })
-    expect(result.written).toHaveLength(3)
+    expect(result.written).toHaveLength(4)
   })
 })
 
@@ -121,13 +129,34 @@ describe('template content', () => {
     expect(content).toContain('export default function AdminModelForm')
   })
 
+  it('UserCreate template contains useForm import', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'UserCreate.tsx'), 'utf-8')
+    expect(content).toContain('useForm')
+    expect(content).toContain('export default function AdminUserCreate')
+  })
+
+  it('UserCreate template renders name, email, password, and role fields', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'UserCreate.tsx'), 'utf-8')
+    expect(content).toContain("type=\"text\"")
+    expect(content).toContain("type=\"email\"")
+    expect(content).toContain("type=\"password\"")
+    expect(content).toContain("<select")
+  })
+
+  it('UserCreate template imports from @inertiajs/react', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'UserCreate.tsx'), 'utf-8')
+    expect(content).toContain("from '@inertiajs/react'")
+  })
+
   it('all templates are non-empty files', () => {
     const dashboard = readFileSync(join(TEMPLATES_DIR, 'Dashboard.tsx'), 'utf-8')
     const modelIndex = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
     const modelForm = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    const userCreate = readFileSync(join(TEMPLATES_DIR, 'UserCreate.tsx'), 'utf-8')
     expect(dashboard.length).toBeGreaterThan(100)
     expect(modelIndex.length).toBeGreaterThan(100)
     expect(modelForm.length).toBeGreaterThan(100)
+    expect(userCreate.length).toBeGreaterThan(100)
   })
 
   it('ModelForm template does not use toISOString().slice(0, 16)', () => {

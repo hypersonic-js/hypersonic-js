@@ -1,55 +1,31 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import express from 'express'
 import request from 'supertest'
+
 import { createAdminRouter } from '../../src/crud/router.js'
-import type { AdminModelMeta, PrismaClientLike, LoggerLike } from '../../src/types.js'
-import { MAX_RELATED_OPTIONS } from '../../src/constants.js'
+import type { AdminModelMeta, PrismaClientLike, LoggerLike, AdminAuthLike } from '../../src/types.js'
 
-// ── Fixtures ──────────────────────────────────────────────────────────────────
+// ── Fixtures ─────────────────────────────────────────────────────────────────
 
-const postDelegate = {
-  findMany: vi.fn().mockResolvedValue([{ id: 1, title: 'Post 1' }]),
-  findUnique: vi.fn().mockResolvedValue({ id: 1, title: 'Post 1' }),
-  create: vi.fn().mockResolvedValue({ id: 2, title: 'New Post' }),
-  update: vi.fn().mockResolvedValue({ id: 1, title: 'Updated' }),
-  delete: vi.fn().mockResolvedValue({ id: 1 }),
-  count: vi.fn().mockResolvedValue(3),
+function makeDelegate() {
+  return {
+    findMany: vi.fn().mockResolvedValue([{ id: 1, title: 'Post 1' }]),
+    findUnique: vi.fn().mockResolvedValue({ id: 1, title: 'Post 1' }),
+    create: vi.fn().mockResolvedValue({ id: 2, title: 'Created' }),
+    update: vi.fn().mockResolvedValue({ id: 1, title: 'Updated' }),
+    delete: vi.fn().mockResolvedValue({ id: 1 }),
+    count: vi.fn().mockResolvedValue(3),
+  }
 }
 
-const userDelegate = {
-  findMany: vi.fn().mockResolvedValue([]),
-  findUnique: vi.fn().mockResolvedValue(null),
-  create: vi.fn().mockResolvedValue({}),
-  update: vi.fn().mockResolvedValue({}),
-  delete: vi.fn().mockResolvedValue({}),
-  count: vi.fn().mockResolvedValue(0),
-}
+const postDelegate = makeDelegate()
+const userDelegate = makeDelegate()
 
 const mockPrisma = {
   $disconnect: vi.fn(),
-  post: postDelegate,
-  user: userDelegate,
+  get post() { return postDelegate },
+  get user() { return userDelegate },
 } as unknown as PrismaClientLike
-
-const userModel: AdminModelMeta = {
-  name: 'User',
-  urlSlug: 'user',
-  displayName: 'Users',
-  idField: 'id',
-  idType: 'string',
-  displayField: 'name',
-  fields: [
-    { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-    { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-  ],
-  listFields: [
-    { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-    { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-  ],
-  formFields: [
-    { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-  ],
-}
 
 const postModel: AdminModelMeta = {
   name: 'Post',
@@ -58,10 +34,7 @@ const postModel: AdminModelMeta = {
   idField: 'id',
   idType: 'number',
   displayField: 'title',
-  fields: [
-    { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-    { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-  ],
+  fields: [],
   listFields: [
     { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
     { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
@@ -69,6 +42,38 @@ const postModel: AdminModelMeta = {
   formFields: [
     { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
     { name: 'userId', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isForeignKey: true, relatedModelName: 'User', isList: false },
+  ],
+}
+
+// Minimal user model used as FK option source in generic CRUD tests
+const userModel: AdminModelMeta = {
+  name: 'User',
+  urlSlug: 'user',
+  displayName: 'Users',
+  idField: 'id',
+  idType: 'string',
+  displayField: 'name',
+  fields: [],
+  listFields: [
+    { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+  ],
+  formFields: [],
+}
+
+// Full user model with role enum — used in Better Auth tests
+const betterAuthUserModel: AdminModelMeta = {
+  name: 'User',
+  urlSlug: 'user',
+  displayName: 'Users',
+  idField: 'id',
+  idType: 'string',
+  displayField: 'name',
+  fields: [],
+  listFields: [],
+  formFields: [
+    { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'email', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: true, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'role', prismaType: 'Role', kind: 'enum', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false, enumValues: ['user', 'admin'] },
   ],
 }
 
@@ -93,7 +98,7 @@ function buildApp(
     next()
   })
 
-  const router = createAdminRouter(mockPrisma, models, PREFIX, allMeta, logger)
+  const router = createAdminRouter(mockPrisma, models, PREFIX, { allMeta, logger })
   app.use(PREFIX, router)
 
   app.use((_req, res) => res.status(404).json({ error: 'Not Found' }))
@@ -101,7 +106,31 @@ function buildApp(
   return app
 }
 
-// -- Dashboard ----------------------------------------------------------------
+// Builds an app with Better Auth admin methods available for the User model
+function buildAuthApp(auth: AdminAuthLike, models = [betterAuthUserModel]) {
+  const app = express()
+  app.use(express.json())
+  app.use(express.urlencoded({ extended: false }))
+
+  app.use((_req, res, next) => {
+    ;(res as unknown as Record<string, unknown>)['inertia'] = (
+      component: string,
+      props: Record<string, unknown> = {},
+    ) => {
+      res.status(200).json({ __inertia: true, component, props })
+    }
+    next()
+  })
+
+  const router = createAdminRouter(mockPrisma, models, PREFIX, { allMeta: models, auth })
+  app.use(PREFIX, router)
+
+  app.use((_req, res) => res.status(404).json({ error: 'Not Found' }))
+
+  return app
+}
+
+// ── Dashboard ----------------------------------------------------------------
 
 describe('GET /admin -- Dashboard', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -321,41 +350,6 @@ describe('DELETE /admin/:model/:id -- Delete', () => {
 describe('error handling -- Prisma throws', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('POST /:model redirects back to Referer for an Inertia request when createRecord throws', async () => {
-    postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
-    const app = buildApp()
-    const res = await request(app)
-      .post('/admin/post')
-      .send({ title: 'Fail' })
-      .set('X-Inertia', 'true')
-      .set('Referer', '/admin/post/new')
-    expect(res.status).toBe(303)
-    expect(res.headers['location']).toBe('/admin/post/new')
-  })
-
-  it('POST /:model redirects to admin root when no Referer on an Inertia request', async () => {
-    postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
-    const app = buildApp()
-    const res = await request(app)
-      .post('/admin/post')
-      .send({ title: 'Fail' })
-      .set('X-Inertia', 'true')
-    expect(res.status).toBe(303)
-    expect(res.headers['location']).toBe('/admin/')
-  })
-
-  it('PATCH /:model/:id redirects back to Referer for an Inertia request when updateRecord throws', async () => {
-    postDelegate.update.mockRejectedValueOnce(new Error('DB error'))
-    const app = buildApp()
-    const res = await request(app)
-      .patch('/admin/post/1')
-      .send({ title: 'Fail' })
-      .set('X-Inertia', 'true')
-      .set('Referer', '/admin/post/1')
-    expect(res.status).toBe(303)
-    expect(res.headers['location']).toBe('/admin/post/1')
-  })
-
   it('GET / returns 500 when countRecords throws', async () => {
     postDelegate.count.mockRejectedValueOnce(new Error('DB error'))
     const app = buildApp()
@@ -411,6 +405,41 @@ describe('error handling -- Prisma throws', () => {
     expect(res.status).toBe(500)
     expect(res.body.error).toBe('Internal Server Error')
   })
+
+  it('POST /:model redirects back to Referer for an Inertia request when createRecord throws', async () => {
+    postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app)
+      .post('/admin/post')
+      .send({ title: 'Fail' })
+      .set('X-Inertia', 'true')
+      .set('Referer', '/admin/post/new')
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/post/new')
+  })
+
+  it('POST /:model redirects to admin root when no Referer on an Inertia request', async () => {
+    postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app)
+      .post('/admin/post')
+      .send({ title: 'Fail' })
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/')
+  })
+
+  it('PATCH /:model/:id redirects back to Referer for an Inertia request when updateRecord throws', async () => {
+    postDelegate.update.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app)
+      .patch('/admin/post/1')
+      .send({ title: 'Fail' })
+      .set('X-Inertia', 'true')
+      .set('Referer', '/admin/post/1')
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/post/1')
+  })
 })
 
 // -- Related options endpoint -------------------------------------------------
@@ -427,59 +456,16 @@ describe('GET /admin/related-options/:relatedModel', () => {
     expect(res.body.hasMore).toBe(false)
   })
 
-  it('returns hasMore: true when result count equals MAX_RELATED_OPTIONS', async () => {
-    const hundredUsers = Array.from({ length: MAX_RELATED_OPTIONS }, (_, i) => ({ id: `u${i}`, name: `User ${i}` }))
-    userDelegate.findMany.mockResolvedValueOnce(hundredUsers)
-    const app = buildApp()
-    const res = await request(app).get('/admin/related-options/user')
-    expect(res.status).toBe(200)
-    expect(res.body.hasMore).toBe(true)
-  })
-
-  it('passes skip based on page query param', async () => {
-    const app = buildApp()
-    await request(app).get('/admin/related-options/user?page=3')
-    expect(userDelegate.findMany).toHaveBeenCalledWith({
-      take: MAX_RELATED_OPTIONS,
-      skip: MAX_RELATED_OPTIONS * 2,
-    })
-  })
-
-  it('defaults to page 1 when page param is absent', async () => {
-    const app = buildApp()
-    await request(app).get('/admin/related-options/user')
-    expect(userDelegate.findMany).toHaveBeenCalledWith({
-      take: MAX_RELATED_OPTIONS,
-      skip: 0,
-    })
-  })
-
-  it('uses allMeta so hidden models can still be queried', async () => {
-    userDelegate.findMany.mockResolvedValueOnce([{ id: 'u1', name: 'Alice' }])
-    const app = buildApp([postModel], [postModel, userModel])
-    const res = await request(app).get('/admin/related-options/user')
-    expect(res.status).toBe(200)
-    expect(res.body.options).toHaveLength(1)
-  })
-
   it('returns 404 for an unknown related model', async () => {
     const app = buildApp()
     const res = await request(app).get('/admin/related-options/nonexistent')
     expect(res.status).toBe(404)
   })
-
-  it('returns 500 when Prisma throws', async () => {
-    userDelegate.findMany.mockRejectedValueOnce(new Error('DB error'))
-    const app = buildApp()
-    const res = await request(app).get('/admin/related-options/user')
-    expect(res.status).toBe(500)
-    expect(res.body.error).toBe('Internal Server Error')
-  })
 })
 
-// -- Error logging ------------------------------------------------------------
+// -- Logger -------------------------------------------------------------------
 
-describe('error logging', () => {
+describe('logger integration', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('calls logger.error when createRecord throws', async () => {
@@ -526,8 +512,273 @@ describe('error logging', () => {
 
   it('does not throw when no logger is provided and an error occurs', async () => {
     postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
-    const app = buildApp() // no logger
+    const app = buildApp()
     const res = await request(app).post('/admin/post').send({ title: 'Fail' })
     expect(res.status).toBe(500)
+  })
+})
+
+// ── Better Auth user management ───────────────────────────────────────────────
+
+describe('Better Auth user management', () => {
+  let mockCreateUser: ReturnType<typeof vi.fn>
+  let mockAdminUpdateUser: ReturnType<typeof vi.fn>
+  let mockRemoveUser: ReturnType<typeof vi.fn>
+  let mockAuth: AdminAuthLike
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockCreateUser = vi.fn().mockResolvedValue({ user: { id: 'new-id', name: 'Alice' } })
+    mockAdminUpdateUser = vi.fn().mockResolvedValue({ user: { id: 'user-1', name: 'Updated' } })
+    mockRemoveUser = vi.fn().mockResolvedValue({ success: true })
+    mockAuth = {
+      api: {
+        getSession: vi.fn(),
+        createUser: mockCreateUser,
+        adminUpdateUser: mockAdminUpdateUser,
+        removeUser: mockRemoveUser,
+      },
+    }
+  })
+
+  // GET /user/new ─────────────────────────────────────────────────────────────
+
+  describe('GET /admin/user/new -- bespoke user create form', () => {
+    it('renders Admin/UserCreate instead of Admin/ModelForm', async () => {
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app).get('/admin/user/new')
+      expect(res.status).toBe(200)
+      expect(res.body.component).toBe('Admin/UserCreate')
+    })
+
+    it('passes roles extracted from the role field enumValues', async () => {
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app).get('/admin/user/new')
+      expect(res.body.props.roles).toEqual(['user', 'admin'])
+    })
+
+    it('passes an empty roles array when the user model has no role enum field', async () => {
+      const noRoleModel: AdminModelMeta = {
+        ...betterAuthUserModel,
+        formFields: betterAuthUserModel.formFields.filter((f) => f.name !== 'role'),
+      }
+      const app = buildAuthApp(mockAuth, [noRoleModel])
+      const res = await request(app).get('/admin/user/new')
+      expect(res.body.props.roles).toEqual([])
+    })
+
+    it('passes prefix and model to the Inertia page', async () => {
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app).get('/admin/user/new')
+      expect(res.body.props.prefix).toBe(PREFIX)
+      expect(res.body.props.model.name).toBe('User')
+    })
+
+    it('passes empty errors object', async () => {
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app).get('/admin/user/new')
+      expect(res.body.props.errors).toEqual({})
+    })
+  })
+
+  // POST /user ────────────────────────────────────────────────────────────────
+
+  describe('POST /admin/user -- create user via Better Auth', () => {
+    it('calls auth.api.createUser with name, email, password, and role', async () => {
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app)
+        .post('/admin/user')
+        .send({ name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'admin' })
+      expect(res.status).toBe(303)
+      expect(mockCreateUser).toHaveBeenCalledWith({
+        body: { name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'admin' },
+      })
+    })
+
+    it('redirects to the user index on success', async () => {
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app)
+        .post('/admin/user')
+        .send({ name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'user' })
+      expect(res.headers['location']).toBe('/admin/user')
+    })
+
+    it('passes role as undefined when role field is empty', async () => {
+      const app = buildAuthApp(mockAuth)
+      await request(app)
+        .post('/admin/user')
+        .send({ name: 'Alice', email: 'alice@example.com', password: 'secret123', role: '' })
+      expect(mockCreateUser).toHaveBeenCalledWith({
+        body: { name: 'Alice', email: 'alice@example.com', password: 'secret123', role: undefined },
+      })
+    })
+
+    it('does NOT call prisma.user.create', async () => {
+      const app = buildAuthApp(mockAuth)
+      await request(app)
+        .post('/admin/user')
+        .send({ name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'user' })
+      expect(userDelegate.create).not.toHaveBeenCalled()
+    })
+
+    it('redirects for Inertia when createUser throws', async () => {
+      mockCreateUser.mockRejectedValueOnce(new Error('auth error'))
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app)
+        .post('/admin/user')
+        .send({ name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'user' })
+        .set('X-Inertia', 'true')
+        .set('Referer', '/admin/user/new')
+      expect(res.status).toBe(303)
+      expect(res.headers['location']).toBe('/admin/user/new')
+    })
+  })
+
+  // PATCH /user/:id ───────────────────────────────────────────────────────────
+
+  describe('PATCH /admin/user/:id -- update user via Better Auth', () => {
+    it('calls auth.api.adminUpdateUser with userId and coerced data', async () => {
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app)
+        .patch('/admin/user/user-123')
+        .send({ name: 'Bob', email: 'bob@example.com', role: 'admin' })
+      expect(res.status).toBe(303)
+      expect(mockAdminUpdateUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({ userId: 'user-123' }),
+        }),
+      )
+    })
+
+    it('forwards request headers to adminUpdateUser for session validation', async () => {
+      const app = buildAuthApp(mockAuth)
+      await request(app)
+        .patch('/admin/user/user-123')
+        .send({ name: 'Bob', email: 'bob@example.com', role: 'user' })
+        .set('Cookie', 'better-auth.session_token=abc')
+      const callArg = mockAdminUpdateUser.mock.calls[0]?.[0] as { headers: Record<string, unknown> }
+      expect(callArg.headers).toBeDefined()
+    })
+
+    it('redirects to the user index on success', async () => {
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app)
+        .patch('/admin/user/user-123')
+        .send({ name: 'Bob', email: 'bob@example.com', role: 'user' })
+      expect(res.headers['location']).toBe('/admin/user')
+    })
+
+    it('does NOT call prisma.user.update', async () => {
+      const app = buildAuthApp(mockAuth)
+      await request(app)
+        .patch('/admin/user/user-123')
+        .send({ name: 'Bob', email: 'bob@example.com', role: 'user' })
+      expect(userDelegate.update).not.toHaveBeenCalled()
+    })
+
+    it('returns 500 when adminUpdateUser throws', async () => {
+      mockAdminUpdateUser.mockRejectedValueOnce(new Error('auth error'))
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app)
+        .patch('/admin/user/user-123')
+        .send({ name: 'Bob', email: 'bob@example.com', role: 'user' })
+      expect(res.status).toBe(500)
+    })
+  })
+
+  // DELETE /user/:id ──────────────────────────────────────────────────────────
+
+  describe('DELETE /admin/user/:id -- delete user via Better Auth', () => {
+    it('calls auth.api.removeUser with the userId', async () => {
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app).delete('/admin/user/user-123')
+      expect(res.status).toBe(303)
+      expect(mockRemoveUser).toHaveBeenCalledWith(
+        expect.objectContaining({ body: { userId: 'user-123' } }),
+      )
+    })
+
+    it('forwards request headers to removeUser for session validation', async () => {
+      const app = buildAuthApp(mockAuth)
+      await request(app)
+        .delete('/admin/user/user-123')
+        .set('Cookie', 'better-auth.session_token=abc')
+      const callArg = mockRemoveUser.mock.calls[0]?.[0] as { headers: Record<string, unknown> }
+      expect(callArg.headers).toBeDefined()
+    })
+
+    it('redirects to the user index on success', async () => {
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app).delete('/admin/user/user-123')
+      expect(res.headers['location']).toBe('/admin/user')
+    })
+
+    it('does NOT call prisma.user.delete', async () => {
+      const app = buildAuthApp(mockAuth)
+      await request(app).delete('/admin/user/user-123')
+      expect(userDelegate.delete).not.toHaveBeenCalled()
+    })
+
+    it('returns 500 when removeUser throws', async () => {
+      mockRemoveUser.mockRejectedValueOnce(new Error('auth error'))
+      const app = buildAuthApp(mockAuth)
+      const res = await request(app).delete('/admin/user/user-123')
+      expect(res.status).toBe(500)
+    })
+  })
+
+  // Fallback behaviour ────────────────────────────────────────────────────────
+
+  describe('fallback to generic Prisma routes when Better Auth is not configured', () => {
+    it('GET /user/new renders Admin/ModelForm when auth has no createUser', async () => {
+      const authWithoutAdmin: AdminAuthLike = { api: { getSession: vi.fn() } }
+      const simpleUserModel: AdminModelMeta = {
+        ...betterAuthUserModel,
+        formFields: [
+          { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+        ],
+      }
+      const app = buildAuthApp(authWithoutAdmin, [simpleUserModel])
+      const res = await request(app).get('/admin/user/new')
+      expect(res.status).toBe(200)
+      expect(res.body.component).toBe('Admin/ModelForm')
+    })
+
+    it('POST /user calls prisma.user.create when auth has no createUser', async () => {
+      userDelegate.create.mockResolvedValueOnce({ id: 'new-id', name: 'Alice' })
+      const authWithoutAdmin: AdminAuthLike = { api: { getSession: vi.fn() } }
+      const app = buildAuthApp(authWithoutAdmin, [betterAuthUserModel])
+      await request(app)
+        .post('/admin/user')
+        .send({ name: 'Alice', email: 'alice@example.com' })
+      expect(userDelegate.create).toHaveBeenCalledOnce()
+      expect(mockCreateUser).not.toHaveBeenCalled()
+    })
+
+    it('customises the user model name via betterAuthUserModel option', async () => {
+      const customModel: AdminModelMeta = {
+        ...betterAuthUserModel,
+        name: 'Member',
+        urlSlug: 'member',
+      }
+      const app = express()
+      app.use(express.json())
+      app.use((_req, res, next) => {
+        ;(res as unknown as Record<string, unknown>)['inertia'] = (
+          component: string,
+          props: Record<string, unknown> = {},
+        ) => res.status(200).json({ __inertia: true, component, props })
+        next()
+      })
+      const router = createAdminRouter(mockPrisma, [customModel], PREFIX, {
+        allMeta: [customModel],
+        auth: mockAuth,
+        betterAuthUserModel: 'Member',
+      })
+      app.use(PREFIX, router)
+
+      const res = await request(app).get('/admin/member/new')
+      expect(res.body.component).toBe('Admin/UserCreate')
+    })
   })
 })

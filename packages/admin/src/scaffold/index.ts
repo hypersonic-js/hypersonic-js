@@ -5,10 +5,10 @@ import type { ScaffoldOptions, ScaffoldResult } from '../types.js'
 
 const TEMPLATES_DIR = join(dirname(fileURLToPath(import.meta.url)), '../../templates')
 
-const SCAFFOLD_FILES = ['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx'] as const
+const SCAFFOLD_FILES = ['Dashboard.tsx', 'ModelIndex.tsx', 'ModelForm.tsx', 'UserCreate.tsx'] as const
 
 /**
- * Copies the three generic admin page components into the user's project.
+ * Copies the admin page components into the user's project.
  * These components are schema-driven and stay in sync with Prisma model changes
  * automatically — no regeneration needed after schema updates.
  *

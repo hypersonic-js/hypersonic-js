@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import type { Response, Request, NextFunction, ErrorRequestHandler } from 'express'
-import type { PrismaClientLike, AdminModelMeta, LoggerLike } from '../types.js'
+import type { PrismaClientLike, AdminModelMeta, LoggerLike, AdminAuthLike } from '../types.js'
 import {
   findMany,
   countRecords,
@@ -9,6 +9,7 @@ import {
   updateRecord,
   deleteRecord,
   fetchRelatedOptions,
+  coerceData,
   type RelatedOption,
 } from './query.js'
 import { parsePaginationParams, buildPaginationMeta } from './pagination.js'
@@ -28,6 +29,29 @@ type InertiaResponse = Response & {
 interface RelatedOptionsBundle {
   options: RelatedOption[]
   hasMore: boolean
+}
+
+/** Optional configuration for createAdminRouter. */
+export interface AdminRouterOptions {
+  /**
+   * Full unfiltered model metadata — used when fetching FK dropdown options so
+   * hidden models (e.g. User when showAuthModels is false) can still be queried.
+   * Defaults to `models`.
+   */
+  allMeta?: AdminModelMeta[]
+  /** Optional structured logger. Pass `app.logger` from createApp(). */
+  logger?: LoggerLike
+  /**
+   * Better Auth instance. When `auth.api.createUser` is present the router
+   * routes User model mutations through the Better Auth admin API instead of
+   * calling Prisma directly.
+   */
+  auth?: AdminAuthLike
+  /**
+   * Name of the Better Auth user model in your Prisma schema.
+   * Defaults to `'User'`.
+   */
+  betterAuthUserModel?: string
 }
 
 /**
@@ -63,21 +87,17 @@ async function buildRelatedOptions(
  * Builds an Express Router containing all admin CRUD routes.
  * The router should be mounted at the admin prefix via app.use(prefix, authMiddleware, router).
  *
- * @param prisma    Prisma client instance.
- * @param models    Filtered model list (nav-visible models only).
- * @param prefix    Route prefix the router is mounted at.
- * @param allMeta   Full unfiltered model metadata — used when fetching FK
- *                  dropdown options so hidden models (e.g. User) can still be
- *                  queried even when not shown in the nav. Defaults to models.
- * @param logger    Optional structured logger. When provided, all errors caught
- *                  by the admin error handler are logged with request context
- *                  before the response is sent. Pass `app.logger` from createApp().
+ * @param prisma   Prisma client instance.
+ * @param models   Filtered model list (nav-visible models only).
+ * @param prefix   Route prefix the router is mounted at.
+ * @param options  Optional configuration — see AdminRouterOptions.
  *
  * Routes (all relative to mount prefix):
  *   GET  /                              -> Admin/Dashboard
  *   GET  /related-options/:relatedModel -> JSON { options, hasMore } for FK load-more
  *   GET  /:model                        -> Admin/ModelIndex  (paginated list)
  *   GET  /:model/new                    -> Admin/ModelForm   (create form)
+ *                                          Admin/UserCreate  (when Better Auth user model)
  *   GET  /:model/:id                    -> Admin/ModelForm   (edit form)
  *   POST /:model                        -> create record, redirect to list
  *   PATCH /:model/:id                   -> update record, redirect to list
@@ -87,15 +107,24 @@ export function createAdminRouter(
   prisma: PrismaClientLike,
   models: AdminModelMeta[],
   prefix: string,
-  allMeta: AdminModelMeta[] = models,
-  logger?: LoggerLike,
+  options: AdminRouterOptions = {},
 ): Router {
+  const { allMeta = models, logger, auth, betterAuthUserModel = 'User' } = options
+
   const router = Router()
 
   const modelMap = new Map<string, AdminModelMeta>(models.map((m) => [m.urlSlug, m]))
   const allMetaMap = new Map<string, AdminModelMeta>(allMeta.map((m) => [m.urlSlug, m]))
 
   const navModels: NavModel[] = models.map((m) => ({ name: m.name, urlSlug: m.urlSlug }))
+
+  // Detect if Better Auth user management is available.
+  // When auth.api.createUser exists the named user model's create / update /
+  // delete routes are handled by the Better Auth admin API instead of Prisma.
+  const betterAuthMeta: AdminModelMeta | undefined =
+    auth?.api?.createUser !== undefined
+      ? models.find((m) => m.name === betterAuthUserModel)
+      : undefined
 
   // GET / -- Dashboard
   router.get('/', async (_req, res: InertiaResponse, next: NextFunction) => {
@@ -124,14 +153,95 @@ export function createAdminRouter(
       const page = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1
       const skip = (page - 1) * MAX_RELATED_OPTIONS
 
-      const options = await fetchRelatedOptions(prisma, meta, skip)
-      const hasMore = options.length === MAX_RELATED_OPTIONS
+      const options_ = await fetchRelatedOptions(prisma, meta, skip)
+      const hasMore = options_.length === MAX_RELATED_OPTIONS
 
-      res.json({ options, hasMore })
+      res.json({ options: options_, hasMore })
     } catch (err) {
       next(err)
     }
   })
+
+  // ── Better Auth user model routes ─────────────────────────────────────────
+  // Registered BEFORE the generic /:model/* routes so they take precedence.
+  // Only active when auth.api.createUser is present and the user model is
+  // visible in the nav. GET /:model (index) and GET /:model/:id (edit) are
+  // intentionally NOT overridden — listing and editing continue via Prisma.
+
+  if (betterAuthMeta !== undefined) {
+    const userSlug = betterAuthMeta.urlSlug
+    const userRoles = betterAuthMeta.formFields
+      .find((f) => f.name === 'role')
+      ?.enumValues ?? []
+
+    // GET /:userSlug/new -- bespoke user create form
+    router.get(`/${userSlug}/new`, async (_req: Request, res: InertiaResponse, next: NextFunction) => {
+      try {
+        res.inertia!('Admin/UserCreate', {
+          model: betterAuthMeta,
+          roles: userRoles,
+          errors: {},
+          models: navModels,
+          prefix,
+        })
+      } catch (err) {
+        next(err)
+      }
+    })
+
+    // POST /:userSlug -- create user via Better Auth admin API
+    router.post(`/${userSlug}`, async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const body = req.body as Record<string, string>
+        await auth!.api.createUser!({
+          body: {
+            name: body['name'] ?? '',
+            email: body['email'] ?? '',
+            password: body['password'] ?? '',
+            role: body['role'] !== '' ? body['role'] : undefined,
+          },
+        })
+        res.redirect(303, `${prefix}/${userSlug}`)
+      } catch (err) {
+        next(err)
+      }
+    })
+
+    // PATCH /:userSlug/:id -- update user via Better Auth admin API
+    // Forwards the incoming request headers so Better Auth can validate the
+    // calling admin's session for permission checks.
+    router.patch(`/${userSlug}/:id`, async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const userId = req.params['id'] as string
+        const coerced = coerceData(req.body as Record<string, unknown>, betterAuthMeta)
+        await auth!.api.adminUpdateUser!({
+          body: { userId, data: coerced },
+          headers: req.headers,
+        })
+        res.redirect(303, `${prefix}/${userSlug}`)
+      } catch (err) {
+        next(err)
+      }
+    })
+
+    // DELETE /:userSlug/:id -- delete user via Better Auth admin API
+    // Better Auth's removeUser also revokes all active sessions for the user,
+    // which plain prisma.user.delete would not do.
+    router.delete(`/${userSlug}/:id`, async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const userId = req.params['id'] as string
+        await auth!.api.removeUser!({
+          body: { userId },
+          headers: req.headers,
+        })
+        res.redirect(303, `${prefix}/${userSlug}`)
+      } catch (err) {
+        next(err)
+      }
+    })
+  }
+
+  // ── Generic CRUD routes ───────────────────────────────────────────────────
 
   // GET /:model -- Model index (paginated list)
   router.get('/:model', async (req: Request, res: InertiaResponse, next: NextFunction) => {
