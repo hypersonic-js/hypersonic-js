@@ -20,7 +20,7 @@ export function mountAdmin(
   const models = options.meta.filter((m) => !hidden.has(m.name))
 
   const authMiddleware = createAdminAuthMiddleware(options.auth)
-  const router = createAdminRouter(prisma, models, prefix, options.meta)
+  const router = createAdminRouter(prisma, models, prefix, options.meta, options.logger)
 
   app.use(prefix, authMiddleware, router)
 }

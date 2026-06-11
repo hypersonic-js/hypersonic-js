@@ -2,24 +2,28 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import express from 'express'
 import request from 'supertest'
 import { createAdminRouter } from '../../src/crud/router.js'
-import type { AdminModelMeta, PrismaClientLike } from '../../src/types.js'
+import type { AdminModelMeta, PrismaClientLike, LoggerLike } from '../../src/types.js'
 import { MAX_RELATED_OPTIONS } from '../../src/constants.js'
 
-// -- Fixtures -----------------------------------------------------------------
+// ── Fixtures ──────────────────────────────────────────────────────────────────
 
-function makeDelegate() {
-  return {
-    findMany: vi.fn().mockResolvedValue([{ id: 1, title: 'Post 1' }]),
-    findUnique: vi.fn().mockResolvedValue({ id: 1, title: 'Post 1' }),
-    create: vi.fn().mockResolvedValue({ id: 2, title: 'New' }),
-    update: vi.fn().mockResolvedValue({ id: 1, title: 'Updated' }),
-    delete: vi.fn().mockResolvedValue({ id: 1 }),
-    count: vi.fn().mockResolvedValue(3),
-  }
+const postDelegate = {
+  findMany: vi.fn().mockResolvedValue([{ id: 1, title: 'Post 1' }]),
+  findUnique: vi.fn().mockResolvedValue({ id: 1, title: 'Post 1' }),
+  create: vi.fn().mockResolvedValue({ id: 2, title: 'New Post' }),
+  update: vi.fn().mockResolvedValue({ id: 1, title: 'Updated' }),
+  delete: vi.fn().mockResolvedValue({ id: 1 }),
+  count: vi.fn().mockResolvedValue(3),
 }
 
-const postDelegate = makeDelegate()
-const userDelegate = makeDelegate()
+const userDelegate = {
+  findMany: vi.fn().mockResolvedValue([]),
+  findUnique: vi.fn().mockResolvedValue(null),
+  create: vi.fn().mockResolvedValue({}),
+  update: vi.fn().mockResolvedValue({}),
+  delete: vi.fn().mockResolvedValue({}),
+  count: vi.fn().mockResolvedValue(0),
+}
 
 const mockPrisma = {
   $disconnect: vi.fn(),
@@ -34,9 +38,13 @@ const userModel: AdminModelMeta = {
   idField: 'id',
   idType: 'string',
   displayField: 'name',
-  fields: [],
+  fields: [
+    { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+  ],
   listFields: [
-    { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
   ],
   formFields: [
     { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
@@ -50,7 +58,10 @@ const postModel: AdminModelMeta = {
   idField: 'id',
   idType: 'number',
   displayField: 'title',
-  fields: [],
+  fields: [
+    { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+  ],
   listFields: [
     { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
     { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
@@ -66,6 +77,7 @@ const PREFIX = '/admin'
 function buildApp(
   models: AdminModelMeta[] = [postModel],
   allMeta: AdminModelMeta[] = [postModel, userModel],
+  logger?: LoggerLike,
 ) {
   const app = express()
   app.use(express.json())
@@ -81,7 +93,7 @@ function buildApp(
     next()
   })
 
-  const router = createAdminRouter(mockPrisma, models, PREFIX, allMeta)
+  const router = createAdminRouter(mockPrisma, models, PREFIX, allMeta, logger)
   app.use(PREFIX, router)
 
   app.use((_req, res) => res.status(404).json({ error: 'Not Found' }))
@@ -310,39 +322,39 @@ describe('error handling -- Prisma throws', () => {
   beforeEach(() => vi.clearAllMocks())
 
   it('POST /:model redirects back to Referer for an Inertia request when createRecord throws', async () => {
-  postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
-  const app = buildApp()
-  const res = await request(app)
-    .post('/admin/post')
-    .send({ title: 'Fail' })
-    .set('X-Inertia', 'true')
-    .set('Referer', '/admin/post/new')
-  expect(res.status).toBe(303)
-  expect(res.headers['location']).toBe('/admin/post/new')
-    })
+    postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app)
+      .post('/admin/post')
+      .send({ title: 'Fail' })
+      .set('X-Inertia', 'true')
+      .set('Referer', '/admin/post/new')
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/post/new')
+  })
 
-    it('POST /:model redirects to admin root when no Referer on an Inertia request', async () => {
-      postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
-      const app = buildApp()
-      const res = await request(app)
-        .post('/admin/post')
-        .send({ title: 'Fail' })
-        .set('X-Inertia', 'true')
-      expect(res.status).toBe(303)
-      expect(res.headers['location']).toBe('/admin/')
-    })
+  it('POST /:model redirects to admin root when no Referer on an Inertia request', async () => {
+    postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app)
+      .post('/admin/post')
+      .send({ title: 'Fail' })
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/')
+  })
 
-    it('PATCH /:model/:id redirects back to Referer for an Inertia request when updateRecord throws', async () => {
-      postDelegate.update.mockRejectedValueOnce(new Error('DB error'))
-      const app = buildApp()
-      const res = await request(app)
-        .patch('/admin/post/1')
-        .send({ title: 'Fail' })
-        .set('X-Inertia', 'true')
-        .set('Referer', '/admin/post/1')
-      expect(res.status).toBe(303)
-      expect(res.headers['location']).toBe('/admin/post/1')
-    })
+  it('PATCH /:model/:id redirects back to Referer for an Inertia request when updateRecord throws', async () => {
+    postDelegate.update.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app)
+      .patch('/admin/post/1')
+      .send({ title: 'Fail' })
+      .set('X-Inertia', 'true')
+      .set('Referer', '/admin/post/1')
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/post/1')
+  })
 
   it('GET / returns 500 when countRecords throws', async () => {
     postDelegate.count.mockRejectedValueOnce(new Error('DB error'))
@@ -462,5 +474,60 @@ describe('GET /admin/related-options/:relatedModel', () => {
     const res = await request(app).get('/admin/related-options/user')
     expect(res.status).toBe(500)
     expect(res.body.error).toBe('Internal Server Error')
+  })
+})
+
+// -- Error logging ------------------------------------------------------------
+
+describe('error logging', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('calls logger.error when createRecord throws', async () => {
+    const logger: LoggerLike = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+    postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp([postModel], [postModel, userModel], logger)
+    await request(app).post('/admin/post').send({ title: 'Fail' })
+    expect(logger.error).toHaveBeenCalledOnce()
+  })
+
+  it('calls logger.error when updateRecord throws', async () => {
+    const logger: LoggerLike = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+    postDelegate.update.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp([postModel], [postModel, userModel], logger)
+    await request(app).patch('/admin/post/1').send({ title: 'Fail' })
+    expect(logger.error).toHaveBeenCalledOnce()
+  })
+
+  it('calls logger.error when deleteRecord throws', async () => {
+    const logger: LoggerLike = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+    postDelegate.delete.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp([postModel], [postModel, userModel], logger)
+    await request(app).delete('/admin/post/1')
+    expect(logger.error).toHaveBeenCalledOnce()
+  })
+
+  it('calls logger.error when a GET handler throws', async () => {
+    const logger: LoggerLike = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+    postDelegate.findMany.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp([postModel], [postModel, userModel], logger)
+    await request(app).get('/admin/post')
+    expect(logger.error).toHaveBeenCalledOnce()
+  })
+
+  it('passes the error object to logger.error', async () => {
+    const logger: LoggerLike = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+    const dbError = new Error('Constraint violation')
+    postDelegate.create.mockRejectedValueOnce(dbError)
+    const app = buildApp([postModel], [postModel, userModel], logger)
+    await request(app).post('/admin/post').send({ title: 'Fail' })
+    const callArg = vi.mocked(logger.error).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(callArg['err']).toBe(dbError)
+  })
+
+  it('does not throw when no logger is provided and an error occurs', async () => {
+    postDelegate.create.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp() // no logger
+    const res = await request(app).post('/admin/post').send({ title: 'Fail' })
+    expect(res.status).toBe(500)
   })
 })

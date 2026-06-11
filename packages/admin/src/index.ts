@@ -8,6 +8,7 @@ export type {
   AdminFieldKind,
   AdminPaginationMeta,
   AdminAuthLike,
+  LoggerLike,
   ScaffoldOptions,
   ScaffoldResult,
 } from './types.js'

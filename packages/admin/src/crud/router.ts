@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import type { Response, Request, NextFunction, ErrorRequestHandler } from 'express'
-import type { PrismaClientLike, AdminModelMeta } from '../types.js'
+import type { PrismaClientLike, AdminModelMeta, LoggerLike } from '../types.js'
 import {
   findMany,
   countRecords,
@@ -69,6 +69,9 @@ async function buildRelatedOptions(
  * @param allMeta   Full unfiltered model metadata — used when fetching FK
  *                  dropdown options so hidden models (e.g. User) can still be
  *                  queried even when not shown in the nav. Defaults to models.
+ * @param logger    Optional structured logger. When provided, all errors caught
+ *                  by the admin error handler are logged with request context
+ *                  before the response is sent. Pass `app.logger` from createApp().
  *
  * Routes (all relative to mount prefix):
  *   GET  /                              -> Admin/Dashboard
@@ -85,6 +88,7 @@ export function createAdminRouter(
   models: AdminModelMeta[],
   prefix: string,
   allMeta: AdminModelMeta[] = models,
+  logger?: LoggerLike,
 ): Router {
   const router = Router()
 
@@ -117,24 +121,56 @@ export function createAdminRouter(
       if (meta === undefined) { res.status(404).json({ error: 'Not Found' }); return }
 
       const rawPage = Number(req.query['page'] ?? 1)
-      const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1
+      const page = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1
       const skip = (page - 1) * MAX_RELATED_OPTIONS
 
       const options = await fetchRelatedOptions(prisma, meta, skip)
-      res.json({ options, hasMore: options.length === MAX_RELATED_OPTIONS })
+      const hasMore = options.length === MAX_RELATED_OPTIONS
+
+      res.json({ options, hasMore })
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // GET /:model -- Model index (paginated list)
+  router.get('/:model', async (req: Request, res: InertiaResponse, next: NextFunction) => {
+    try {
+      const model = modelMap.get(req.params['model'] as string)
+      if (model === undefined) { res.status(404).json({ error: 'Not Found' }); return }
+
+      const pagination = parsePaginationParams(req.query)
+      const { records, total } = await findMany(prisma, model, pagination)
+      const paginationMeta = buildPaginationMeta(pagination.page, pagination.perPage, total)
+
+      res.inertia!('Admin/ModelIndex', {
+        model,
+        records,
+        pagination: paginationMeta,
+        models: navModels,
+        prefix,
+      })
     } catch (err) {
       next(err)
     }
   })
 
   // GET /:model/new -- Create form
-  // Must be registered BEFORE /:model/:id so "new" is not matched as an id.
   router.get('/:model/new', async (req: Request, res: InertiaResponse, next: NextFunction) => {
     try {
       const model = modelMap.get(req.params['model'] as string)
-      if (model === undefined) { next(); return }
+      if (model === undefined) { res.status(404).json({ error: 'Not Found' }); return }
+
       const relatedOptions = await buildRelatedOptions(prisma, model, allMeta)
-      res.inertia!('Admin/ModelForm', { model, record: null, models: navModels, errors: {}, prefix, relatedOptions })
+
+      res.inertia!('Admin/ModelForm', {
+        model,
+        record: null,
+        relatedOptions,
+        errors: {},
+        models: navModels,
+        prefix,
+      })
     } catch (err) {
       next(err)
     }
@@ -144,32 +180,18 @@ export function createAdminRouter(
   router.get('/:model/:id', async (req: Request, res: InertiaResponse, next: NextFunction) => {
     try {
       const model = modelMap.get(req.params['model'] as string)
-      if (model === undefined) { next(); return }
+      if (model === undefined) { res.status(404).json({ error: 'Not Found' }); return }
 
       const record = await findUnique(prisma, model, req.params['id'] as string)
-      if (record === null || record === undefined) { next(); return }
+      if (record === null) { res.status(404).json({ error: 'Not Found' }); return }
 
       const relatedOptions = await buildRelatedOptions(prisma, model, allMeta)
-      res.inertia!('Admin/ModelForm', { model, record, models: navModels, errors: {}, prefix, relatedOptions })
-    } catch (err) {
-      next(err)
-    }
-  })
 
-  // GET /:model -- Paginated list
-  router.get('/:model', async (req: Request, res: InertiaResponse, next: NextFunction) => {
-    try {
-      const model = modelMap.get(req.params['model'] as string)
-      if (model === undefined) { next(); return }
-
-      const pagination = parsePaginationParams(req.query as Record<string, unknown>)
-      const { records, total } = await findMany(prisma, model, pagination)
-      const paginationMeta = buildPaginationMeta(pagination.page, pagination.perPage, total)
-
-      res.inertia!('Admin/ModelIndex', {
+      res.inertia!('Admin/ModelForm', {
         model,
-        records,
-        pagination: paginationMeta,
+        record,
+        relatedOptions,
+        errors: {},
         models: navModels,
         prefix,
       })
@@ -217,16 +239,22 @@ export function createAdminRouter(
     }
   })
 
-  // Error handler -- returns a clean 500 without leaking internals
-  const errorHandler: ErrorRequestHandler = (_err, req, res, _next) => {
-      if (req.headers['x-inertia']) {
-        const referer = req.headers['referer']
-        const redirectUrl =
-          typeof referer === 'string' && referer.length > 0 ? referer : `${prefix}/`
-        res.redirect(303, redirectUrl)
-        return
-      }
-      res.status(500).json({ error: 'Internal Server Error' })
+  // Error handler — logs the error then either redirects back (Inertia) or
+  // returns a clean 500 without leaking internal details.
+  const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
+    logger?.error(
+      { err, method: req.method, url: req.url },
+      'Admin request error',
+    )
+
+    if (req.headers['x-inertia']) {
+      const referer = req.headers['referer']
+      const redirectUrl =
+        typeof referer === 'string' && referer.length > 0 ? referer : `${prefix}/`
+      res.redirect(303, redirectUrl)
+      return
+    }
+    res.status(500).json({ error: 'Internal Server Error' })
   }
 
   router.use(errorHandler)

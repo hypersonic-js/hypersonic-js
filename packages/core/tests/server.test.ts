@@ -17,6 +17,26 @@ vi.mock('../src/inertia/vite.js', () => ({
   })),
 }))
 
+const mockLogger = {
+  level: 'error',
+  error: vi.fn(),
+  warn: vi.fn(),
+  info: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn(),
+}
+
+vi.mock('pino', () => ({
+  default: vi.fn(() => mockLogger),
+}))
+
+// Named export to match `import { pinoHttp } from 'pino-http'` in app.ts
+vi.mock('pino-http', () => ({
+  pinoHttp: vi.fn(() => (_req: unknown, _res: unknown, next: () => void) => next()),
+}))
+
 import { createApp } from '../src/server/app.js'
 import { createLifecycle } from '../src/server/lifecycle.js'
 import { disconnectPrismaClient } from '../src/database/client.js'
@@ -42,10 +62,11 @@ describe('createApp', () => {
   beforeEach(() => vi.clearAllMocks())
   afterEach(async () => { await disconnectPrismaClient() })
 
-  it('returns an object with express, auth, start, and stop', async () => {
+  it('returns an object with express, auth, logger, start, and stop', async () => {
     const app = await createApp({ config, env, prisma: mockPrisma })
     expect(app).toHaveProperty('express')
     expect(app).toHaveProperty('auth')
+    expect(app).toHaveProperty('logger')
     expect(app).toHaveProperty('start')
     expect(app).toHaveProperty('stop')
   })
@@ -58,7 +79,6 @@ describe('createApp', () => {
   it('returns the auth instance created internally', async () => {
     const { betterAuth } = await import('better-auth')
     const app = await createApp({ config, env, prisma: mockPrisma })
-    // The returned auth should be the same object betterAuth() produced
     expect(app.auth).toBe(vi.mocked(betterAuth).mock.results[0]?.value)
   })
 
@@ -104,7 +124,6 @@ describe('createApp', () => {
       res.inertia!('Ping', {})
     })
 
-    // A stale version triggers 409 only if 'v42' was actually forwarded
     const res = await request(app.express)
       .get('/ping')
       .set('X-Inertia', 'true')
@@ -121,7 +140,6 @@ describe('createApp', () => {
       res.inertia!('Ping', {})
     })
 
-    // Version "1" matches the middleware default — no mismatch, no 409
     const res = await request(app.express)
       .get('/ping')
       .set('X-Inertia', 'true')
@@ -129,6 +147,44 @@ describe('createApp', () => {
 
     expect(res.status).toBe(200)
     expect(res.body.version).toBe('1')
+  })
+
+  // ── Logger ────────────────────────────────────────────────────────────────
+
+  describe('logger', () => {
+    it('creates a pino logger with error level when logging is not configured', async () => {
+      const pino = (await import('pino')).default
+      await createApp({ config, env, prisma: mockPrisma })
+      expect(pino).toHaveBeenCalledWith({ level: 'error' })
+    })
+
+    it('creates a pino logger with the configured level', async () => {
+      const pino = (await import('pino')).default
+      const configWithLogging: HypersonicConfig = { ...config, logging: { level: 'debug' } }
+      await createApp({ config: configWithLogging, env, prisma: mockPrisma })
+      expect(pino).toHaveBeenCalledWith({ level: 'debug' })
+    })
+
+    it('returns the pino logger on app.logger', async () => {
+      const app = await createApp({ config, env, prisma: mockPrisma })
+      expect(app.logger).toBe(mockLogger)
+    })
+
+    it('mounts pino-http with the created logger', async () => {
+      const { pinoHttp } = await import('pino-http')
+      await createApp({ config, env, prisma: mockPrisma })
+      expect(pinoHttp).toHaveBeenCalledWith({ logger: mockLogger })
+    })
+
+    it('supports all valid log levels from config', async () => {
+      const pino = (await import('pino')).default
+      const levels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'] as const
+      for (const level of levels) {
+        vi.mocked(pino).mockClear()
+        await createApp({ config: { ...config, logging: { level } }, env, prisma: mockPrisma })
+        expect(pino).toHaveBeenCalledWith({ level })
+      }
+    })
   })
 
   // ── Security headers (helmet) ──────────────────────────────────────────────
@@ -148,11 +204,11 @@ describe('createApp', () => {
       expect(res.headers['x-content-type-options']).toBe('nosniff')
     })
 
-    it('sets Referrer-Policy', async () => {
+    it('sets Referrer-Policy to same-origin', async () => {
       const app = await createApp({ config, env, prisma: mockPrisma })
       app.express.get('/h', (_req, res) => res.json({ ok: true }))
       const res = await request(app.express).get('/h')
-      expect(res.headers['referrer-policy']).toBeDefined()
+      expect(res.headers['referrer-policy']).toBe('same-origin')
     })
 
     it('removes X-Powered-By to avoid fingerprinting the server', async () => {
@@ -213,8 +269,9 @@ describe('lifecycle — via createLifecycle', () => {
       on: vi.fn().mockReturnThis(),
       close: vi.fn((cb: (err?: Error) => void) => cb(closeError)),
     }
+    // listen must call its callback so start() resolves
     const mockApp = {
-      listen: vi.fn((_port: number, _host: string, cb: () => void) => {
+      listen: vi.fn((_port: unknown, _host: unknown, cb: () => void) => {
         setImmediate(cb)
         return mockServer
       }),

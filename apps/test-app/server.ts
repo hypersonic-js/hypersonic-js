@@ -22,6 +22,7 @@ registerRoutes(app.express, prisma as unknown as PrismaRouteClient, app.auth)
 mountAdmin(app.express, prisma, {
   meta: adminMeta,
   auth: app.auth,
+  logger: app.logger,
 })
 
 await app.start()

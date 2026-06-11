@@ -14,4 +14,6 @@ export default defineConfig({
   database: {
     provider: 'postgresql',
   },
+  logging: { level: 'debug' // or 'info', 'warn', 'error', 'fatal', 'silent'
+  },
 })

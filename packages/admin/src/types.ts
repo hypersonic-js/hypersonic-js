@@ -71,6 +71,20 @@ export interface PrismaClientLike {
   $disconnect(): Promise<void>
 }
 
+// ── Logger ───────────────────────────────────────────────────────────────────
+
+/**
+ * Minimal structured-logging interface satisfied by any Pino Logger instance.
+ * Keeping this as a local interface decouples the admin package from a direct
+ * pino dependency while still enabling rich structured log output when the
+ * host application passes `app.logger` from @hypersonic-js/core.
+ */
+export interface LoggerLike {
+  error(obj: unknown, msg?: string): void
+  warn(obj: unknown, msg?: string): void
+  info(obj: unknown, msg?: string): void
+}
+
 // ── Options ──────────────────────────────────────────────────────────────────
 
 export interface AdminOptions {
@@ -84,6 +98,13 @@ export interface AdminOptions {
   showAuthModels?: boolean
   /** Additional model names to hide on top of the built-in hidden list. */
   hiddenModels?: string[]
+  /**
+   * Structured logger for server-side error visibility.
+   * Pass `app.logger` from createApp() to route admin errors through the
+   * same Pino instance used by the rest of the framework.
+   * When omitted, errors are silently handled (no output).
+   */
+  logger?: LoggerLike
 }
 
 export interface ScaffoldOptions {
