@@ -61,7 +61,15 @@ function buildInitialData(
     formFields.map((f) => {
       const value = record?.[f.name]
       if (value instanceof Date) return [f.name, toLocalDateTimeString(value)]
-      return [f.name, value !== null && value !== undefined ? String(value) : '']
+      if (value !== null && value !== undefined) return [f.name, String(value)]
+
+      // New record — use type-aware defaults so coerceData never receives
+      // an empty string for a required typed field.
+      if (f.prismaType === 'Boolean') return [f.name, 'false']
+      if (f.kind === 'enum' && f.enumValues !== undefined && f.enumValues.length > 0) {
+        return [f.name, f.enumValues[0]!]
+      }
+      return [f.name, '']
     }),
   )
 }
