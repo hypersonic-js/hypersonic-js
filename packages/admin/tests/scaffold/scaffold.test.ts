@@ -235,4 +235,40 @@ describe('template content', () => {
     const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
     expect(content).toContain("f.kind === 'enum' && f.isRequired")
   })
+
+  it('ModelIndex FieldMeta interface declares prismaType', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).toContain('prismaType: string')
+  })
+
+  it('ModelIndex displayValue accepts prismaType as second parameter', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).toContain('function displayValue(value: unknown, prismaType: string)')
+  })
+
+  it('ModelIndex displayValue branches on prismaType === DateTime', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).toContain("prismaType === 'DateTime'")
+  })
+
+  it('ModelIndex displayValue formats DateTime values with toLocaleString', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).toContain('toLocaleString()')
+  })
+
+  it('ModelIndex cell passes f.prismaType to displayValue', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).toContain('displayValue(record[f.name], f.prismaType)')
+  })
+
+  it('ModelIndex template does not use a regex for date detection', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).not.toContain('ISO_DATE_RE')
+    expect(content).not.toContain('RegExp')
+  })
+
+  it('ModelIndex displayValue does not call toLocaleDateString (time would be stripped)', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).not.toContain('toLocaleDateString()')
+  })
 })

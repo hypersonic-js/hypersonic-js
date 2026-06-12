@@ -3,6 +3,7 @@ import { Link, router } from '@inertiajs/react'
 interface FieldMeta {
   name: string
   isId: boolean
+  prismaType: string
 }
 
 interface ModelMeta {
@@ -28,9 +29,13 @@ interface Props {
   prefix: string
 }
 
-function displayValue(value: unknown): string {
+function displayValue(value: unknown, prismaType: string): string {
   if (value === null || value === undefined) return '—'
-  if (value instanceof Date) return value.toLocaleDateString()
+  if (prismaType === 'DateTime') {
+    const date = value instanceof Date ? value : new Date(String(value))
+    return date.toLocaleString()
+  }
+  if (value instanceof Date) return value.toLocaleString()
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
 }
@@ -79,10 +84,10 @@ export default function AdminModelIndex({ model, records, pagination, prefix }: 
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {records.map((record) => (
-                    <tr key={String(record[model.idField])} className="hover:bg-gray-50">
+                  <tr key={String(record[model.idField])} className="hover:bg-gray-50">
                     {model.listFields.map((f) => (
                       <td key={f.name} className="px-4 py-3 text-gray-800">
-                        {displayValue(record[f.name])}
+                        {displayValue(record[f.name], f.prismaType)}
                       </td>
                     ))}
                     <td className="px-4 py-3 text-right space-x-2">
