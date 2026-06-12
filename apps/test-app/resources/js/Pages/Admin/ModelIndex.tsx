@@ -78,8 +78,8 @@ export default function AdminModelIndex({ model, records, pagination, prefix }: 
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {records.map((record, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
+                {records.map((record) => (
+                    <tr key={String(record[model.idField])} className="hover:bg-gray-50">
                     {model.listFields.map((f) => (
                       <td key={f.name} className="px-4 py-3 text-gray-800">
                         {displayValue(record[f.name])}

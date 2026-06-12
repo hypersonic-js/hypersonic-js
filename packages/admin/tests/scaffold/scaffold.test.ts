@@ -187,4 +187,10 @@ describe('template content', () => {
     const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
     expect(content).toContain('if (!res.ok) throw new Error(')
   })
+
+  it('ModelIndex template uses stable record id as row key', () => {
+  const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+  expect(content).toContain('key={String(record[model.idField])}')
+  expect(content).not.toContain('key={i}')
+  })
 })
