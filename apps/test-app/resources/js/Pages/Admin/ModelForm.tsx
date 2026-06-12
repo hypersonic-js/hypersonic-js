@@ -118,6 +118,7 @@ export default function AdminModelForm({ model, record, errors, prefix, relatedO
       const slug = relatedModelName.charAt(0).toLowerCase() + relatedModelName.slice(1)
       const nextPage = current.page + 1
       const res = await fetch(`${prefix}/related-options/${slug}?page=${nextPage}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const payload = (await res.json()) as { options: FkOption[]; hasMore: boolean }
       setFkOptions((prev) => ({
         ...prev,

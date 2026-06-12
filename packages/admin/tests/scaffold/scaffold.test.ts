@@ -182,4 +182,9 @@ describe('template content', () => {
     expect(content).toContain('getHours()')
     expect(content).toContain('getMinutes()')
   })
+
+  it('ModelForm template checks res.ok before parsing JSON in loadMore', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('if (!res.ok) throw new Error(')
+  })
 })
