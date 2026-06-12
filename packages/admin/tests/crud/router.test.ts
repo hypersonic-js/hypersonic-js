@@ -781,4 +781,103 @@ describe('Better Auth user management', () => {
       expect(res.body.component).toBe('Admin/UserCreate')
     })
   })
+
+  // Partial Better Auth configuration ────────────────────────────────────────
+  // Covers the case where the auth object has only a subset of the three admin
+  // methods. Each verb must be independently gated so missing methods fall
+  // through to the generic Prisma routes rather than crashing with a TypeError.
+
+  describe('partial Better Auth configuration', () => {
+    // ── createUser present, adminUpdateUser absent ──────────────────────────
+
+    it('PATCH /user/:id falls through to prisma.update when only createUser is present', async () => {
+      const partialAuth: AdminAuthLike = {
+        api: { getSession: vi.fn(), createUser: mockCreateUser },
+      }
+      userDelegate.findUnique.mockResolvedValueOnce({ id: 'user-123', name: 'Bob' })
+      userDelegate.update.mockResolvedValueOnce({ id: 'user-123', name: 'Updated' })
+      const app = buildAuthApp(partialAuth)
+      const res = await request(app)
+        .patch('/admin/user/user-123')
+        .send({ name: 'Updated' })
+      expect(res.status).toBe(303)
+      expect(userDelegate.update).toHaveBeenCalledOnce()
+      expect(mockAdminUpdateUser).not.toHaveBeenCalled()
+    })
+
+    // ── createUser present, removeUser absent ───────────────────────────────
+
+    it('DELETE /user/:id falls through to prisma.delete when only createUser is present', async () => {
+      const partialAuth: AdminAuthLike = {
+        api: { getSession: vi.fn(), createUser: mockCreateUser },
+      }
+      userDelegate.delete.mockResolvedValueOnce({ id: 'user-123' })
+      const app = buildAuthApp(partialAuth)
+      const res = await request(app).delete('/admin/user/user-123')
+      expect(res.status).toBe(303)
+      expect(userDelegate.delete).toHaveBeenCalledOnce()
+      expect(mockRemoveUser).not.toHaveBeenCalled()
+    })
+
+    // ── adminUpdateUser present, createUser absent ──────────────────────────
+
+    it('PATCH /user/:id calls adminUpdateUser when only adminUpdateUser is present', async () => {
+      const partialAuth: AdminAuthLike = {
+        api: { getSession: vi.fn(), adminUpdateUser: mockAdminUpdateUser },
+      }
+      const app = buildAuthApp(partialAuth)
+      const res = await request(app)
+        .patch('/admin/user/user-123')
+        .send({ name: 'Bob', email: 'bob@example.com', role: 'user' })
+      expect(res.status).toBe(303)
+      expect(mockAdminUpdateUser).toHaveBeenCalledOnce()
+      expect(userDelegate.update).not.toHaveBeenCalled()
+    })
+
+    it('GET /user/new renders Admin/ModelForm when only adminUpdateUser is present', async () => {
+      const partialAuth: AdminAuthLike = {
+        api: { getSession: vi.fn(), adminUpdateUser: mockAdminUpdateUser },
+      }
+      const app = buildAuthApp(partialAuth)
+      const res = await request(app).get('/admin/user/new')
+      expect(res.status).toBe(200)
+      expect(res.body.component).toBe('Admin/ModelForm')
+    })
+
+    // ── removeUser present, createUser absent ───────────────────────────────
+
+    it('DELETE /user/:id calls removeUser when only removeUser is present', async () => {
+      const partialAuth: AdminAuthLike = {
+        api: { getSession: vi.fn(), removeUser: mockRemoveUser },
+      }
+      const app = buildAuthApp(partialAuth)
+      const res = await request(app).delete('/admin/user/user-123')
+      expect(res.status).toBe(303)
+      expect(mockRemoveUser).toHaveBeenCalledOnce()
+      expect(userDelegate.delete).not.toHaveBeenCalled()
+    })
+
+    it('GET /user/new renders Admin/ModelForm when only removeUser is present', async () => {
+      const partialAuth: AdminAuthLike = {
+        api: { getSession: vi.fn(), removeUser: mockRemoveUser },
+      }
+      const app = buildAuthApp(partialAuth)
+      const res = await request(app).get('/admin/user/new')
+      expect(res.status).toBe(200)
+      expect(res.body.component).toBe('Admin/ModelForm')
+    })
+
+    // ── no admin methods present ────────────────────────────────────────────
+
+    it('POST /user falls through to prisma.create when no admin methods are present', async () => {
+      const noAdminAuth: AdminAuthLike = { api: { getSession: vi.fn() } }
+      userDelegate.create.mockResolvedValueOnce({ id: 'new-id', name: 'Alice' })
+      const app = buildAuthApp(noAdminAuth)
+      await request(app)
+        .post('/admin/user')
+        .send({ name: 'Alice', email: 'alice@example.com' })
+      expect(userDelegate.create).toHaveBeenCalledOnce()
+      expect(mockCreateUser).not.toHaveBeenCalled()
+    })
+  })
 })

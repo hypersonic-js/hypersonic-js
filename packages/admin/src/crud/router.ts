@@ -42,9 +42,9 @@ export interface AdminRouterOptions {
   /** Optional structured logger. Pass `app.logger` from createApp(). */
   logger?: LoggerLike
   /**
-   * Better Auth instance. When `auth.api.createUser` is present the router
-   * routes User model mutations through the Better Auth admin API instead of
-   * calling Prisma directly.
+   * Better Auth instance. When any of the optional admin methods (`createUser`,
+   * `adminUpdateUser`, `removeUser`) are present, the corresponding verb for the
+   * user model is routed through the Better Auth admin API instead of Prisma.
    */
   auth?: AdminAuthLike
   /**
@@ -96,12 +96,15 @@ async function buildRelatedOptions(
  *   GET  /                              -> Admin/Dashboard
  *   GET  /related-options/:relatedModel -> JSON { options, hasMore } for FK load-more
  *   GET  /:model                        -> Admin/ModelIndex  (paginated list)
- *   GET  /:model/new                    -> Admin/ModelForm   (create form)
- *                                          Admin/UserCreate  (when Better Auth user model)
+ *   GET  /:model/new                    -> Admin/UserCreate  (when auth.api.createUser present)
+ *                                          Admin/ModelForm   (create form, otherwise)
  *   GET  /:model/:id                    -> Admin/ModelForm   (edit form)
- *   POST /:model                        -> create record, redirect to list
- *   PATCH /:model/:id                   -> update record, redirect to list
- *   DELETE /:model/:id                  -> delete record, redirect to list
+ *   POST /:model                        -> Better Auth createUser (when auth.api.createUser present)
+ *                                          create record via Prisma, otherwise
+ *   PATCH /:model/:id                   -> Better Auth adminUpdateUser (when auth.api.adminUpdateUser present)
+ *                                          update record via Prisma, otherwise
+ *   DELETE /:model/:id                  -> Better Auth removeUser (when auth.api.removeUser present)
+ *                                          delete record via Prisma, otherwise
  */
 export function createAdminRouter(
   prisma: PrismaClientLike,
@@ -118,11 +121,15 @@ export function createAdminRouter(
 
   const navModels: NavModel[] = models.map((m) => ({ name: m.name, urlSlug: m.urlSlug }))
 
-  // Detect if Better Auth user management is available.
-  // When auth.api.createUser exists the named user model's create / update /
-  // delete routes are handled by the Better Auth admin API instead of Prisma.
+  // Detect if any Better Auth admin methods are available for the user model.
+  // Each verb is registered independently — POST when createUser is present,
+  // PATCH when adminUpdateUser is present, DELETE when removeUser is present.
+  // This prevents guaranteed 500s when the Better Auth admin plugin only
+  // exposes a subset of the three methods (a valid partial configuration).
   const betterAuthMeta: AdminModelMeta | undefined =
-    auth?.api?.createUser !== undefined
+    auth?.api.createUser !== undefined ||
+    auth?.api.adminUpdateUser !== undefined ||
+    auth?.api.removeUser !== undefined
       ? models.find((m) => m.name === betterAuthUserModel)
       : undefined
 
@@ -164,9 +171,10 @@ export function createAdminRouter(
 
   // ── Better Auth user model routes ─────────────────────────────────────────
   // Registered BEFORE the generic /:model/* routes so they take precedence.
-  // Only active when auth.api.createUser is present and the user model is
-  // visible in the nav. GET /:model (index) and GET /:model/:id (edit) are
-  // intentionally NOT overridden — listing and editing continue via Prisma.
+  // Each verb is only mounted when its corresponding auth method is available,
+  // so partial Better Auth configurations fall through to the generic Prisma
+  // routes for the uncovered verbs. GET /:model (index) and GET /:model/:id
+  // (edit) are intentionally NOT overridden — they always use Prisma.
 
   if (betterAuthMeta !== undefined) {
     const userSlug = betterAuthMeta.urlSlug
@@ -174,71 +182,84 @@ export function createAdminRouter(
       .find((f) => f.name === 'role')
       ?.enumValues ?? []
 
-    // GET /:userSlug/new -- bespoke user create form
-    router.get(`/${userSlug}/new`, async (_req: Request, res: InertiaResponse, next: NextFunction) => {
-      try {
-        res.inertia!('Admin/UserCreate', {
-          model: betterAuthMeta,
-          roles: userRoles,
-          errors: {},
-          models: navModels,
-          prefix,
-        })
-      } catch (err) {
-        next(err)
-      }
-    })
+    // GET + POST: only when createUser is available.
+    if (auth?.api.createUser !== undefined) {
+      const createUser = auth.api.createUser
 
-    // POST /:userSlug -- create user via Better Auth admin API
-    router.post(`/${userSlug}`, async (req: Request, res: Response, next: NextFunction) => {
-      try {
-        const body = req.body as Record<string, string>
-        await auth!.api.createUser!({
-          body: {
-            name: body['name'] ?? '',
-            email: body['email'] ?? '',
-            password: body['password'] ?? '',
-            role: body['role'] !== '' ? body['role'] : undefined,
-          },
-        })
-        res.redirect(303, `${prefix}/${userSlug}`)
-      } catch (err) {
-        next(err)
-      }
-    })
+      // GET /:userSlug/new -- bespoke user create form
+      router.get(`/${userSlug}/new`, async (_req: Request, res: InertiaResponse, next: NextFunction) => {
+        try {
+          res.inertia!('Admin/UserCreate', {
+            model: betterAuthMeta,
+            roles: userRoles,
+            errors: {},
+            models: navModels,
+            prefix,
+          })
+        } catch (err) {
+          next(err)
+        }
+      })
 
-    // PATCH /:userSlug/:id -- update user via Better Auth admin API
+      // POST /:userSlug -- create user via Better Auth admin API
+      router.post(`/${userSlug}`, async (req: Request, res: Response, next: NextFunction) => {
+        try {
+          const body = req.body as Record<string, string>
+          await createUser({
+            body: {
+              name: body['name'] ?? '',
+              email: body['email'] ?? '',
+              password: body['password'] ?? '',
+              role: body['role'] !== '' ? body['role'] : undefined,
+            },
+          })
+          res.redirect(303, `${prefix}/${userSlug}`)
+        } catch (err) {
+          next(err)
+        }
+      })
+    }
+
+    // PATCH /:userSlug/:id -- only when adminUpdateUser is available.
     // Forwards the incoming request headers so Better Auth can validate the
     // calling admin's session for permission checks.
-    router.patch(`/${userSlug}/:id`, async (req: Request, res: Response, next: NextFunction) => {
-      try {
-        const userId = req.params['id'] as string
-        const coerced = coerceData(req.body as Record<string, unknown>, betterAuthMeta)
-        await auth!.api.adminUpdateUser!({
-          body: { userId, data: coerced },
-          headers: req.headers,
-        })
-        res.redirect(303, `${prefix}/${userSlug}`)
-      } catch (err) {
-        next(err)
-      }
-    })
+    if (auth?.api.adminUpdateUser !== undefined) {
+      const adminUpdateUser = auth.api.adminUpdateUser
 
-    // DELETE /:userSlug/:id -- delete user via Better Auth admin API
+      router.patch(`/${userSlug}/:id`, async (req: Request, res: Response, next: NextFunction) => {
+        try {
+          const userId = req.params['id'] as string
+          const coerced = coerceData(req.body as Record<string, unknown>, betterAuthMeta)
+          await adminUpdateUser({
+            body: { userId, data: coerced },
+            headers: req.headers,
+          })
+          res.redirect(303, `${prefix}/${userSlug}`)
+        } catch (err) {
+          next(err)
+        }
+      })
+    }
+
+    // DELETE /:userSlug/:id -- only when removeUser is available.
     // Better Auth's removeUser also revokes all active sessions for the user,
     // which plain prisma.user.delete would not do.
-    router.delete(`/${userSlug}/:id`, async (req: Request, res: Response, next: NextFunction) => {
-      try {
-        const userId = req.params['id'] as string
-        await auth!.api.removeUser!({
-          body: { userId },
-          headers: req.headers,
-        })
-        res.redirect(303, `${prefix}/${userSlug}`)
-      } catch (err) {
-        next(err)
-      }
-    })
+    if (auth?.api.removeUser !== undefined) {
+      const removeUser = auth.api.removeUser
+
+      router.delete(`/${userSlug}/:id`, async (req: Request, res: Response, next: NextFunction) => {
+        try {
+          const userId = req.params['id'] as string
+          await removeUser({
+            body: { userId },
+            headers: req.headers,
+          })
+          res.redirect(303, `${prefix}/${userSlug}`)
+        } catch (err) {
+          next(err)
+        }
+      })
+    }
   }
 
   // ── Generic CRUD routes ───────────────────────────────────────────────────
