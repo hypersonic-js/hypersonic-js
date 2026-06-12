@@ -1,9 +1,9 @@
 # Third-Party Licenses
 
 All dependencies used by Hypersonic.js and their respective licenses.
-650 packages across 13 license types.
+653 packages across 13 license types.
 
-_Generated: 2026-06-11_
+_Generated: 2026-06-12_
 
 ---
 
@@ -64,7 +64,7 @@ THE SOFTWARE.
 - **@eslint/config-helpers@0.6.0** — https://github.com/eslint/rewrite/tree/main/packages/config-helpers#readme
 - **@eslint/core@1.2.1** — Nicholas C. Zakas — https://github.com/eslint/rewrite/tree/main/packages/core#readme
 - **@eslint/object-schema@3.0.5** — Nicholas C. Zakas — https://github.com/eslint/rewrite/tree/main/packages/object-schema#readme
-- **@eslint/plugin-kit@0.7.1** — Nicholas C. Zakas — https://github.com/eslint/rewrite/tree/main/packages/plugin-kit#readme
+- **@eslint/plugin-kit@0.7.2** — Nicholas C. Zakas — https://github.com/eslint/rewrite/tree/main/packages/plugin-kit#readme
 - **@humanfs/core@0.19.2** — Nicholas C. Zakas — https://github.com/humanwhocodes/humanfs#readme
 - **@humanfs/node@0.16.8** — Nicholas C. Zakas — https://github.com/humanwhocodes/humanfs#readme
 - **@humanfs/types@0.15.0** — Nicholas C. Zakas — https://github.com/humanwhocodes/humanfs#readme
@@ -461,7 +461,7 @@ _License text not found in package distribution._
 
 ## ISC
 
-### Packages (25)
+### Packages (26)
 
 - **@prisma/dev@0.24.3** — Igal Klebanov
 - **@ungap/structured-clone@1.3.1** — Andrea Giammarchi — https://github.com/ungap/structured-clone#readme
@@ -481,6 +481,7 @@ _License text not found in package distribution._
 - **pg-int8@1.0.1** — Copyright © 2017, Charmander <~@charmander.me> — https://github.com/charmander/pg-int8#readme
 - **picocolors@1.1.1** — Alexey Raspopov — https://github.com/alexeyraspopov/picocolors#readme
 - **semver@7.8.1** — GitHub Inc. — https://github.com/npm/node-semver#readme
+- **semver@7.8.4** — GitHub Inc. — https://github.com/npm/node-semver#readme
 - **setprototypeof@1.2.0** — Wes Todd — https://github.com/wesleytodd/setprototypeof
 - **siginfo@2.0.0** — Emil Bay — https://github.com/emilbayes/siginfo#readme
 - **signal-exit@3.0.7** — Ben Coe — https://github.com/tapjs/signal-exit#readme
@@ -513,7 +514,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ## MIT
 
-### Packages (554)
+### Packages (556)
 
 - **@algolia/abtesting@1.18.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/abtesting#readme
 - **@algolia/autocomplete-core@1.17.7** — Algolia, Inc. — https://github.com/algolia/autocomplete
@@ -539,23 +540,23 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@babel/runtime@7.29.7** — The Babel Team — https://babel.dev/docs/en/next/babel-runtime
 - **@babel/types@7.29.7** — The Babel Team — https://babel.dev/docs/en/next/babel-types
 - **@bcoe/v8-coverage@1.0.2** — Charles Samborski — https://github.com/bcoe/v8-coverage#readme
-- **@better-auth/core@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
 - **@better-auth/core@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
-- **@better-auth/drizzle-adapter@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/drizzle
+- **@better-auth/core@1.6.17** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
 - **@better-auth/drizzle-adapter@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/drizzle
-- **@better-auth/kysely-adapter@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/kysely
+- **@better-auth/drizzle-adapter@1.6.17** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/drizzle
 - **@better-auth/kysely-adapter@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/kysely
-- **@better-auth/memory-adapter@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
+- **@better-auth/kysely-adapter@1.6.17** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/kysely
 - **@better-auth/memory-adapter@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
-- **@better-auth/mongo-adapter@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/mongodb
+- **@better-auth/memory-adapter@1.6.17** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
 - **@better-auth/mongo-adapter@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/mongodb
-- **@better-auth/prisma-adapter@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/prisma
+- **@better-auth/mongo-adapter@1.6.17** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/mongodb
 - **@better-auth/prisma-adapter@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/prisma
-- **@better-auth/telemetry@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
+- **@better-auth/prisma-adapter@1.6.17** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/prisma
 - **@better-auth/telemetry@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
-- **@better-auth/utils@0.4.0** — Bereket Engida — https://github.com/better-auth/utils#readme
+- **@better-auth/telemetry@1.6.17** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
 - **@better-auth/utils@0.4.1** — Bereket Engida — https://github.com/better-auth/utils#readme
-- **@better-fetch/fetch@1.1.21**
+- **@better-fetch/fetch@1.1.21** — https://github.com/better-auth/better-fetch#readme
+- **@better-fetch/fetch@1.3.0** — https://github.com/better-auth/better-fetch#readme
 - **@changesets/apply-release-plan@7.1.1** — https://github.com/changesets/changesets/tree/main#readme
 - **@changesets/assemble-release-plan@6.0.10** — https://github.com/changesets/changesets/tree/main#readme
 - **@changesets/changelog-git@0.2.1** — https://github.com/changesets/changesets/tree/main#readme
@@ -582,8 +583,8 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@eslint-community/regexpp@4.12.2** — Toru Nagashima — https://github.com/eslint-community/regexpp#readme
 - **@hono/node-server@1.19.11** — Yusuke Wada — https://github.com/honojs/node-server
 - **@iconify/types@2.0.0** — Vjacheslav Trushkin — https://github.com/iconify/iconify
-- **@inertiajs/core@3.3.0** — https://inertiajs.com/
-- **@inertiajs/react@3.3.0** — https://inertiajs.com/
+- **@inertiajs/core@3.4.0** — https://inertiajs.com/
+- **@inertiajs/react@3.4.0** — https://inertiajs.com/
 - **@inquirer/external-editor@1.0.3** — Simon Boudrias — https://github.com/SBoudrias/Inquirer.js/blob/main/packages/external-editor/README.md
 - **@jridgewell/gen-mapping@0.3.13** — Justin Ridgewell — https://github.com/jridgewell/sourcemaps/tree/main/packages/gen-mapping
 - **@jridgewell/remapping@2.3.5** — Justin Ridgewell — https://github.com/jridgewell/sourcemaps/tree/main/packages/remapping
@@ -599,7 +600,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@nodelib/fs.scandir@2.1.5** — https://github.com/nodelib/nodelib/tree/master#readme
 - **@nodelib/fs.stat@2.0.5** — https://github.com/nodelib/nodelib/tree/master#readme
 - **@nodelib/fs.walk@1.2.8** — https://github.com/nodelib/nodelib/tree/master#readme
-- **@oxc-project/types@0.132.0** — Boshen and oxc contributors — https://oxc.rs
+- **@oxc-project/types@0.133.0** — Boshen and oxc contributors — https://oxc.rs
 - **@paralleldrive/cuid2@2.3.1** — Eric Elliott — https://github.com/ericelliott/cuid2#readme
 - **@pinojs/redact@0.4.0** — Matteo Collina — https://github.com/pinojs/redact#readme
 - **@radix-ui/primitive@1.1.3** — Copyright (c) 2022 WorkOS — https://radix-ui.com/primitives
@@ -610,7 +611,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@radix-ui/react-use-controllable-state@1.2.2** — Copyright (c) 2022 WorkOS — https://radix-ui.com/primitives
 - **@radix-ui/react-use-effect-event@0.0.2** — Copyright (c) 2022 WorkOS — https://radix-ui.com/primitives
 - **@radix-ui/react-use-layout-effect@1.1.1** — https://radix-ui.com/primitives
-- **@rolldown/binding-win32-x64-msvc@1.0.2** — https://rolldown.rs/
+- **@rolldown/binding-win32-x64-msvc@1.0.3** — https://rolldown.rs/
 - **@rolldown/pluginutils@1.0.1** — Copyright (c) 2026-present, rolldown/plugins repository contributors — https://github.com/rolldown/plugins/tree/main/packages/pluginutils#readme
 - **@rollup/rollup-win32-x64-gnu@4.60.4** — Lukas Taegert-Atkinson — https://rollupjs.org/
 - **@rollup/rollup-win32-x64-msvc@4.60.4** — Lukas Taegert-Atkinson — https://rollupjs.org/
@@ -628,7 +629,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@tailwindcss/oxide@4.3.0** — https://github.com/tailwindlabs/tailwindcss#readme
 - **@tailwindcss/oxide-win32-x64-msvc@4.3.0** — https://github.com/tailwindlabs/tailwindcss#readme
 - **@tailwindcss/vite@4.3.0** — https://tailwindcss.com
-- **@turbo/windows-64@2.9.15** — Copyright (c) 2026 Vercel, Inc — https://turborepo.dev
+- **@turbo/windows-64@2.9.18** — Copyright (c) 2026 Vercel, Inc — https://turborepo.dev
 - **@types/body-parser@1.19.6** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/body-parser
 - **@types/chai@5.2.3** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/chai
 - **@types/connect@3.4.38** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/connect
@@ -648,11 +649,11 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@types/mdurl@2.0.0** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/mdurl
 - **@types/methods@1.1.4** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/methods
 - **@types/node@12.20.55** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node
-- **@types/node@25.9.1** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node
+- **@types/node@25.9.3** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node
 - **@types/pg@8.20.0** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/pg
 - **@types/qs@6.15.1** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/qs
 - **@types/range-parser@1.2.7** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/range-parser
-- **@types/react@19.2.15** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react
+- **@types/react@19.2.17** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react
 - **@types/react-dom@19.2.3** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/react-dom
 - **@types/send@1.2.1** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/send
 - **@types/serve-static@2.2.0** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/serve-static
@@ -660,26 +661,26 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@types/supertest@7.2.0** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/supertest
 - **@types/unist@3.0.3** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/unist
 - **@types/web-bluetooth@0.0.21** — https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/web-bluetooth
-- **@typescript-eslint/eslint-plugin@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/eslint-plugin
-- **@typescript-eslint/parser@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/parser
-- **@typescript-eslint/project-service@8.60.0** — Copyright (c) 2025 typescript-eslint and other contributors — https://typescript-eslint.io
-- **@typescript-eslint/scope-manager@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/scope-manager
-- **@typescript-eslint/tsconfig-utils@8.60.0** — Copyright (c) 2025 typescript-eslint and other contributors — https://typescript-eslint.io
-- **@typescript-eslint/type-utils@8.60.0** — Copyright (c) 2021 typescript-eslint and other contributors — https://typescript-eslint.io
-- **@typescript-eslint/types@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io
-- **@typescript-eslint/typescript-estree@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/typescript-estree
-- **@typescript-eslint/utils@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/utils
-- **@typescript-eslint/visitor-keys@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io
+- **@typescript-eslint/eslint-plugin@8.61.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/eslint-plugin
+- **@typescript-eslint/parser@8.61.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/parser
+- **@typescript-eslint/project-service@8.61.0** — Copyright (c) 2025 typescript-eslint and other contributors — https://typescript-eslint.io
+- **@typescript-eslint/scope-manager@8.61.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/scope-manager
+- **@typescript-eslint/tsconfig-utils@8.61.0** — Copyright (c) 2025 typescript-eslint and other contributors — https://typescript-eslint.io
+- **@typescript-eslint/type-utils@8.61.0** — Copyright (c) 2021 typescript-eslint and other contributors — https://typescript-eslint.io
+- **@typescript-eslint/types@8.61.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io
+- **@typescript-eslint/typescript-estree@8.61.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/typescript-estree
+- **@typescript-eslint/utils@8.61.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/utils
+- **@typescript-eslint/visitor-keys@8.61.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io
 - **@vitejs/plugin-react@6.0.2** — Evan You — https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#readme
 - **@vitejs/plugin-vue@5.2.4** — Evan You — https://github.com/vitejs/vite-plugin-vue/tree/main/packages/plugin-vue#readme
-- **@vitest/coverage-v8@4.1.7** — Anthony Fu — https://vitest.dev/guide/coverage
-- **@vitest/expect@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/api/expect
-- **@vitest/mocker@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://github.com/vitest-dev/vitest/tree/main/packages/mocker
-- **@vitest/pretty-format@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://github.com/vitest-dev/vitest/tree/main/packages/pretty-format
-- **@vitest/runner@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/api/advanced/runner
-- **@vitest/snapshot@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/guide/snapshot
-- **@vitest/spy@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/api/mock
-- **@vitest/utils@4.1.7** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://github.com/vitest-dev/vitest/tree/main/packages/utils
+- **@vitest/coverage-v8@4.1.8** — Anthony Fu — https://vitest.dev/guide/coverage
+- **@vitest/expect@4.1.8** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/api/expect
+- **@vitest/mocker@4.1.8** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://github.com/vitest-dev/vitest/tree/main/packages/mocker
+- **@vitest/pretty-format@4.1.8** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://github.com/vitest-dev/vitest/tree/main/packages/pretty-format
+- **@vitest/runner@4.1.8** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/api/advanced/runner
+- **@vitest/snapshot@4.1.8** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/guide/snapshot
+- **@vitest/spy@4.1.8** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://vitest.dev/api/mock
+- **@vitest/utils@4.1.8** — Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors — https://github.com/vitest-dev/vitest/tree/main/packages/utils
 - **@vue/compiler-core@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/compiler-core#readme
 - **@vue/compiler-dom@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/compiler-dom#readme
 - **@vue/compiler-sfc@3.5.35** — Evan You — https://github.com/vuejs/core/tree/main/packages/compiler-sfc#readme
@@ -708,15 +709,16 @@ PERFORMANCE OF THIS SOFTWARE.
 - **array-union@2.1.0** — Sindre Sorhus — https://github.com/sindresorhus/array-union#readme
 - **asap@2.0.6** — Copyright 2009–2014 Contributors. All rights reserved. — https://github.com/kriskowal/asap#readme
 - **assertion-error@2.0.1** — Jake Luer — https://github.com/chaijs/assertion-error#readme
-- **ast-v8-to-istanbul@1.0.2** — Ari Perkkiö — https://github.com/AriPerkkio/ast-v8-to-istanbul
+- **ast-v8-to-istanbul@1.0.4** — Ari Perkkiö — https://github.com/AriPerkkio/ast-v8-to-istanbul
 - **asynckit@0.4.0** — Alex Indigo — https://github.com/alexindigo/asynckit#readme
 - **atomic-sleep@1.0.0** — David Mark Clements — https://github.com/davidmarkclements/atomic-sleep#readme
 - **aws-ssl-profiles@1.1.2** — https://github.com/wellwelwel — https://github.com/mysqljs/aws-ssl-profiles#readme
 - **balanced-match@4.0.4** — https://github.com/juliangruber/balanced-match#readme
 - **base64-js@1.5.1** — T. Jameson Little — https://github.com/beatgammit/base64-js
-- **better-auth@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://better-auth.com
 - **better-auth@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://better-auth.com
+- **better-auth@1.6.17** — Copyright (c) 2024 - present, Bereket Engida — https://better-auth.com
 - **better-call@1.3.5** — Copyright (c) 2025 Bereket Engida — https://github.com/better-auth/better-call#readme
+- **better-call@1.3.6** — Copyright (c) 2025 Bereket Engida — https://github.com/better-auth/better-call#readme
 - **better-path-resolve@1.0.0** — Zoltan Kochan — https://github.com/zkochan/packages/tree/master/better-path-resolve#readme
 - **better-result@2.9.2** — Dillon Mulroy — https://better-result.dev
 - **better-sqlite3@12.10.0** — Joshua Wise — http://github.com/WiseLibs/better-sqlite3
@@ -784,7 +786,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **esbuild@0.21.5** — Copyright (c) 2020 Evan Wallace — https://github.com/evanw/esbuild#readme
 - **escape-html@1.0.3** — Copyright (c) 2012-2013 TJ Holowaychuk — https://github.com/component/escape-html#readme
 - **escape-string-regexp@4.0.0** — Sindre Sorhus — https://github.com/sindresorhus/escape-string-regexp#readme
-- **eslint@10.4.0** — Nicholas C. Zakas — https://eslint.org
+- **eslint@10.4.1** — Nicholas C. Zakas — https://eslint.org
 - **estree-walker@2.0.2** — Rich Harris — https://github.com/Rich-Harris/estree-walker#readme
 - **estree-walker@3.0.3** — Rich Harris — https://github.com/Rich-Harris/estree-walker#readme
 - **etag@1.8.1** — Copyright (c) 2014-2016 Douglas Christopher Wilson — https://github.com/jshttp/etag#readme
@@ -864,6 +866,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **jsonfile@4.0.0** — JP Richardson — https://github.com/jprichardson/node-jsonfile#readme
 - **keyv@4.5.4** — Jared Wray — https://github.com/jaredwray/keyv
 - **kysely@0.28.17** — Sami Koskimäki — https://kysely.dev
+- **kysely@0.29.2** — Sami Koskimäki — https://kysely.dev
 - **laravel-precognition@2.0.0** — Laravel — https://github.com/laravel/precognition
 - **levn@0.4.1** — George Zahariev — https://github.com/gkz/levn
 - **locate-path@5.0.0** — Sindre Sorhus — https://github.com/sindresorhus/locate-path#readme
@@ -907,7 +910,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **negotiator@1.0.0** — Copyright (c) 2012-2014 Federico Romero — https://github.com/jshttp/negotiator#readme
 - **node-abi@3.92.0** — Lukas Geiger — https://github.com/electron/node-abi#readme
 - **object-inspect@1.13.4** — James Halliday — https://github.com/inspect-js/object-inspect
-- **obug@2.1.1** — Kevin Deng — https://github.com/sxzz/obug#readme
+- **obug@2.1.2** — Kevin Deng — https://github.com/sxzz/obug#readme
 - **ohash@2.0.11** — https://github.com/unjs/ohash#readme
 - **on-exit-leak-free@2.1.2** — Matteo Collina — https://github.com/mcollina/on-exit-or-gc#readme
 - **on-finished@2.4.1** — Copyright (c) 2013 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/on-finished#readme
@@ -969,8 +972,8 @@ PERFORMANCE OF THIS SOFTWARE.
 - **range-parser@1.2.1** — TJ Holowaychuk — https://github.com/jshttp/range-parser#readme
 - **raw-body@3.0.2** — Jonathan Ong — https://github.com/stream-utils/raw-body#readme
 - **rc9@3.0.1** — Copyright (c) 2014, Hugh Kennedy — https://github.com/unjs/rc9#readme
-- **react@19.2.6** — https://react.dev/
-- **react-dom@19.2.6** — https://react.dev/
+- **react@19.2.7** — https://react.dev/
+- **react-dom@19.2.7** — https://react.dev/
 - **read-yaml-file@1.1.0** — Zoltan Kochan — https://github.com/zkochan/packages/tree/master#readme
 - **readable-stream@3.6.2** — https://github.com/nodejs/readable-stream#readme
 - **readdirp@5.0.0** — Thorsten Lorenz — https://github.com/paulmillr/readdirp
@@ -985,7 +988,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **retry@0.12.0** — Tim Koschützki — https://github.com/tim-kos/node-retry
 - **reusify@1.1.0** — Matteo Collina — https://github.com/mcollina/reusify#readme
 - **rfdc@1.4.1** — David Mark Clements — https://github.com/davidmarkclements/rfdc#readme
-- **rolldown@1.0.2** — Copyright (c) 2024-present VoidZero Inc. & Contributors — https://rolldown.rs/
+- **rolldown@1.0.3** — Copyright (c) 2024-present VoidZero Inc. & Contributors — https://rolldown.rs/
 - **rollup@4.60.4** — Rich Harris — https://rollupjs.org/
 - **rou3@0.7.12** — https://github.com/h3js/rou3#readme
 - **router@2.2.0** — Douglas Christopher Wilson — https://github.com/pillarjs/router#readme
@@ -1033,17 +1036,17 @@ PERFORMANCE OF THIS SOFTWARE.
 - **term-size@2.2.1** — Sindre Sorhus — https://github.com/sindresorhus/term-size#readme
 - **thread-stream@4.2.0** — Matteo Collina — https://github.com/mcollina/thread-stream#readme
 - **tinybench@2.9.0** — Copyright (c) 2022 Tinylibs — https://github.com/tinylibs/tinybench#readme
-- **tinyexec@1.2.2** — James Garbutt — https://github.com/tinylibs/tinyexec#readme
-- **tinyglobby@0.2.16** — Superchupu — https://superchupu.dev/tinyglobby
+- **tinyexec@1.2.4** — James Garbutt — https://github.com/tinylibs/tinyexec#readme
+- **tinyglobby@0.2.17** — Superchupu — https://superchupu.dev/tinyglobby
 - **tinyrainbow@3.1.0** — Copyright (c) 2022 Tinylibs — https://github.com/tinylibs/tinyrainbow#readme
 - **to-regex-range@5.0.1** — Jon Schlinkert — https://github.com/micromatch/to-regex-range
 - **toidentifier@1.0.1** — Douglas Christopher Wilson — https://github.com/component/toidentifier#readme
 - **trim-lines@3.0.1** — Titus Wormer — https://github.com/wooorm/trim-lines#readme
 - **ts-api-utils@2.5.0** — JoshuaKGoldberg — https://github.com/JoshuaKGoldberg/ts-api-utils#readme
-- **turbo@2.9.15** — Copyright (c) 2026 Vercel, Inc — https://turborepo.dev
+- **turbo@2.9.18** — Copyright (c) 2026 Vercel, Inc — https://turborepo.dev
 - **type-check@0.4.0** — George Zahariev — https://github.com/gkz/type-check
 - **type-is@2.1.0** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/type-is#readme
-- **typescript-eslint@8.60.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/typescript-eslint
+- **typescript-eslint@8.61.0** — Copyright (c) 2019 typescript-eslint and other contributors — https://typescript-eslint.io/packages/typescript-eslint
 - **undici-types@7.24.6** — https://undici.nodejs.org
 - **unist-util-is@6.0.1** — Titus Wormer — https://github.com/syntax-tree/unist-util-is#readme
 - **unist-util-position@5.0.0** — Titus Wormer — https://github.com/syntax-tree/unist-util-position#readme
@@ -1058,9 +1061,9 @@ PERFORMANCE OF THIS SOFTWARE.
 - **vfile@6.0.3** — Titus Wormer — https://github.com/vfile/vfile#readme
 - **vfile-message@4.0.3** — Titus Wormer — https://github.com/vfile/vfile-message#readme
 - **vite@5.4.21** — Evan You — https://vite.dev
-- **vite@8.0.14** — Evan You — https://vite.dev
+- **vite@8.0.16** — Evan You — https://vite.dev
 - **vitepress@1.6.4** — Evan You — https://vitepress.dev/
-- **vitest@4.1.7** — Anthony Fu — https://vitest.dev
+- **vitest@4.1.8** — Anthony Fu — https://vitest.dev
 - **vue@3.5.35** — Evan You — https://vuejs.org/
 - **why-is-node-running@2.3.0** — Mathias Buus — https://github.com/mafintosh/why-is-node-running
 - **word-wrap@1.2.5** — Jon Schlinkert — https://github.com/jonschlinkert/word-wrap
