@@ -181,6 +181,7 @@ describe('template content', () => {
     expect(content).toContain('getDate()')
     expect(content).toContain('getHours()')
     expect(content).toContain('getMinutes()')
+    expect(content).toContain('getSeconds()')
   })
 
   it('ModelForm template checks res.ok before parsing JSON in loadMore', () => {
@@ -189,8 +190,8 @@ describe('template content', () => {
   })
 
   it('ModelIndex template uses stable record id as row key', () => {
-  const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
-  expect(content).toContain('key={String(record[model.idField])}')
-  expect(content).not.toContain('key={i}')
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).toContain('key={String(record[model.idField])}')
+    expect(content).not.toContain('key={i}')
   })
 })
