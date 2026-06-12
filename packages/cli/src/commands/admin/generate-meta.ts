@@ -41,8 +41,13 @@ export function registerGenerateMeta(adminCmd: Command, deps?: GenerateMetaDeps)
     .option('--schema <path>', 'Path to Prisma schema file', 'prisma/schema.prisma')
     .option('--output <path>', 'Output path for the generated meta file', 'prisma/admin-meta.json')
     .action(async (options: { schema: string; output: string }) => {
-      logger.info(`Reading schema from ${options.schema}…`)
-      await runGenerateMeta(options, deps)
-      logger.success(`Admin meta written to ${options.output}`)
+      try {
+        logger.info(`Reading schema from ${options.schema}…`)
+        await runGenerateMeta(options, deps)
+        logger.success(`Admin meta written to ${options.output}`)
+      } catch (err) {
+        logger.error(err instanceof Error ? err.message : String(err))
+        process.exit(1)
+      }
     })
 }

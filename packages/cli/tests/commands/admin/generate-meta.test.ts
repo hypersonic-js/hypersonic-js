@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { resolve } from 'node:path'
 import { Command } from 'commander'
 import { runGenerateMeta, registerGenerateMeta, type GenerateMetaDeps } from '../../../src/commands/admin/generate-meta.js'
@@ -12,6 +12,7 @@ vi.mock('../../../src/utils/logger.js', () => ({
 }))
 
 import { parseDmmf } from '../../../src/dmmf/parser.js'
+import { logger } from '../../../src/utils/logger.js'
 const mockParseDmmf = vi.mocked(parseDmmf)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -119,5 +120,59 @@ describe('registerGenerateMeta command structure', () => {
     await program.parseAsync(['node', 'hypersonic', 'admin', 'generate-meta', '--schema', 'custom/schema.prisma', '--output', 'custom/meta.json'])
     expect(deps.getDMMF).toHaveBeenCalledTimes(1)
     expect(deps.writeFile).toHaveBeenCalledWith(resolve('custom/meta.json'), expect.any(String))
+  })
+})
+
+// ── action error handling ─────────────────────────────────────────────────────
+
+describe('registerGenerateMeta action error handling', () => {
+  let exitSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    exitSpy = vi.spyOn(process, 'exit').mockImplementation((_code?: number) => {
+      throw new Error(`process.exit(${_code})`)
+    })
+  })
+
+  afterEach(() => {
+    exitSpy.mockRestore()
+  })
+
+  it('calls logger.error with the message when an Error is thrown', async () => {
+    const deps = makeDeps()
+    vi.mocked(deps.readFile).mockImplementation(() => { throw new Error('ENOENT: file not found') })
+    const program = buildAdminCommand(deps)
+    await expect(
+      program.parseAsync(['node', 'hypersonic', 'admin', 'generate-meta']),
+    ).rejects.toThrow('process.exit(1)')
+    expect(logger.error).toHaveBeenCalledWith('ENOENT: file not found')
+  })
+
+  it('calls logger.error with String(err) when a non-Error is thrown', async () => {
+    const deps = makeDeps()
+    vi.mocked(deps.getDMMF).mockRejectedValue('invalid schema string')
+    const program = buildAdminCommand(deps)
+    await expect(
+      program.parseAsync(['node', 'hypersonic', 'admin', 'generate-meta']),
+    ).rejects.toThrow('process.exit(1)')
+    expect(logger.error).toHaveBeenCalledWith('invalid schema string')
+  })
+
+  it('calls process.exit(1) when runGenerateMeta throws', async () => {
+    const deps = makeDeps()
+    vi.mocked(deps.getDMMF).mockRejectedValue(new Error('bad dmmf'))
+    const program = buildAdminCommand(deps)
+    await expect(
+      program.parseAsync(['node', 'hypersonic', 'admin', 'generate-meta']),
+    ).rejects.toThrow('process.exit(1)')
+    expect(exitSpy).toHaveBeenCalledWith(1)
+  })
+
+  it('does not call process.exit on the happy path', async () => {
+    const deps = makeDeps()
+    const program = buildAdminCommand(deps)
+    await program.parseAsync(['node', 'hypersonic', 'admin', 'generate-meta'])
+    expect(exitSpy).not.toHaveBeenCalled()
   })
 })
