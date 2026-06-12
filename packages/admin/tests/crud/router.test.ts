@@ -551,20 +551,13 @@ describe('Better Auth user management', () => {
       expect(res.body.component).toBe('Admin/UserCreate')
     })
 
-    it('passes roles extracted from the role field enumValues', async () => {
+    it('does not include a roles prop — role is driven by model.formFields', async () => {
       const app = buildAuthApp(mockAuth)
       const res = await request(app).get('/admin/user/new')
-      expect(res.body.props.roles).toEqual(['user', 'admin'])
-    })
-
-    it('passes an empty roles array when the user model has no role enum field', async () => {
-      const noRoleModel: AdminModelMeta = {
-        ...betterAuthUserModel,
-        formFields: betterAuthUserModel.formFields.filter((f) => f.name !== 'role'),
-      }
-      const app = buildAuthApp(mockAuth, [noRoleModel])
-      const res = await request(app).get('/admin/user/new')
-      expect(res.body.props.roles).toEqual([])
+      expect(res.body.props['roles']).toBeUndefined()
+      const roleField = (res.body.props.model.formFields as Array<{ name: string }>)
+        .find((f) => f.name === 'role')
+      expect(roleField).toBeDefined()
     })
 
     it('passes prefix and model to the Inertia page', async () => {
@@ -631,6 +624,39 @@ describe('Better Auth user management', () => {
         .set('Referer', '/admin/user/new')
       expect(res.status).toBe(303)
       expect(res.headers['location']).toBe('/admin/user/new')
+    })
+
+    it('forwards custom formFields as body.data', async () => {
+      const modelWithCustomField: AdminModelMeta = {
+        ...betterAuthUserModel,
+        formFields: [
+          ...betterAuthUserModel.formFields,
+          { name: 'department', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+        ],
+      }
+      const app = buildAuthApp(mockAuth, [modelWithCustomField])
+      await request(app)
+        .post('/admin/user')
+        .send({ name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'user', department: 'Engineering' })
+      expect(mockCreateUser).toHaveBeenCalledWith({
+        body: {
+          name: 'Alice',
+          email: 'alice@example.com',
+          password: 'secret123',
+          role: 'user',
+          data: { department: 'Engineering' },
+        },
+      })
+    })
+
+    it('omits data key when no custom formFields are present', async () => {
+      const app = buildAuthApp(mockAuth)
+      await request(app)
+        .post('/admin/user')
+        .send({ name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'user' })
+      expect(mockCreateUser).toHaveBeenCalledWith({
+        body: { name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'user' },
+      })
     })
   })
 

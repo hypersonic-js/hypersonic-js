@@ -55,6 +55,14 @@ export interface AdminRouterOptions {
 }
 
 /**
+ * The three fields that Better Auth's createUser API accepts at the top level
+ * of its body, plus `role` which is forwarded as a named param rather than via
+ * `body.data`. Any formField whose name is NOT in this set is forwarded as a
+ * custom field via `body.data`.
+ */
+const BETTER_AUTH_CORE_FIELDS = new Set(['name', 'email', 'password', 'role'])
+
+/**
  * Fetches the first page of <select> options for every FK field in the model's
  * formFields. Uses allMeta (the full unfiltered metadata) so hidden models (e.g.
  * User when showAuthModels is false) can still be queried for their dropdown values.
@@ -178,20 +186,18 @@ export function createAdminRouter(
 
   if (betterAuthMeta !== undefined) {
     const userSlug = betterAuthMeta.urlSlug
-    const userRoles = betterAuthMeta.formFields
-      .find((f) => f.name === 'role')
-      ?.enumValues ?? []
 
     // GET + POST: only when createUser is available.
     if (auth?.api.createUser !== undefined) {
       const createUser = auth.api.createUser
 
-      // GET /:userSlug/new -- bespoke user create form
+      // GET /:userSlug/new -- bespoke user create form.
+      // The full model (including formFields) is passed so the UI can render
+      // role and any custom fields from metadata rather than hard-coding them.
       router.get(`/${userSlug}/new`, async (_req: Request, res: InertiaResponse, next: NextFunction) => {
         try {
           res.inertia!('Admin/UserCreate', {
             model: betterAuthMeta,
-            roles: userRoles,
             errors: {},
             models: navModels,
             prefix,
@@ -201,16 +207,29 @@ export function createAdminRouter(
         }
       })
 
-      // POST /:userSlug -- create user via Better Auth admin API
+      // POST /:userSlug -- create user via Better Auth admin API.
+      // name, email, password, and role are forwarded as Better Auth top-level
+      // params. Any other formFields are forwarded via body.data so custom
+      // required columns on the User model are correctly persisted.
       router.post(`/${userSlug}`, async (req: Request, res: Response, next: NextFunction) => {
         try {
-          const body = req.body as Record<string, string>
+          const body = req.body as Record<string, unknown>
+          const role = body['role']
+
+          const extraData: Record<string, unknown> = {}
+          for (const f of betterAuthMeta.formFields) {
+            if (!BETTER_AUTH_CORE_FIELDS.has(f.name) && body[f.name] !== undefined) {
+              extraData[f.name] = body[f.name]
+            }
+          }
+
           await createUser({
             body: {
-              name: body['name'] ?? '',
-              email: body['email'] ?? '',
-              password: body['password'] ?? '',
-              role: body['role'] !== '' ? body['role'] : undefined,
+              name: String(body['name'] ?? ''),
+              email: String(body['email'] ?? ''),
+              password: String(body['password'] ?? ''),
+              role: role !== '' && role !== undefined ? String(role) : undefined,
+              ...(Object.keys(extraData).length > 0 ? { data: extraData } : {}),
             },
           })
           res.redirect(303, `${prefix}/${userSlug}`)
