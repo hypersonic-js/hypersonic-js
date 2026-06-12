@@ -26,6 +26,14 @@ export interface AdminFieldMeta {
    * <select> options when rendering the create/edit form.
    */
   relatedModelName?: string
+  /**
+   * For FK scalar fields, the URL slug of the related model as registered in
+   * the admin router (e.g. `'user'` for `userId`, `'userprofile'` for a
+   * `UserProfile` model). Used by ModelForm to construct the correct
+   * `/related-options/:slug` URL for load-more pagination. Always equals the
+   * related model's `urlSlug` — never a client-side derivation.
+   */
+  relatedModelSlug?: string
   isList: boolean
   relationTo?: string
   enumValues?: string[]

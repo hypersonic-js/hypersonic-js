@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useForm, Link } from '@inertiajs/react'
 
 type FieldKind = 'scalar' | 'relation' | 'enum'
@@ -10,6 +10,7 @@ interface FieldMeta {
   isRequired: boolean
   isForeignKey: boolean
   relatedModelName?: string
+  relatedModelSlug?: string
   enumValues?: string[]
 }
 
@@ -67,10 +68,11 @@ function buildInitialData(
       if (value instanceof Date) return [f.name, toLocalDateTimeString(value)]
       if (value !== null && value !== undefined) return [f.name, String(value)]
 
-      // New record — use type-aware defaults so coerceData never receives
-      // an empty string for a required typed field.
-      if (f.prismaType === 'Boolean') return [f.name, 'false']
-      if (f.kind === 'enum' && f.enumValues !== undefined && f.enumValues.length > 0) {
+      // New record — use type-aware defaults only for REQUIRED fields so that
+      // optional columns are left unset rather than silently written with a
+      // synthetic value the user never chose.
+      if (f.prismaType === 'Boolean' && f.isRequired) return [f.name, 'false']
+      if (f.kind === 'enum' && f.isRequired && f.enumValues !== undefined && f.enumValues.length > 0) {
         return [f.name, f.enumValues[0]!]
       }
 
@@ -106,19 +108,27 @@ export default function AdminModelForm({ model, record, errors, prefix, relatedO
     ),
   )
 
-  async function loadMore(fieldName: string, relatedModelName: string): Promise<void> {
-    const current = fkOptions[fieldName]
-    if (current === undefined || current.loading) return
+  // Ref-based guard prevents duplicate in-flight requests for the same field.
+  // A ref is used (not state) so the guard is updated synchronously — two rapid
+  // clicks both read the ref before any setState is committed, ensuring only
+  // the first click proceeds.
+  const inflight = useRef(new Set<string>())
 
+  async function loadMore(fieldName: string, relatedModelSlug: string): Promise<void> {
+    if (inflight.current.has(fieldName)) return
+
+    const current = fkOptions[fieldName]
+    if (current === undefined) return
+
+    inflight.current.add(fieldName)
     setFkOptions((prev) => ({
       ...prev,
       [fieldName]: { ...prev[fieldName]!, loading: true },
     }))
 
     try {
-      const slug = relatedModelName.charAt(0).toLowerCase() + relatedModelName.slice(1)
       const nextPage = current.page + 1
-      const res = await fetch(`${prefix}/related-options/${slug}?page=${nextPage}`)
+      const res = await fetch(`${prefix}/related-options/${relatedModelSlug}?page=${nextPage}`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const payload = (await res.json()) as { options: FkOption[]; hasMore: boolean }
       setFkOptions((prev) => ({
@@ -135,6 +145,8 @@ export default function AdminModelForm({ model, record, errors, prefix, relatedO
         ...prev,
         [fieldName]: { ...prev[fieldName]!, loading: false },
       }))
+    } finally {
+      inflight.current.delete(fieldName)
     }
   }
 
@@ -170,7 +182,7 @@ export default function AdminModelForm({ model, record, errors, prefix, relatedO
           {state.hasMore && (
             <button
               type="button"
-              onClick={() => void loadMore(field.name, field.relatedModelName!)}
+              onClick={() => void loadMore(field.name, field.relatedModelSlug!)}
               disabled={state.loading}
               className="mt-1 text-xs text-blue-600 hover:underline disabled:opacity-50"
             >

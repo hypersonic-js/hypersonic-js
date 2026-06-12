@@ -191,6 +191,7 @@ describe('mapField', () => {
     expect(result.isReadOnly).toBe(false)
     expect(result.isForeignKey).toBe(false)
     expect(result.relatedModelName).toBeUndefined()
+    expect(result.relatedModelSlug).toBeUndefined()
     expect(result.isList).toBe(false)
     expect(result.relationTo).toBeUndefined()
     expect(result.enumValues).toBeUndefined()
@@ -202,12 +203,14 @@ describe('mapField', () => {
     expect(result.isReadOnly).toBe(false)
     expect(result.isForeignKey).toBe(false)
     expect(result.relatedModelName).toBeUndefined()
+    expect(result.relatedModelSlug).toBeUndefined()
   })
   it('FK scalar without fkToModel entry: isReadOnly true, isForeignKey false, no relatedModelName', () => {
     const result = mapField(makeField({ name: 'userId', type: 'String', isReadOnly: true }), NO_ENUMS, EMPTY_FK_MAP)
     expect(result.isReadOnly).toBe(true)
     expect(result.isForeignKey).toBe(false)
     expect(result.relatedModelName).toBeUndefined()
+    expect(result.relatedModelSlug).toBeUndefined()
   })
   it('FK scalar with fkToModel entry: isForeignKey true, relatedModelName set', () => {
     const fkToModel = new Map([['userId', 'User']])
@@ -216,12 +219,42 @@ describe('mapField', () => {
     expect(result.isForeignKey).toBe(true)
     expect(result.relatedModelName).toBe('User')
   })
+  it('FK scalar with fkToSlug entry: relatedModelSlug set correctly', () => {
+    const fkToModel = new Map([['userId', 'User']])
+    const fkToSlug = new Map([['userId', 'user']])
+    const result = mapField(makeField({ name: 'userId', type: 'String', isReadOnly: true }), NO_ENUMS, fkToModel, fkToSlug)
+    expect(result.relatedModelSlug).toBe('user')
+  })
+  it('FK scalar with fkToModel but no fkToSlug entry: relatedModelSlug is undefined', () => {
+    const fkToModel = new Map([['userId', 'User']])
+    const result = mapField(makeField({ name: 'userId', type: 'String', isReadOnly: true }), NO_ENUMS, fkToModel)
+    expect(result.relatedModelSlug).toBeUndefined()
+  })
+  it('non-FK scalar: relatedModelSlug is undefined even when fkToSlug is populated', () => {
+    const fkToSlug = new Map([['userId', 'user']])
+    const result = mapField(makeField({ name: 'title' }), NO_ENUMS, EMPTY_FK_MAP, fkToSlug)
+    expect(result.isForeignKey).toBe(false)
+    expect(result.relatedModelSlug).toBeUndefined()
+  })
+  it('relatedModelSlug for multi-word model is fully lowercased, not camelCase', () => {
+    const fkToModel = new Map([['userProfileId', 'UserProfile']])
+    const fkToSlug = new Map([['userProfileId', 'userprofile']])
+    const result = mapField(
+      makeField({ name: 'userProfileId', type: 'String', isReadOnly: true }),
+      NO_ENUMS,
+      fkToModel,
+      fkToSlug,
+    )
+    expect(result.relatedModelSlug).toBe('userprofile')
+    expect(result.relatedModelSlug).not.toBe('userProfile')
+  })
   it('does NOT set isForeignKey on a relation (object) field even if name is in fkToModel', () => {
     const fkToModel = new Map([['user', 'User']])
     const result = mapField(makeField({ name: 'user', type: 'User', kind: 'object' }), NO_ENUMS, fkToModel)
     expect(result.kind).toBe('relation')
     expect(result.isForeignKey).toBe(false)
     expect(result.relatedModelName).toBeUndefined()
+    expect(result.relatedModelSlug).toBeUndefined()
   })
   it('sets relatedModelName only for FK scalars, not regular scalars', () => {
     const fkToModel = new Map([['userId', 'User']])

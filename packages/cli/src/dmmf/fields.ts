@@ -76,11 +76,16 @@ export function getFormFields(fields: AdminFieldMeta[]): AdminFieldMeta[] {
  * @param fkToModel Map of FK scalar field name → related model name, built by
  *                  parseDmmf from relation fields' relationFromFields.
  *                  e.g. new Map([['userId', 'User'], ['authorId', 'Author']])
+ * @param fkToSlug  Map of FK scalar field name → related model urlSlug, built
+ *                  by parseDmmf. Always use this — never derive the slug
+ *                  client-side from the model name.
+ *                  e.g. new Map([['userId', 'user'], ['userProfileId', 'userprofile']])
  */
 export function mapField(
   field: DmmfField,
   enums: DmmfEnum[],
   fkToModel: ReadonlyMap<string, string> = new Map(),
+  fkToSlug: ReadonlyMap<string, string> = new Map(),
 ): AdminFieldMeta {
   const kind = classifyField(field)
   const enumDef = kind === 'enum' ? enums.find((e) => e.name === field.type) : undefined
@@ -97,6 +102,7 @@ export function mapField(
     isReadOnly: field.isReadOnly || isAutoManagedField(field),
     isForeignKey,
     relatedModelName: isForeignKey ? fkToModel.get(field.name) : undefined,
+    relatedModelSlug: isForeignKey ? fkToSlug.get(field.name) : undefined,
     isList: field.isList,
     relationTo: field.kind === 'object' ? field.type : undefined,
     enumValues: enumDef?.values.map((v) => v.name),

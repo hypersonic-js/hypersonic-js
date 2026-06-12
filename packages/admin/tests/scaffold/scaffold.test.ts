@@ -194,4 +194,45 @@ describe('template content', () => {
     expect(content).toContain('key={String(record[model.idField])}')
     expect(content).not.toContain('key={i}')
   })
+
+  // ── Bug-fix assertions ────────────────────────────────────────────────────
+
+  it('ModelForm template defines relatedModelSlug in FieldMeta interface', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('relatedModelSlug?: string')
+  })
+
+  it('ModelForm template imports useRef alongside useState', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('useRef')
+  })
+
+  it('ModelForm template uses a ref-based inflight guard in loadMore', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('inflight')
+    expect(content).toContain('inflight.current.has(fieldName)')
+    expect(content).toContain('inflight.current.add(fieldName)')
+    expect(content).toContain('inflight.current.delete(fieldName)')
+  })
+
+  it('ModelForm template uses relatedModelSlug in the loadMore fetch URL', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('relatedModelSlug')
+    expect(content).toContain('/related-options/${relatedModelSlug}')
+  })
+
+  it('ModelForm template does not derive the slug from relatedModelName client-side', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).not.toContain("charAt(0).toLowerCase()")
+  })
+
+  it('ModelForm template gates Boolean default on isRequired', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain("f.prismaType === 'Boolean' && f.isRequired")
+  })
+
+  it('ModelForm template gates enum default on isRequired', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain("f.kind === 'enum' && f.isRequired")
+  })
 })

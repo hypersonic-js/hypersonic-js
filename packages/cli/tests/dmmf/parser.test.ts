@@ -42,6 +42,13 @@ const POST_WITH_USER_FK: DmmfDocument = {
           } as DmmfField,
         ],
       },
+      {
+        name: 'User',
+        dbName: null,
+        fields: [
+          { name: 'id', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false },
+        ],
+      },
     ],
     enums: [],
   },
@@ -176,6 +183,19 @@ describe('parseDmmf', () => {
     expect(userId!.relatedModelName).toBe('User')
   })
 
+  it('sets relatedModelSlug on FK scalar', () => {
+    const [model] = parseDmmf(POST_WITH_USER_FK)
+    const userId = model!.fields.find((f) => f.name === 'userId')
+    expect(userId!.relatedModelSlug).toBe('user')
+  })
+
+  it('relatedModelSlug matches the related model urlSlug', () => {
+    const models = parseDmmf(POST_WITH_USER_FK)
+    const userModel = models.find((m) => m.name === 'User')!
+    const userId = models[0]!.fields.find((f) => f.name === 'userId')!
+    expect(userId.relatedModelSlug).toBe(userModel.urlSlug)
+  })
+
   it('FK scalar fields appear in formFields', () => {
     const [model] = parseDmmf(POST_WITH_USER_FK)
     expect(model!.formFields.map((f) => f.name)).toContain('userId')
@@ -190,6 +210,55 @@ describe('parseDmmf', () => {
     const [model] = parseDmmf(POST_WITH_USER_FK)
     const userId = model!.formFields.find((f) => f.name === 'userId')
     expect(userId!.relatedModelName).toBe('User')
+  })
+
+  it('relatedModelSlug is set on FK scalar in formFields', () => {
+    const [model] = parseDmmf(POST_WITH_USER_FK)
+    const userId = model!.formFields.find((f) => f.name === 'userId')
+    expect(userId!.relatedModelSlug).toBe('user')
+  })
+
+  it('relatedModelSlug for a multi-word model is fully lowercased, not camelCase', () => {
+    const dmmf: DmmfDocument = {
+      datamodel: {
+        models: [
+          {
+            name: 'Post',
+            dbName: null,
+            fields: [
+              { name: 'id', type: 'Int', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+              { name: 'userProfileId', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: true, isUpdatedAt: false },
+              {
+                name: 'userProfile', type: 'UserProfile', kind: 'object',
+                isRequired: true, isUnique: false, isId: false, isList: false,
+                hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false,
+                relationName: 'PostToUserProfile', relationFromFields: ['userProfileId'], relationToFields: ['id'],
+              } as DmmfField,
+            ],
+          },
+          {
+            name: 'UserProfile',
+            dbName: null,
+            fields: [
+              { name: 'id', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false },
+            ],
+          },
+        ],
+        enums: [],
+      },
+    }
+    const [postModel] = parseDmmf(dmmf)
+    const fkField = postModel!.fields.find((f) => f.name === 'userProfileId')!
+    expect(fkField.relatedModelSlug).toBe('userprofile')
+    expect(fkField.relatedModelSlug).not.toBe('userProfile')
+  })
+
+  it('non-FK scalars have no relatedModelSlug', () => {
+    const [model] = parseDmmf(POST_WITH_USER_FK)
+    const title = model!.fields.find((f) => f.name === 'title')
+    expect(title!.isForeignKey).toBe(false)
+    expect(title!.relatedModelName).toBeUndefined()
+    expect(title!.relatedModelSlug).toBeUndefined()
   })
 
   it('auto-managed timestamp fields are NOT in formFields', () => {
