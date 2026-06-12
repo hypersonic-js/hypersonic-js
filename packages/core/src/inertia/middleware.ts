@@ -17,6 +17,8 @@ function generateCsrfToken(): string {
 /**
  * Parses the raw Cookie request header into a key→value map.
  * Splits on ';', finds the first '=' in each pair, and URL-decodes the value.
+ * Falls back to the raw value if decoding throws a URIError so that a single
+ * malformed cookie cannot crash the middleware before CSRF validation runs.
  */
 function parseCookieHeader(cookieHeader: string | undefined): Record<string, string> {
   if (!cookieHeader) return {}
@@ -24,7 +26,15 @@ function parseCookieHeader(cookieHeader: string | undefined): Record<string, str
   for (const pair of cookieHeader.split(';')) {
     const eqIdx = pair.indexOf('=')
     if (eqIdx === -1) continue
-    result[pair.slice(0, eqIdx).trim()] = decodeURIComponent(pair.slice(eqIdx + 1).trim())
+    const key = pair.slice(0, eqIdx).trim()
+    const raw = pair.slice(eqIdx + 1).trim()
+    let value: string
+    try {
+      value = decodeURIComponent(raw)
+    } catch {
+      value = raw
+    }
+    result[key] = value
   }
   return result
 }
@@ -92,8 +102,10 @@ export function createInertiaErrorHandler(): (
  *
  * Also installs two CSRF middlewares that apply to every route:
  *
- * - **csrfSetter** — sets a fresh `XSRF-TOKEN` cookie on every response so
- *   the Inertia client always has a valid token to send on its next request.
+ * - **csrfSetter** — sets the `XSRF-TOKEN` cookie only when the incoming
+ *   request does not already carry one. Skipping rotation on subsequent
+ *   requests prevents concurrent-tab races where a fresh token issued for
+ *   Tab B would invalidate an in-flight form submission from Tab A.
  *
  * - **csrfValidator** — on POST/PUT/PATCH/DELETE requests, verifies that the
  *   `X-XSRF-TOKEN` request header matches the `XSRF-TOKEN` request cookie.
@@ -112,15 +124,20 @@ export async function createInertiaMiddleware(
   // Mount Vite dev server or static file serving
   app.use(vite.middleware as RequestHandler)
 
-  // CSRF token setter — sets a fresh XSRF-TOKEN cookie on every response.
+  // CSRF token setter — writes the XSRF-TOKEN cookie only when the request
+  // carries no existing token. This keeps the token stable across multiple
+  // concurrent tabs / in-flight requests for the same session.
   // httpOnly must be false so the Inertia JS client can read it.
-  const csrfSetter: RequestHandler = (_req: Request, res: Response, next: NextFunction): void => {
-    res.cookie(CSRF_COOKIE, generateCsrfToken(), {
-      httpOnly: false,
-      sameSite: 'strict',
-      secure: process.env['NODE_ENV'] === 'production',
-      path: '/',
-    })
+  const csrfSetter: RequestHandler = (req: Request, res: Response, next: NextFunction): void => {
+    const cookies = parseCookieHeader(req.headers.cookie)
+    if (!cookies[CSRF_COOKIE]) {
+      res.cookie(CSRF_COOKIE, generateCsrfToken(), {
+        httpOnly: false,
+        sameSite: 'strict',
+        secure: process.env['NODE_ENV'] === 'production',
+        path: '/',
+      })
+    }
     next()
   }
 

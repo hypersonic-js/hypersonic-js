@@ -42,6 +42,7 @@ async function buildCsrfTestApp() {
 
 /**
  * Extracts the XSRF-TOKEN value from a supertest response's Set-Cookie header.
+ * Returns an empty string when the header is absent (token was not rotated).
  */
 function extractCsrfToken(res: request.Response): string {
   const cookies = (res.headers['set-cookie'] as string[] | undefined) ?? []
@@ -167,22 +168,22 @@ describe('createInertiaMiddleware', () => {
   // ── CSRF protection ─────────────────────────────────────────────────────────
 
   describe('CSRF — XSRF-TOKEN cookie', () => {
-    it('sets the XSRF-TOKEN cookie on GET responses', async () => {
+    it('sets the XSRF-TOKEN cookie on GET responses when none is present', async () => {
       const app = await buildTestApp()
       const res = await request(app).get('/test')
       const cookies = res.headers['set-cookie'] as string[]
       expect(cookies.some((c) => c.startsWith('XSRF-TOKEN='))).toBe(true)
     })
 
-    it('sets the XSRF-TOKEN cookie on POST responses', async () => {
+    it('does not rotate the XSRF-TOKEN cookie when one is already present in the request', async () => {
       const app = await buildCsrfTestApp()
       const token = 'a'.repeat(64)
       const res = await request(app)
         .post('/mutate')
         .set('Cookie', `XSRF-TOKEN=${token}`)
         .set('X-XSRF-TOKEN', token)
-      const cookies = res.headers['set-cookie'] as string[]
-      expect(cookies.some((c) => c.startsWith('XSRF-TOKEN='))).toBe(true)
+      const cookies = (res.headers['set-cookie'] as string[] | undefined) ?? []
+      expect(cookies.some((c) => c.startsWith('XSRF-TOKEN='))).toBe(false)
     })
 
     it('cookie is NOT HttpOnly so the Inertia JS client can read it', async () => {
@@ -216,7 +217,7 @@ describe('createInertiaMiddleware', () => {
       expect(token).toMatch(/^[0-9a-f]{64}$/)
     })
 
-    it('generates a fresh token on each response', async () => {
+    it('generates a unique token for each new session without an existing cookie', async () => {
       const app = await buildTestApp()
       const res1 = await request(app).get('/test')
       const res2 = await request(app).get('/test')
@@ -324,6 +325,36 @@ describe('createInertiaMiddleware', () => {
       // No CSRF token at all — GET must pass through
       const res = await request(app).get('/test')
       expect(res.status).toBe(200)
+    })
+  })
+
+  describe('CSRF — cookie parsing robustness', () => {
+    it('does not throw when a non-CSRF cookie contains malformed percent-encoding', async () => {
+      const app = await buildTestApp()
+      // %ZZ is invalid; without try/catch this would have thrown URIError
+      const res = await request(app)
+        .get('/test')
+        .set('Cookie', 'other=%ZZ')
+      expect(res.status).toBe(200)
+    })
+
+    it('falls back to the raw value when the CSRF cookie has malformed percent-encoding', async () => {
+      const app = await buildCsrfTestApp()
+      // Both cookie and header carry the same malformed raw value — should pass
+      const res = await request(app)
+        .post('/mutate')
+        .set('Cookie', 'XSRF-TOKEN=%ZZ')
+        .set('X-XSRF-TOKEN', '%ZZ')
+      expect(res.status).toBe(200)
+    })
+
+    it('rejects POST with 419 when malformed CSRF cookie does not match the header', async () => {
+      const app = await buildCsrfTestApp()
+      const res = await request(app)
+        .post('/mutate')
+        .set('Cookie', 'XSRF-TOKEN=%ZZ')
+        .set('X-XSRF-TOKEN', 'different')
+      expect(res.status).toBe(419)
     })
   })
 })
