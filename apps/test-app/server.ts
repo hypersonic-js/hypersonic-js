@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { createRequire } from 'node:module'
-import { PrismaClient } from '@prisma/client'
+import type { PrismaClient as PrismaClientType } from '@prisma/client'
 import { createApp, loadConfig, createDatabaseAdapter } from '@hypersonic-js/core'
 import { mountAdmin } from '@hypersonic-js/admin'
 import type { AdminModelMeta } from '@hypersonic-js/admin'
@@ -9,6 +9,7 @@ import type { PrismaRouteClient } from './src/types.ts'
 
 const require = createRequire(import.meta.url)
 const adminMeta = require('./prisma/admin-meta.json') as AdminModelMeta[]
+const { PrismaClient } = require('@prisma/client') as { PrismaClient: typeof PrismaClientType }
 
 const { config, env } = await loadConfig()
 
