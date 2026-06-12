@@ -1,4 +1,4 @@
-import { defineConfig } from '@hypersonic/core'
+import { defineConfig } from '@hypersonic-js/core'
 
 export default defineConfig({
   server: {
@@ -10,5 +10,10 @@ export default defineConfig({
   },
   inertia: {
     ssr: false,
+  },
+  database: {
+    provider: 'postgresql',
+  },
+  logging: { level: 'debug' // or 'info', 'warn', 'error', 'fatal', 'silent'
   },
 })

@@ -8,6 +8,7 @@ const baseConfig: HypersonicConfig = {
   server: { port: 3000, host: 'localhost' },
   auth: { trustedOrigins: ['http://localhost:3000'] },
   inertia: { ssr: true },
+  database: { provider: 'postgresql' },
 }
 
 const baseEnv = {
@@ -137,5 +138,34 @@ describe('loadConfig', () => {
     await expect(loadConfig('/fake', {}, importer)).rejects.toThrowError(
       /Environment validation failed/,
     )
+  })
+})
+
+// ── LoggingConfig / LogLevel ──────────────────────────────────────────────────
+
+describe('HypersonicConfig logging field', () => {
+  it('accepts a config with no logging field', () => {
+    const config: HypersonicConfig = { ...baseConfig }
+    expect(config.logging).toBeUndefined()
+  })
+
+  it('accepts logging: { level: "error" }', () => {
+    const config: HypersonicConfig = { ...baseConfig, logging: { level: 'error' } }
+    expect(config.logging?.level).toBe('error')
+  })
+
+  it('accepts logging: { level: "debug" }', () => {
+    const config: HypersonicConfig = { ...baseConfig, logging: { level: 'debug' } }
+    expect(config.logging?.level).toBe('debug')
+  })
+
+  it('accepts logging: { level: "silent" }', () => {
+    const config: HypersonicConfig = { ...baseConfig, logging: { level: 'silent' } }
+    expect(config.logging?.level).toBe('silent')
+  })
+
+  it('defineConfig round-trips the logging field unchanged', () => {
+    const config: HypersonicConfig = { ...baseConfig, logging: { level: 'warn' } }
+    expect(defineConfig(config).logging?.level).toBe('warn')
   })
 })

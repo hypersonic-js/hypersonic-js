@@ -1,21 +1,26 @@
 import { describe, it, expect } from 'vitest'
 import * as complete from '../src/index.js'
 import * as core from '@hypersonic-js/core'
+import * as admin from '@hypersonic-js/admin'
 
 describe('@hypersonic-js/complete re-exports', () => {
-  it('exports the same set of named exports as @hypersonic/core', () => {
-    const coreKeys = Object.keys(core).sort()
-    const completeKeys = Object.keys(complete).sort()
-    expect(completeKeys).toEqual(coreKeys)
-  })
+  // ── Referential identity ──────────────────────────────────────────────────
+  // Guards that complete is a true pass-through — no wrappers, no copies.
 
-  it('re-exported values are referentially identical to core exports', () => {
+  it('re-exported core values are referentially identical to @hypersonic-js/core', () => {
     for (const key of Object.keys(core) as Array<keyof typeof core>) {
       expect(complete[key as keyof typeof complete]).toBe(core[key])
     }
   })
 
-  // Config
+  it('re-exported admin values are referentially identical to @hypersonic-js/admin', () => {
+    for (const key of Object.keys(admin) as Array<keyof typeof admin>) {
+      expect(complete[key as keyof typeof complete]).toBe(admin[key])
+    }
+  })
+
+  // ── Config ────────────────────────────────────────────────────────────────
+
   it('re-exports defineConfig', () => {
     expect(complete.defineConfig).toBeDefined()
     expect(typeof complete.defineConfig).toBe('function')
@@ -41,13 +46,15 @@ describe('@hypersonic-js/complete re-exports', () => {
     expect(typeof complete.buildEnvSchema).toBe('function')
   })
 
-  // Server
+  // ── Server ────────────────────────────────────────────────────────────────
+
   it('re-exports createApp', () => {
     expect(complete.createApp).toBeDefined()
     expect(typeof complete.createApp).toBe('function')
   })
 
-  // Database
+  // ── Database ──────────────────────────────────────────────────────────────
+
   it('re-exports getPrismaClient', () => {
     expect(complete.getPrismaClient).toBeDefined()
     expect(typeof complete.getPrismaClient).toBe('function')
@@ -63,7 +70,13 @@ describe('@hypersonic-js/complete re-exports', () => {
     expect(typeof complete.disconnectPrismaClient).toBe('function')
   })
 
-  // Auth
+  it('re-exports createDatabaseAdapter', () => {
+    expect(complete.createDatabaseAdapter).toBeDefined()
+    expect(typeof complete.createDatabaseAdapter).toBe('function')
+  })
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+
   it('re-exports createAuth', () => {
     expect(complete.createAuth).toBeDefined()
     expect(typeof complete.createAuth).toBe('function')
@@ -74,7 +87,8 @@ describe('@hypersonic-js/complete re-exports', () => {
     expect(typeof complete.mountAuth).toBe('function')
   })
 
-  // Inertia
+  // ── Inertia ───────────────────────────────────────────────────────────────
+
   it('re-exports createInertiaMiddleware', () => {
     expect(complete.createInertiaMiddleware).toBeDefined()
     expect(typeof complete.createInertiaMiddleware).toBe('function')
@@ -90,7 +104,8 @@ describe('@hypersonic-js/complete re-exports', () => {
     expect(typeof complete.createViteSetup).toBe('function')
   })
 
-  // Utils — error classes
+  // ── Utils — error classes ─────────────────────────────────────────────────
+
   it('re-exports HttpError as a constructor', () => {
     expect(complete.HttpError).toBeDefined()
     const err = new complete.HttpError(500, 'Internal Server Error')
@@ -127,8 +142,30 @@ describe('@hypersonic-js/complete re-exports', () => {
     expect(err.statusCode).toBe(422)
   })
 
-  it('re-exports detectProvider', () => {
-    expect(complete.detectProvider).toBeDefined()
-    expect(typeof complete.detectProvider).toBe('function')
+  // ── Admin ─────────────────────────────────────────────────────────────────
+
+  it('re-exports mountAdmin', () => {
+    expect(complete.mountAdmin).toBeDefined()
+    expect(typeof complete.mountAdmin).toBe('function')
+  })
+
+  it('re-exports scaffoldAdmin', () => {
+    expect(complete.scaffoldAdmin).toBeDefined()
+    expect(typeof complete.scaffoldAdmin).toBe('function')
+  })
+
+  it('re-exports DEFAULT_HIDDEN_MODELS as a non-empty array containing Session', () => {
+    expect(Array.isArray(complete.DEFAULT_HIDDEN_MODELS)).toBe(true)
+    expect(complete.DEFAULT_HIDDEN_MODELS.length).toBeGreaterThan(0)
+    expect(complete.DEFAULT_HIDDEN_MODELS).toContain('Session')
+  })
+
+  it('re-exports DEFAULT_PREFIX as /admin', () => {
+    expect(complete.DEFAULT_PREFIX).toBe('/admin')
+  })
+
+  it('re-exports DEFAULT_PER_PAGE as a positive number', () => {
+    expect(typeof complete.DEFAULT_PER_PAGE).toBe('number')
+    expect(complete.DEFAULT_PER_PAGE).toBeGreaterThan(0)
   })
 })

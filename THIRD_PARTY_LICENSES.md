@@ -1,15 +1,61 @@
 # Third-Party Licenses
 
 All dependencies used by Hypersonic.js and their respective licenses.
-585 packages across 11 license types.
+650 packages across 13 license types.
 
-_Generated: 2026-05-30_
+_Generated: 2026-06-11_
+
+---
+
+## (BSD-2-Clause OR MIT OR Apache-2.0)
+
+### Packages (1)
+
+- **rc@1.2.8** — Dominic Tarr — https://github.com/dominictarr/rc#readme
+
+### License Text
+
+_License text not found in package distribution._
+
+---
+
+## (MIT OR WTFPL)
+
+### Packages (1)
+
+- **expand-template@2.0.3** — LM — https://github.com/ralphtheninja/expand-template
+
+### License Text
+
+```
+The MIT License (MIT)
+
+Copyright (c) 2018 Lars-Magnus Skog
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
 
 ---
 
 ## Apache-2.0
 
-### Packages (37)
+### Packages (42)
 
 - **@electric-sql/pglite@0.4.1** — Electric DB Limited — https://pglite.dev
 - **@electric-sql/pglite-socket@0.1.1** — Electric DB Limited — https://pglite.dev
@@ -25,18 +71,22 @@ _Generated: 2026-05-30_
 - **@humanwhocodes/module-importer@1.0.1** — Nicholas C. Zaks — https://github.com/humanwhocodes/module-importer#readme
 - **@humanwhocodes/retry@0.4.3** — Nicholas C. Zaks — https://github.com/humanwhocodes/retry#readme
 - **@opentelemetry/semantic-conventions@1.41.1** — OpenTelemetry Authors — https://github.com/open-telemetry/opentelemetry-js/tree/main/semantic-conventions
+- **@prisma/adapter-better-sqlite3@7.8.0** — Alberto Schiabel — https://github.com/prisma/prisma#readme
 - **@prisma/adapter-pg@7.8.0** — Tom Houlé — https://github.com/prisma/prisma#readme
 - **@prisma/client@7.8.0** — Tim Suchanek — https://www.prisma.io
 - **@prisma/client-runtime-utils@7.8.0** — https://github.com/prisma/prisma#readme
 - **@prisma/config@7.8.0** — Alberto Schiabel — https://github.com/prisma/prisma#readme
 - **@prisma/debug@7.2.0** — Tim Suchanek — https://www.prisma.io
 - **@prisma/debug@7.8.0** — Tim Suchanek — https://www.prisma.io
+- **@prisma/dmmf@7.8.0** — https://github.com/prisma/prisma#readme
 - **@prisma/driver-adapter-utils@7.8.0** — Alberto Schiabel — https://github.com/prisma/prisma#readme
 - **@prisma/engines@7.8.0** — Tim Suchanek — https://github.com/prisma/prisma#readme
 - **@prisma/engines-version@7.8.0-6.3c6e192761c0362d496ed980de936e2f3cebcd3a** — Tim Suchanek — https://github.com/prisma/engines-wrapper#readme
 - **@prisma/fetch-engine@7.8.0** — Tim Suchanek — https://www.prisma.io
+- **@prisma/get-dmmf@7.8.0** — https://www.prisma.io
 - **@prisma/get-platform@7.2.0** — Tim Suchanek — https://www.prisma.io
 - **@prisma/get-platform@7.8.0** — Tim Suchanek — https://www.prisma.io
+- **@prisma/prisma-schema-wasm@7.8.0-6.3c6e192761c0362d496ed980de936e2f3cebcd3a** — Prisma — https://github.com/prisma/prisma-engines
 - **@prisma/query-plan-executor@7.2.0** — https://github.com/prisma/prisma#readme
 - **@prisma/streams-local@0.1.2** — https://github.com/prisma/streams/tree/main/docs
 - **@prisma/studio-core@0.27.3** — Igal Klebanov
@@ -47,6 +97,7 @@ _Generated: 2026-05-30_
 - **expect-type@1.3.0** — Copyright 2024 Misha Kaletsky — https://github.com/mmkal/expect-type#readme
 - **long@5.3.2** — Daniel Wirtz — https://github.com/dcodeIO/long.js#readme
 - **prisma@7.8.0** — Tim Suchanek — https://www.prisma.io
+- **tunnel-agent@0.6.0** — Mikeal Rogers — https://github.com/mikeal/tunnel-agent#readme
 - **typescript@6.0.3** — Microsoft Corp. — https://www.typescriptlang.org/
 
 ### License Text
@@ -346,11 +397,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ## BSD-3-Clause
 
-### Packages (10)
+### Packages (11)
 
 - **deepmerge-ts@7.1.5** — Rebecca Stevens — https://github.com/RebeccaStevens/deepmerge-ts#readme
 - **esquery@1.7.0** — Joel Feenstra — https://github.com/estools/esquery/
 - **fast-uri@3.1.2** — Vincent Le Goff — https://github.com/fastify/fast-uri
+- **ieee754@1.2.1** — Feross Aboukhadijeh — https://github.com/feross/ieee754#readme
 - **istanbul-lib-coverage@3.2.2** — Krishnan Anantheswaran — https://istanbul.js.org/
 - **istanbul-lib-report@3.0.1** — Krishnan Anantheswaran — https://istanbul.js.org/
 - **istanbul-reports@3.2.0** — Krishnan Anantheswaran — https://istanbul.js.org/
@@ -409,18 +461,21 @@ _License text not found in package distribution._
 
 ## ISC
 
-### Packages (22)
+### Packages (25)
 
 - **@prisma/dev@0.24.3** — Igal Klebanov
 - **@ungap/structured-clone@1.3.1** — Andrea Giammarchi — https://github.com/ungap/structured-clone#readme
+- **chownr@1.1.4** — Isaac Z. Schlueter — https://github.com/isaacs/chownr#readme
 - **dezalgo@1.0.4** — Isaac Z. Schlueter — https://github.com/npm/dezalgo
 - **fastq@1.20.1** — Matteo Collina — https://github.com/mcollina/fastq#readme
 - **flatted@3.4.2** — Andrea Giammarchi — https://github.com/WebReflection/flatted#readme
 - **foreground-child@3.3.1** — Isaac Z. Schlueter — https://github.com/tapjs/foreground-child#readme
+- **get-caller-file@2.0.5** — Stefan Penner — https://github.com/stefanpenner/get-caller-file#readme
 - **glob-parent@5.1.2** — Gulp Team — https://github.com/gulpjs/glob-parent#readme
 - **glob-parent@6.0.2** — Gulp Team — https://github.com/gulpjs/glob-parent#readme
 - **graceful-fs@4.2.11** — Copyright (c) 2011-2022 Isaac Z. Schlueter, Ben Noordhuis, and Contributors — https://github.com/isaacs/node-graceful-fs#readme
 - **inherits@2.0.4** — https://github.com/isaacs/inherits#readme
+- **ini@1.3.8** — Isaac Z. Schlueter — https://github.com/isaacs/ini#readme
 - **isexe@2.0.0** — Isaac Z. Schlueter — https://github.com/isaacs/isexe#readme
 - **once@1.4.0** — Isaac Z. Schlueter — https://github.com/isaacs/once#readme
 - **pg-int8@1.0.1** — Copyright © 2017, Charmander <~@charmander.me> — https://github.com/charmander/pg-int8#readme
@@ -458,7 +513,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ## MIT
 
-### Packages (500)
+### Packages (554)
 
 - **@algolia/abtesting@1.18.1** — Algolia — https://github.com/algolia/algoliasearch-client-javascript/tree/main/packages/abtesting#readme
 - **@algolia/autocomplete-core@1.17.7** — Algolia, Inc. — https://github.com/algolia/autocomplete
@@ -485,13 +540,21 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@babel/types@7.29.7** — The Babel Team — https://babel.dev/docs/en/next/babel-types
 - **@bcoe/v8-coverage@1.0.2** — Charles Samborski — https://github.com/bcoe/v8-coverage#readme
 - **@better-auth/core@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
+- **@better-auth/core@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
 - **@better-auth/drizzle-adapter@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/drizzle
+- **@better-auth/drizzle-adapter@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/drizzle
 - **@better-auth/kysely-adapter@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/kysely
+- **@better-auth/kysely-adapter@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/kysely
 - **@better-auth/memory-adapter@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
+- **@better-auth/memory-adapter@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
 - **@better-auth/mongo-adapter@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/mongodb
+- **@better-auth/mongo-adapter@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/mongodb
 - **@better-auth/prisma-adapter@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/prisma
+- **@better-auth/prisma-adapter@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com/docs/adapters/prisma
 - **@better-auth/telemetry@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
+- **@better-auth/telemetry@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://www.better-auth.com
 - **@better-auth/utils@0.4.0** — Bereket Engida — https://github.com/better-auth/utils#readme
+- **@better-auth/utils@0.4.1** — Bereket Engida — https://github.com/better-auth/utils#readme
 - **@better-fetch/fetch@1.1.21**
 - **@changesets/apply-release-plan@7.1.1** — https://github.com/changesets/changesets/tree/main#readme
 - **@changesets/assemble-release-plan@6.0.10** — https://github.com/changesets/changesets/tree/main#readme
@@ -538,6 +601,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@nodelib/fs.walk@1.2.8** — https://github.com/nodelib/nodelib/tree/master#readme
 - **@oxc-project/types@0.132.0** — Boshen and oxc contributors — https://oxc.rs
 - **@paralleldrive/cuid2@2.3.1** — Eric Elliott — https://github.com/ericelliott/cuid2#readme
+- **@pinojs/redact@0.4.0** — Matteo Collina — https://github.com/pinojs/redact#readme
 - **@radix-ui/primitive@1.1.3** — Copyright (c) 2022 WorkOS — https://radix-ui.com/primitives
 - **@radix-ui/react-compose-refs@1.1.2** — https://radix-ui.com/primitives
 - **@radix-ui/react-primitive@2.1.3** — Copyright (c) 2022 WorkOS — https://radix-ui.com/primitives
@@ -559,6 +623,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **@shikijs/types@2.5.0** — Anthony Fu — https://github.com/shikijs/shiki#readme
 - **@shikijs/vscode-textmate@10.0.2** — Microsoft Corporation — https://github.com/shikijs/vscode-textmate#readme
 - **@standard-schema/spec@1.1.0** — Colin McDonnell — https://standardschema.dev
+- **@streamparser/json@0.0.22** — Juanjo Diaz — https://github.com/juanjoDiaz/jsonparse2#readme
 - **@tailwindcss/node@4.3.0** — https://tailwindcss.com
 - **@tailwindcss/oxide@4.3.0** — https://github.com/tailwindlabs/tailwindcss#readme
 - **@tailwindcss/oxide-win32-x64-msvc@4.3.0** — https://github.com/tailwindlabs/tailwindcss#readme
@@ -645,16 +710,23 @@ PERFORMANCE OF THIS SOFTWARE.
 - **assertion-error@2.0.1** — Jake Luer — https://github.com/chaijs/assertion-error#readme
 - **ast-v8-to-istanbul@1.0.2** — Ari Perkkiö — https://github.com/AriPerkkio/ast-v8-to-istanbul
 - **asynckit@0.4.0** — Alex Indigo — https://github.com/alexindigo/asynckit#readme
+- **atomic-sleep@1.0.0** — David Mark Clements — https://github.com/davidmarkclements/atomic-sleep#readme
 - **aws-ssl-profiles@1.1.2** — https://github.com/wellwelwel — https://github.com/mysqljs/aws-ssl-profiles#readme
 - **balanced-match@4.0.4** — https://github.com/juliangruber/balanced-match#readme
+- **base64-js@1.5.1** — T. Jameson Little — https://github.com/beatgammit/base64-js
 - **better-auth@1.6.11** — Copyright (c) 2024 - present, Bereket Engida — https://better-auth.com
+- **better-auth@1.6.12** — Copyright (c) 2024 - present, Bereket Engida — https://better-auth.com
 - **better-call@1.3.5** — Copyright (c) 2025 Bereket Engida — https://github.com/better-auth/better-call#readme
 - **better-path-resolve@1.0.0** — Zoltan Kochan — https://github.com/zkochan/packages/tree/master/better-path-resolve#readme
 - **better-result@2.9.2** — Dillon Mulroy — https://better-result.dev
+- **better-sqlite3@12.10.0** — Joshua Wise — http://github.com/WiseLibs/better-sqlite3
+- **bindings@1.5.0** — Nathan Rajlich — https://github.com/TooTallNate/node-bindings
 - **birpc@2.9.0** — Anthony Fu — https://github.com/antfu-collective/birpc#readme
+- **bl@4.1.0** — Copyright (c) 2013-2019 bl contributors — https://github.com/rvagg/bl
 - **body-parser@2.2.2** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/expressjs/body-parser#readme
 - **brace-expansion@5.0.6** — https://github.com/juliangruber/brace-expansion#readme
 - **braces@3.0.3** — Jon Schlinkert — https://github.com/micromatch/braces
+- **buffer@5.7.1** — Feross Aboukhadijeh — https://github.com/feross/buffer
 - **bytes@3.1.2** — TJ Holowaychuk — https://github.com/visionmedia/bytes.js#readme
 - **c12@3.3.4** — https://github.com/unjs/c12#readme
 - **call-bind-apply-helpers@1.0.2** — Jordan Harband — https://github.com/ljharb/call-bind-apply-helpers#readme
@@ -668,6 +740,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **chokidar@5.0.0** — Paul Miller — https://github.com/paulmillr/chokidar
 - **combined-stream@1.0.8** — Felix Geisendörfer — https://github.com/felixge/node-combined-stream
 - **comma-separated-tokens@2.0.3** — Titus Wormer — https://github.com/wooorm/comma-separated-tokens#readme
+- **commander@15.0.0** — TJ Holowaychuk — https://github.com/tj/commander.js#readme
 - **component-emitter@1.3.1** — Copyright (c) 2014 Component contributors <dev@component.io> — https://github.com/sindresorhus/component-emitter#readme
 - **confbox@0.2.4** — https://github.com/unjs/confbox#readme
 - **content-disposition@1.1.0** — Douglas Christopher Wilson — https://github.com/jshttp/content-disposition#readme
@@ -681,6 +754,8 @@ PERFORMANCE OF THIS SOFTWARE.
 - **cross-spawn@7.0.6** — André Cruz — https://github.com/moxystudio/node-cross-spawn
 - **csstype@3.2.3** — Fredrik Nicol — https://github.com/frenic/csstype#readme
 - **debug@4.4.3** — Josh Junon — https://github.com/debug-js/debug#readme
+- **decompress-response@6.0.0** — Sindre Sorhus — https://github.com/sindresorhus/decompress-response#readme
+- **deep-extend@0.6.0** — Viacheslav Lotsmanov — https://github.com/unclechu/node-deep-extend
 - **deep-is@0.1.4** — Thorsten Lorenz — https://github.com/thlorenz/deep-is#readme
 - **defu@6.1.7** — https://github.com/unjs/defu#readme
 - **delayed-stream@1.0.0** — Felix Geisendörfer — https://github.com/felixge/node-delayed-stream
@@ -696,6 +771,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **emoji-regex-xs@1.0.0** — Steven Levithan — https://github.com/slevithan/emoji-regex-xs#readme
 - **empathic@2.0.0** — Luke Edwards — https://github.com/lukeed/empathic#readme
 - **encodeurl@2.0.0** — Copyright (c) 2016 Douglas Christopher Wilson — https://github.com/pillarjs/encodeurl#readme
+- **end-of-stream@1.4.5** — Mathias Buus — https://github.com/mafintosh/end-of-stream
 - **enhanced-resolve@5.22.0** — Tobias Koppers @sokra — http://github.com/webpack/enhanced-resolve
 - **enquirer@2.4.1** — Jon Schlinkert — https://github.com/enquirer/enquirer
 - **env-paths@3.0.0** — Sindre Sorhus — https://github.com/sindresorhus/env-paths#readme
@@ -723,6 +799,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **fast-safe-stringify@2.1.1** — David Mark Clements — https://github.com/davidmarkclements/fast-safe-stringify#readme
 - **fdir@6.5.0** — thecodrr — https://github.com/thecodrr/fdir#readme
 - **file-entry-cache@8.0.0** — Jared Wray — https://github.com/jaredwray/file-entry-cache#readme
+- **file-uri-to-path@1.0.0** — Nathan Rajlich — https://github.com/TooTallNate/file-uri-to-path
 - **fill-range@7.1.1** — Jon Schlinkert — https://github.com/jonschlinkert/fill-range
 - **finalhandler@2.1.1** — Douglas Christopher Wilson — https://github.com/pillarjs/finalhandler#readme
 - **find-up@4.1.0** — Sindre Sorhus — https://github.com/sindresorhus/find-up#readme
@@ -733,6 +810,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **formidable@3.5.4** — Copyright (c) 2011-present Felix Geisendörfer, and contributors. — https://github.com/node-formidable/formidable
 - **forwarded@0.2.0** — Copyright (c) 2014-2017 Douglas Christopher Wilson — https://github.com/jshttp/forwarded#readme
 - **fresh@2.0.0** — TJ Holowaychuk — https://github.com/jshttp/fresh#readme
+- **fs-constants@1.0.0** — Mathias Buus — https://github.com/mafintosh/fs-constants
 - **fs-extra@7.0.1** — JP Richardson — https://github.com/jprichardson/node-fs-extra
 - **fs-extra@8.1.0** — JP Richardson — https://github.com/jprichardson/node-fs-extra
 - **function-bind@1.1.2** — Raynos — https://github.com/Raynos/function-bind
@@ -741,6 +819,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **get-port-please@3.2.0** — https://github.com/unjs/get-port-please#readme
 - **get-proto@1.0.1** — Jordan Harband — https://github.com/ljharb/get-proto#readme
 - **giget@3.2.0** — Copyright (c) 2017-2023 npm, Inc., Isaac Z. Schlueter, and Contributors — https://github.com/unjs/giget#readme
+- **github-from-package@0.0.0** — James Halliday — https://github.com/substack/github-from-package
 - **globals@17.6.0** — Sindre Sorhus — https://github.com/sindresorhus/globals#readme
 - **globby@11.1.0** — Sindre Sorhus — https://github.com/sindresorhus/globby#readme
 - **gopd@1.2.0** — Jordan Harband — https://github.com/ljharb/gopd#readme
@@ -752,6 +831,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **hasown@2.0.3** — Jordan Harband — https://github.com/inspect-js/hasOwn#readme
 - **hast-util-to-html@9.0.5** — Titus Wormer — https://github.com/syntax-tree/hast-util-to-html#readme
 - **hast-util-whitespace@3.0.0** — Titus Wormer — https://github.com/syntax-tree/hast-util-whitespace#readme
+- **helmet@8.2.0** — Adam Baldwin — https://helmet.js.org/
 - **hono@4.12.23** — Yusuke Wada — https://hono.dev
 - **hookable@5.5.3** — https://github.com/unjs/hookable#readme
 - **html-escaper@2.0.2** — Andrea Giammarchi — https://github.com/WebReflection/html-escaper
@@ -811,19 +891,25 @@ PERFORMANCE OF THIS SOFTWARE.
 - **mime-db@1.54.0** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/mime-db#readme
 - **mime-types@2.1.35** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/mime-types#readme
 - **mime-types@3.0.2** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/mime-types#readme
+- **mimic-response@3.1.0** — Sindre Sorhus — https://github.com/sindresorhus/mimic-response#readme
+- **minimist@1.2.8** — James Halliday — https://github.com/minimistjs/minimist
 - **minisearch@7.2.0** — Luca Ongaro — https://lucaong.github.io/minisearch/
 - **mitt@3.0.1** — Copyright (c) 2021 Jason Miller — https://github.com/developit/mitt
+- **mkdirp-classic@0.5.3** — Mathias Buus — https://github.com/mafintosh/mkdirp-classic
 - **mri@1.2.0** — Luke Edwards — https://github.com/lukeed/mri#readme
 - **ms@2.1.3** — Copyright (c) 2020 Vercel, Inc. — https://github.com/vercel/ms#readme
 - **mysql2@3.15.3** — Andrey Sidorov — https://sidorares.github.io/node-mysql2/docs
 - **named-placeholders@1.1.6** — Andrey Sidorov — https://github.com/mysqljs/named-placeholders#readme
 - **nanoid@3.3.12** — Andrey Sitnik — https://github.com/ai/nanoid#readme
 - **nanostores@1.3.0** — Andrey Sitnik — https://github.com/nanostores/nanostores#readme
+- **napi-build-utils@2.0.0** — Jim Schlight — https://github.com/inspiredware/napi-build-utils#readme
 - **natural-compare@1.4.0** — Lauri Rooden — https://github.com/litejs/natural-compare-lite#readme
 - **negotiator@1.0.0** — Copyright (c) 2012-2014 Federico Romero — https://github.com/jshttp/negotiator#readme
+- **node-abi@3.92.0** — Lukas Geiger — https://github.com/electron/node-abi#readme
 - **object-inspect@1.13.4** — James Halliday — https://github.com/inspect-js/object-inspect
 - **obug@2.1.1** — Kevin Deng — https://github.com/sxzz/obug#readme
 - **ohash@2.0.11** — https://github.com/unjs/ohash#readme
+- **on-exit-leak-free@2.1.2** — Matteo Collina — https://github.com/mcollina/on-exit-or-gc#readme
 - **on-finished@2.4.1** — Copyright (c) 2013 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/on-finished#readme
 - **oniguruma-to-es@3.1.1** — Steven Levithan — https://github.com/slevithan/oniguruma-to-es#readme
 - **optionator@0.9.4** — George Zahariev — https://github.com/gkz/optionator
@@ -854,7 +940,12 @@ PERFORMANCE OF THIS SOFTWARE.
 - **picomatch@2.3.2** — Jon Schlinkert — https://github.com/micromatch/picomatch
 - **picomatch@4.0.4** — Jon Schlinkert — https://github.com/micromatch/picomatch
 - **pify@4.0.1** — Sindre Sorhus — https://github.com/sindresorhus/pify#readme
+- **pino@10.3.1** — Matteo Collina — https://getpino.io
+- **pino-abstract-transport@3.0.0** — Matteo Collina — https://github.com/pinojs/pino-abstract-transport#readme
+- **pino-http@11.0.0** — David Mark Clements — https://github.com/pinojs/pino-http#readme
+- **pino-std-serializers@7.1.0** — James Sumners — https://github.com/pinojs/pino-std-serializers#readme
 - **pkg-types@2.3.1** — https://github.com/unjs/pkg-types#readme
+- **pluralize@8.0.0** — Blake Embrey — https://github.com/blakeembrey/pluralize#readme
 - **postcss@8.5.15** — Andrey Sitnik — https://postcss.org/
 - **postgres-array@2.0.0** — Ben Drucker — https://github.com/bendrucker/postgres-array#readme
 - **postgres-array@3.0.4** — Ben Drucker — https://github.com/bendrucker/postgres-array#readme
@@ -862,22 +953,29 @@ PERFORMANCE OF THIS SOFTWARE.
 - **postgres-date@1.0.7** — Ben Drucker — https://github.com/bendrucker/postgres-date#readme
 - **postgres-interval@1.2.0** — Ben Drucker — https://github.com/bendrucker/postgres-interval#readme
 - **preact@10.29.2** — Copyright (c) 2015-present Jason Miller — https://preactjs.com
+- **prebuild-install@7.1.3** — Mathias Buus — https://github.com/prebuild/prebuild-install
 - **prelude-ls@1.2.1** — George Zahariev — http://preludels.com
 - **prettier@2.8.8** — James Long — https://prettier.io
+- **process-warning@5.0.0** — Tomas Della Vedova — https://github.com/fastify/fastify-warning#readme
 - **proper-lockfile@4.1.2** — André Cruz — https://github.com/moxystudio/node-proper-lockfile
 - **property-information@7.1.0** — Titus Wormer — https://github.com/wooorm/property-information#readme
 - **proxy-addr@2.0.7** — Douglas Christopher Wilson — https://github.com/jshttp/proxy-addr#readme
+- **pump@3.0.4** — Mathias Buus Madsen — https://github.com/mafintosh/pump#readme
 - **punycode@2.3.1** — Mathias Bynens — https://mths.be/punycode
 - **pure-rand@6.1.0** — Nicolas DUBIEN — https://github.com/dubzzz/pure-rand#readme
 - **quansync@0.2.11** — Anthony Fu — https://github.com/quansync-dev/quansync#readme
 - **queue-microtask@1.2.3** — Feross Aboukhadijeh — https://github.com/feross/queue-microtask
+- **quick-format-unescaped@4.0.4** — David Mark Clements — https://github.com/davidmarkclements/quick-format#readme
 - **range-parser@1.2.1** — TJ Holowaychuk — https://github.com/jshttp/range-parser#readme
 - **raw-body@3.0.2** — Jonathan Ong — https://github.com/stream-utils/raw-body#readme
 - **rc9@3.0.1** — Copyright (c) 2014, Hugh Kennedy — https://github.com/unjs/rc9#readme
 - **react@19.2.6** — https://react.dev/
 - **react-dom@19.2.6** — https://react.dev/
 - **read-yaml-file@1.1.0** — Zoltan Kochan — https://github.com/zkochan/packages/tree/master#readme
+- **readable-stream@3.6.2** — https://github.com/nodejs/readable-stream#readme
 - **readdirp@5.0.0** — Thorsten Lorenz — https://github.com/paulmillr/readdirp
+- **real-require@0.2.0** — Paolo Insogna — https://github.com/pinojs/real-require
+- **real-require@1.0.0** — Paolo Insogna — https://github.com/pinojs/real-require
 - **regex@6.1.0** — Steven Levithan — https://github.com/slevithan/regex#readme
 - **regex-recursion@6.0.2** — Steven Levithan — https://github.com/slevithan/regex-recursion#readme
 - **regex-utilities@2.3.0** — Steven Levithan — https://github.com/slevithan/regex-utilities#readme
@@ -892,6 +990,8 @@ PERFORMANCE OF THIS SOFTWARE.
 - **rou3@0.7.12** — https://github.com/h3js/rou3#readme
 - **router@2.2.0** — Douglas Christopher Wilson — https://github.com/pillarjs/router#readme
 - **run-parallel@1.2.0** — Feross Aboukhadijeh — https://github.com/feross/run-parallel
+- **safe-buffer@5.2.1** — Feross Aboukhadijeh — https://github.com/feross/safe-buffer
+- **safe-stable-stringify@2.5.0** — Ruben Bridgewater — https://github.com/BridgeAR/safe-stable-stringify#readme
 - **safer-buffer@2.1.2** — Nikita Skovoroda — https://github.com/ChALkeR/safer-buffer#readme
 - **scheduler@0.27.0** — https://react.dev/
 - **search-insights@2.17.3** — Algolia — https://github.com/algolia/search-insights.js#readme
@@ -906,16 +1006,21 @@ PERFORMANCE OF THIS SOFTWARE.
 - **side-channel-list@1.0.1** — Jordan Harband — https://github.com/ljharb/side-channel-list#readme
 - **side-channel-map@1.0.1** — Jordan Harband — https://github.com/ljharb/side-channel-map#readme
 - **side-channel-weakmap@1.0.2** — Jordan Harband — https://github.com/ljharb/side-channel-weakmap#readme
+- **simple-concat@1.0.1** — Feross Aboukhadijeh — https://github.com/feross/simple-concat
+- **simple-get@4.0.1** — Feross Aboukhadijeh — https://github.com/feross/simple-get
 - **slash@3.0.0** — Sindre Sorhus — https://github.com/sindresorhus/slash#readme
+- **sonic-boom@4.2.1** — Matteo Collina — https://github.com/pinojs/sonic-boom#readme
 - **space-separated-tokens@2.0.2** — Titus Wormer — https://github.com/wooorm/space-separated-tokens#readme
 - **sqlstring@2.3.3** — Copyright (c) 2012 Felix Geisendörfer (felix@debuggable.com) and contributors — https://github.com/mysqljs/sqlstring#readme
 - **stackback@0.0.2** — Roman Shtylman — https://github.com/shtylman/node-stackback#readme
 - **statuses@2.0.2** — Copyright (c) 2014 Jonathan Ong <me@jongleberry.com> — https://github.com/jshttp/statuses#readme
 - **std-env@3.10.0** — https://github.com/unjs/std-env#readme
 - **std-env@4.1.0** — https://github.com/unjs/std-env#readme
+- **string_decoder@1.3.0** — https://github.com/nodejs/string_decoder
 - **stringify-entities@4.0.4** — Titus Wormer — https://github.com/wooorm/stringify-entities#readme
 - **strip-ansi@6.0.1** — Sindre Sorhus — https://github.com/chalk/strip-ansi#readme
 - **strip-bom@3.0.0** — Sindre Sorhus — https://github.com/sindresorhus/strip-bom#readme
+- **strip-json-comments@2.0.1** — Sindre Sorhus — https://github.com/sindresorhus/strip-json-comments#readme
 - **superagent@10.3.0** — TJ Holowaychuk — https://github.com/ladjs/superagent
 - **superjson@2.2.6** — Simon Knott — https://github.com/blitz-js/superjson#readme
 - **supertest@7.2.2** — TJ Holowaychuk — https://github.com/ladjs/supertest#readme
@@ -923,7 +1028,10 @@ PERFORMANCE OF THIS SOFTWARE.
 - **tabbable@6.4.0** — David Clark — https://github.com/focus-trap/tabbable#readme
 - **tailwindcss@4.3.0** — https://tailwindcss.com
 - **tapable@2.3.3** — Tobias Koppers @sokra — https://github.com/webpack/tapable
+- **tar-fs@2.1.4** — Mathias Buus — https://github.com/mafintosh/tar-fs
+- **tar-stream@2.2.0** — Mathias Buus — https://github.com/mafintosh/tar-stream
 - **term-size@2.2.1** — Sindre Sorhus — https://github.com/sindresorhus/term-size#readme
+- **thread-stream@4.2.0** — Matteo Collina — https://github.com/mcollina/thread-stream#readme
 - **tinybench@2.9.0** — Copyright (c) 2022 Tinylibs — https://github.com/tinylibs/tinybench#readme
 - **tinyexec@1.2.2** — James Garbutt — https://github.com/tinylibs/tinyexec#readme
 - **tinyglobby@0.2.16** — Superchupu — https://superchupu.dev/tinyglobby
@@ -944,6 +1052,7 @@ PERFORMANCE OF THIS SOFTWARE.
 - **unist-util-visit-parents@6.0.2** — Titus Wormer — https://github.com/syntax-tree/unist-util-visit-parents#readme
 - **universalify@0.1.2** — Ryan Zimmerman — https://github.com/RyanZim/universalify#readme
 - **unpipe@1.0.0** — Douglas Christopher Wilson — https://github.com/stream-utils/unpipe#readme
+- **util-deprecate@1.0.2** — Nathan Rajlich — https://github.com/TooTallNate/util-deprecate
 - **valibot@1.2.0** — Fabian Hiller — https://valibot.dev
 - **vary@1.1.2** — Douglas Christopher Wilson — https://github.com/jshttp/vary#readme
 - **vfile@6.0.3** — Titus Wormer — https://github.com/vfile/vfile#readme

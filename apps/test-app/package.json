@@ -16,11 +16,13 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@hypersonic-js/admin": "workspace:*",
     "@hypersonic-js/core": "workspace:*",
     "better-auth": "1.6.11",
     "@prisma/adapter-pg": "^7.8.0"
   },
   "devDependencies": {
+    "@hypersonic-js/cli": "workspace:*",
     "@inertiajs/react": "3.3.0",
     "@prisma/client": "7.8.0",
     "@tailwindcss/vite": "4.3.0",

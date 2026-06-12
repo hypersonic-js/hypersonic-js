@@ -1,0 +1,60 @@
+{
+  "name": "@hypersonic-js/admin",
+  "version": "0.1.2",
+  "description": "Auto-generated admin dashboard for Hypersonic.js — full CRUD from your Prisma schema",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hypersonic-js/hypersonic-js"
+  },
+  "author": "Joaquim Dalton-Pereira",
+  "license": "MIT",
+  "homepage": "https://hypersonic-js.com",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": "^24.0.0"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/copy-templates.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist coverage"
+  },
+  "peerDependencies": {
+    "@prisma/client": "7.8.0",
+    "better-auth": "1.6.12"
+  },
+  "peerDependenciesMeta": {
+    "@prisma/client": {
+      "optional": false
+    },
+    "better-auth": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "25.9.1",
+    "@types/supertest": "7.2.0",
+    "@vitest/coverage-v8": "4.1.7",
+    "express": "5.2.1",
+    "supertest": "7.2.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.7"
+  }
+}

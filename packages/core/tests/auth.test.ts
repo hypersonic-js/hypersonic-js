@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock better-auth and its adapter before importing our modules
 vi.mock('better-auth', () => ({
   betterAuth: vi.fn((opts: unknown) => ({ __opts: opts, handler: vi.fn() })),
 }))
@@ -13,11 +12,14 @@ vi.mock('better-auth/node', () => ({
   toNodeHandler: vi.fn(() => vi.fn()),
 }))
 
+vi.mock('better-auth/plugins', () => ({
+  admin: vi.fn(() => ({ id: 'admin' })),
+}))
+
 import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
-import { toNodeHandler } from 'better-auth/node'
+import { admin } from 'better-auth/plugins'
 import { createAuth } from '../src/auth/setup.js'
-import { mountAuth } from '../src/auth/middleware.js'
 import type { AuthSetupOptions } from '../src/auth/types.js'
 
 const mockPrisma = { $disconnect: vi.fn() }
@@ -25,7 +27,7 @@ const mockPrisma = { $disconnect: vi.fn() }
 const baseOptions: AuthSetupOptions = {
   secret: 'a'.repeat(32),
   trustedOrigins: ['http://localhost:3000'],
-  databaseUrl: 'postgresql://localhost:5432/db',
+  provider: 'postgresql',
   prisma: mockPrisma,
 }
 
@@ -44,14 +46,14 @@ describe('createAuth', () => {
     )
   })
 
-  it('passes the prisma adapter with detected provider', () => {
+  it('passes the prisma adapter with the postgresql provider', () => {
     createAuth(baseOptions)
     expect(prismaAdapter).toHaveBeenCalledWith(mockPrisma, { provider: 'postgresql' })
   })
 
-  it('detects mysql provider from database URL', () => {
-    createAuth({ ...baseOptions, databaseUrl: 'mysql://localhost/db' })
-    expect(prismaAdapter).toHaveBeenCalledWith(mockPrisma, { provider: 'mysql' })
+  it('passes the prisma adapter with the sqlite provider', () => {
+    createAuth({ ...baseOptions, provider: 'sqlite' })
+    expect(prismaAdapter).toHaveBeenCalledWith(mockPrisma, { provider: 'sqlite' })
   })
 
   it('enables email/password auth', () => {
@@ -61,6 +63,14 @@ describe('createAuth', () => {
     )
   })
 
+  it('always enables the admin plugin', () => {
+    createAuth(baseOptions)
+    expect(admin).toHaveBeenCalledOnce()
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(Array.isArray(call['plugins'])).toBe(true)
+    expect((call['plugins'] as Array<{ id: string }>).some((p) => p.id === 'admin')).toBe(true)
+  })
+
   it('does not include socialProviders when none are configured', () => {
     createAuth(baseOptions)
     const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
@@ -68,29 +78,15 @@ describe('createAuth', () => {
   })
 
   it('includes github when github credentials are provided', () => {
-    createAuth({
-      ...baseOptions,
-      providers: {
-        github: { clientId: 'gid', clientSecret: 'gsec' },
-      },
-    })
+    createAuth({ ...baseOptions, providers: { github: { clientId: 'gid', clientSecret: 'gsec' } } })
     const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
-    expect(call['socialProviders']).toEqual({
-      github: { clientId: 'gid', clientSecret: 'gsec' },
-    })
+    expect(call['socialProviders']).toEqual({ github: { clientId: 'gid', clientSecret: 'gsec' } })
   })
 
   it('includes google when google credentials are provided', () => {
-    createAuth({
-      ...baseOptions,
-      providers: {
-        google: { clientId: 'gid', clientSecret: 'gsec' },
-      },
-    })
+    createAuth({ ...baseOptions, providers: { google: { clientId: 'gid', clientSecret: 'gsec' } } })
     const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
-    expect(call['socialProviders']).toEqual({
-      google: { clientId: 'gid', clientSecret: 'gsec' },
-    })
+    expect(call['socialProviders']).toEqual({ google: { clientId: 'gid', clientSecret: 'gsec' } })
   })
 
   it('includes both providers when both are supplied', () => {
@@ -104,20 +100,5 @@ describe('createAuth', () => {
     const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
     expect(call['socialProviders']).toHaveProperty('github')
     expect(call['socialProviders']).toHaveProperty('google')
-  })
-})
-
-describe('mountAuth', () => {
-  it('registers a handler on /api/auth/*splat', () => {
-    const mockApp = { all: vi.fn() } as unknown as Parameters<typeof mountAuth>[0]
-    const mockAuth = createAuth(baseOptions)
-    mountAuth(mockApp, mockAuth)
-    expect(mockApp.all).toHaveBeenCalledWith('/api/auth/*splat', expect.any(Function))
-  })
-
-  it('uses toNodeHandler to convert the auth instance', () => {
-    const mockApp = { all: vi.fn() } as unknown as Parameters<typeof mountAuth>[0]
-    mountAuth(mockApp, createAuth(baseOptions))
-    expect(toNodeHandler).toHaveBeenCalled()
   })
 })

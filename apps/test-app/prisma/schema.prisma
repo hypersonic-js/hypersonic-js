@@ -9,16 +9,26 @@ datasource db {
 // ─── Better Auth required models ─────────────────────────────────────────────
 
 model User {
-  id            String    @id
+  id            String    @id @default(cuid())
   name          String
   email         String    @unique
   emailVerified Boolean
   image         String?
   createdAt     DateTime
   updatedAt     DateTime
+  // Better Auth admin plugin fields
+  role          Role      @default(user)
+  banned        Boolean   @default(false)
+  banReason     String?
+  banExpires    DateTime?
   sessions      Session[]
   accounts      Account[]
   posts         Post[]
+}
+
+enum Role {
+  user
+  admin
 }
 
 model Session {

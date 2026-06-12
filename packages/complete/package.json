@@ -29,6 +29,7 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
+    "@hypersonic-js/admin": "workspace:*",
     "@hypersonic-js/core": "workspace:*"
   },
   "devDependencies": {

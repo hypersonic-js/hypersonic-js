@@ -1,0 +1,49 @@
+{
+  "name": "@hypersonic-js/cli",
+  "version": "0.1.2",
+  "description": "Hypersonic.js CLI — developer tooling for the Hypersonic framework",
+  "type": "module",
+  "bin": {
+    "hypersonic": "./dist/bin/hypersonic.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hypersonic-js/hypersonic-js"
+  },
+  "author": "Joaquim Dalton-Pereira",
+  "license": "MIT",
+  "homepage": "https://hypersonic-js.com",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": "^24.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist coverage"
+  },
+  "dependencies": {
+    "@hypersonic-js/admin": "workspace:*",
+    "commander": "15.0.0",
+    "dotenv": "17.4.2",
+    "picocolors": "1.1.1",
+    "@prisma/get-dmmf": "7.8.0"
+  },
+  "devDependencies": {
+    "@hypersonic-js/core": "workspace:*",
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0",
+    "@types/node": "25.9.1",
+    "@vitest/coverage-v8": "4.1.7",
+    "better-auth": "1.6.11",
+    "typescript": "6.0.3",
+    "vitest": "4.1.7"
+  }
+}
