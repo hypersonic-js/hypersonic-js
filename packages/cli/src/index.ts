@@ -1,5 +1,6 @@
 import { Command } from 'commander'
 import { registerAdminCommands } from './commands/admin/index.js'
+import { registerNewCommand } from './commands/new/index.js'
 import pkg from '../package.json' with { type: 'json' }
 
 export const CLI_VERSION: string = pkg.version
@@ -16,6 +17,7 @@ export function createProgram(): Command {
     .version(CLI_VERSION, '-v, --version', 'Print the CLI version')
 
   registerAdminCommands(program)
+  registerNewCommand(program)
 
   return program
 }
