@@ -9,6 +9,7 @@ import {
   mountAdmin,
 } from '@hypersonic-js/complete'
 import type { AdminModelMeta } from '@hypersonic-js/complete'
+import { createAuthGuard } from './src/middleware.ts'
 
 // PrismaClient is CommonJS — use createRequire to load it in an ESM context.
 const require = createRequire(import.meta.url)
@@ -25,7 +26,11 @@ const prisma = new PrismaClient({ adapter })
 
 const app = await createApp({ config, env, prisma })
 
-// ── Routes ─────────────────────────────────────────────────────────────────
+// ── Auth guard (use on any route you want to protect) ──────────────────────
+
+const requireAuth = createAuthGuard(app.auth)
+
+// ── Public routes ──────────────────────────────────────────────────────────
 
 app.express.get('/', (_req, res) => {
   res.inertia!('Welcome', {
@@ -36,6 +41,19 @@ app.express.get('/', (_req, res) => {
     ],
   })
 })
+
+app.express.get('/login', (_req, res) => {
+  res.inertia!('Auth/Login', {})
+})
+
+app.express.get('/register', (_req, res) => {
+  res.inertia!('Auth/Register', {})
+})
+
+// ── Protected routes — example ─────────────────────────────────────────────
+// app.express.get('/dashboard', requireAuth, (req, res) => {
+//   res.inertia!('Dashboard', { user: req.sessionUser })
+// })
 
 // ── Admin ───────────────────────────────────────────────────────────────────
 
@@ -49,3 +67,5 @@ app.express.use(createInertiaErrorHandler())
 
 await app.start()
 console.log(`Listening on http://${config.server.host}:${config.server.port}`)
+
+export { requireAuth }

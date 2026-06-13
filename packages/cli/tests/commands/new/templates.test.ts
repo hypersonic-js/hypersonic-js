@@ -376,6 +376,21 @@ describe('server.ts template', () => {
   it('calls app.start()', () => {
     expect(read('server.ts')).toContain('app.start()')
   })
+
+  it('imports createAuthGuard from ./src/middleware.ts', () => {
+    expect(read('server.ts')).toContain("from './src/middleware.ts'")
+    expect(read('server.ts')).toContain('createAuthGuard')
+  })
+
+  it('registers the GET /login route rendering Auth/Login', () => {
+    expect(read('server.ts')).toContain("'/login'")
+    expect(read('server.ts')).toContain("'Auth/Login'")
+  })
+
+  it('registers the GET /register route rendering Auth/Register', () => {
+    expect(read('server.ts')).toContain("'/register'")
+    expect(read('server.ts')).toContain("'Auth/Register'")
+  })
 })
 
 // ── resources/css/app.css ─────────────────────────────────────────────────────
@@ -444,5 +459,167 @@ describe('resources/js/Pages/Welcome.tsx template', () => {
 
   it('uses Tailwind CSS classes', () => {
     expect(read('resources/js/Pages/Welcome.tsx')).toContain('className=')
+  })
+})
+
+// ── src/types.ts ──────────────────────────────────────────────────────────────
+
+describe('src/types.ts template', () => {
+  it('exports the SessionUser interface', () => {
+    expect(read('src/types.ts')).toContain('export interface SessionUser')
+  })
+
+  it('SessionUser has id, name, and email string fields', () => {
+    const content = read('src/types.ts')
+    expect(content).toContain('id: string')
+    expect(content).toContain('name: string')
+    expect(content).toContain('email: string')
+  })
+
+  it('exports the AuthRequest interface extending Request', () => {
+    const content = read('src/types.ts')
+    expect(content).toContain('export interface AuthRequest')
+    expect(content).toContain('extends Request')
+  })
+
+  it('AuthRequest has an optional sessionUser field', () => {
+    expect(read('src/types.ts')).toContain('sessionUser?: SessionUser')
+  })
+
+  it('exports the AuthLike interface with a getSession method', () => {
+    const content = read('src/types.ts')
+    expect(content).toContain('export interface AuthLike')
+    expect(content).toContain('getSession')
+  })
+
+  it('imports Request from express', () => {
+    expect(read('src/types.ts')).toContain("from 'express'")
+  })
+})
+
+// ── src/middleware.ts ─────────────────────────────────────────────────────────
+
+describe('src/middleware.ts template', () => {
+  it('exports createAuthGuard', () => {
+    expect(read('src/middleware.ts')).toContain('export function createAuthGuard')
+  })
+
+  it('returns a RequestHandler', () => {
+    expect(read('src/middleware.ts')).toContain('RequestHandler')
+  })
+
+  it('redirects to /login when there is no session', () => {
+    expect(read('src/middleware.ts')).toContain("redirect('/login')")
+  })
+
+  it('attaches session.user to req.sessionUser on success', () => {
+    expect(read('src/middleware.ts')).toContain('req.sessionUser = session.user')
+  })
+
+  it('imports AuthLike and AuthRequest from ./types.js', () => {
+    const content = read('src/middleware.ts')
+    expect(content).toContain("from './types.js'")
+    expect(content).toContain('AuthLike')
+    expect(content).toContain('AuthRequest')
+  })
+})
+
+// ── resources/js/lib/auth-client.ts ──────────────────────────────────────────
+
+describe('resources/js/lib/auth-client.ts template', () => {
+  it('imports createAuthClient from better-auth/react', () => {
+    expect(read('resources/js/lib/auth-client.ts')).toContain(
+      "from 'better-auth/react'",
+    )
+  })
+
+  it('exports authClient', () => {
+    expect(read('resources/js/lib/auth-client.ts')).toContain('export const authClient')
+  })
+
+  it('sets baseURL to http://localhost:3000', () => {
+    expect(read('resources/js/lib/auth-client.ts')).toContain(
+      'http://localhost:3000',
+    )
+  })
+})
+
+// ── resources/js/Pages/Auth/Login.tsx ────────────────────────────────────────
+
+describe('resources/js/Pages/Auth/Login.tsx template', () => {
+  it('exports a default function named Login', () => {
+    expect(read('resources/js/Pages/Auth/Login.tsx')).toContain(
+      'export default function Login',
+    )
+  })
+
+  it('imports authClient from the lib/auth-client module', () => {
+    expect(read('resources/js/Pages/Auth/Login.tsx')).toContain('auth-client')
+  })
+
+  it('calls authClient.signIn.email', () => {
+    expect(read('resources/js/Pages/Auth/Login.tsx')).toContain(
+      'authClient.signIn.email',
+    )
+  })
+
+  it('links to /register', () => {
+    expect(read('resources/js/Pages/Auth/Login.tsx')).toContain('/register')
+  })
+
+  it('has an email input', () => {
+    expect(read('resources/js/Pages/Auth/Login.tsx')).toContain('type="email"')
+  })
+
+  it('has a password input', () => {
+    expect(read('resources/js/Pages/Auth/Login.tsx')).toContain('type="password"')
+  })
+
+  it('manages submitting state to disable the button', () => {
+    const content = read('resources/js/Pages/Auth/Login.tsx')
+    expect(content).toContain('submitting')
+    expect(content).toContain('disabled')
+  })
+})
+
+// ── resources/js/Pages/Auth/Register.tsx ─────────────────────────────────────
+
+describe('resources/js/Pages/Auth/Register.tsx template', () => {
+  it('exports a default function named Register', () => {
+    expect(read('resources/js/Pages/Auth/Register.tsx')).toContain(
+      'export default function Register',
+    )
+  })
+
+  it('imports authClient from the lib/auth-client module', () => {
+    expect(read('resources/js/Pages/Auth/Register.tsx')).toContain('auth-client')
+  })
+
+  it('calls authClient.signUp.email', () => {
+    expect(read('resources/js/Pages/Auth/Register.tsx')).toContain(
+      'authClient.signUp.email',
+    )
+  })
+
+  it('links to /login', () => {
+    expect(read('resources/js/Pages/Auth/Register.tsx')).toContain('/login')
+  })
+
+  it('has a name input', () => {
+    expect(read('resources/js/Pages/Auth/Register.tsx')).toContain('type="text"')
+  })
+
+  it('has an email input', () => {
+    expect(read('resources/js/Pages/Auth/Register.tsx')).toContain('type="email"')
+  })
+
+  it('has a password input', () => {
+    expect(read('resources/js/Pages/Auth/Register.tsx')).toContain('type="password"')
+  })
+
+  it('manages submitting state to disable the button', () => {
+    const content = read('resources/js/Pages/Auth/Register.tsx')
+    expect(content).toContain('submitting')
+    expect(content).toContain('disabled')
   })
 })

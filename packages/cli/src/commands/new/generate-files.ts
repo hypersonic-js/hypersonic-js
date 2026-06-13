@@ -39,20 +39,25 @@ export interface GenerateFilesDeps {
  * under a neutral name and renamed on write.
  */
 export const TEMPLATE_FILES = [
-  { src: 'package.json',                        dest: 'package.json' },
-  { src: 'hypersonic.config.ts',                dest: 'hypersonic.config.ts' },
-  { src: '_env',                                dest: '.env' },
-  { src: '.env.example',                        dest: '.env.example' },
-  { src: '.gitignore',                          dest: '.gitignore' },
-  { src: 'tsconfig.json',                       dest: 'tsconfig.json' },
-  { src: 'eslint.config.js',                    dest: 'eslint.config.js' },
-  { src: 'vite.config.ts',                      dest: 'vite.config.ts' },
-  { src: 'prisma/schema.prisma',                dest: 'prisma/schema.prisma' },
-  { src: 'prisma.config.ts',                    dest: 'prisma.config.ts' },
-  { src: 'server.ts',                           dest: 'server.ts' },
-  { src: 'resources/css/app.css',               dest: 'resources/css/app.css' },
-  { src: 'resources/js/app.tsx',                dest: 'resources/js/app.tsx' },
-  { src: 'resources/js/Pages/Welcome.tsx',      dest: 'resources/js/Pages/Welcome.tsx' },
+  { src: 'package.json',                              dest: 'package.json' },
+  { src: 'hypersonic.config.ts',                      dest: 'hypersonic.config.ts' },
+  { src: '_env',                                      dest: '.env' },
+  { src: '.env.example',                              dest: '.env.example' },
+  { src: '.gitignore',                                dest: '.gitignore' },
+  { src: 'tsconfig.json',                             dest: 'tsconfig.json' },
+  { src: 'eslint.config.js',                          dest: 'eslint.config.js' },
+  { src: 'vite.config.ts',                            dest: 'vite.config.ts' },
+  { src: 'prisma/schema.prisma',                      dest: 'prisma/schema.prisma' },
+  { src: 'prisma.config.ts',                          dest: 'prisma.config.ts' },
+  { src: 'server.ts',                                 dest: 'server.ts' },
+  { src: 'src/types.ts',                              dest: 'src/types.ts' },
+  { src: 'src/middleware.ts',                         dest: 'src/middleware.ts' },
+  { src: 'resources/css/app.css',                     dest: 'resources/css/app.css' },
+  { src: 'resources/js/app.tsx',                      dest: 'resources/js/app.tsx' },
+  { src: 'resources/js/lib/auth-client.ts',           dest: 'resources/js/lib/auth-client.ts' },
+  { src: 'resources/js/Pages/Welcome.tsx',            dest: 'resources/js/Pages/Welcome.tsx' },
+  { src: 'resources/js/Pages/Auth/Login.tsx',         dest: 'resources/js/Pages/Auth/Login.tsx' },
+  { src: 'resources/js/Pages/Auth/Register.tsx',      dest: 'resources/js/Pages/Auth/Register.tsx' },
 ] as const
 
 // ── Substitution ───────────────────────────────────────────────────────────
@@ -65,51 +70,55 @@ export function applySubstitutions(
   content: string,
   vars: Record<string, string>,
 ): string {
-  return Object.entries(vars).reduce(
-    (acc, [key, value]) => acc.replaceAll(`{{${key}}}`, value),
-    content,
+  return content.replace(/\{\{(\w+)\}\}/g, (match, key: string) =>
+    key in vars ? (vars[key] ?? match) : match,
   )
 }
 
-// ── Dependency loader ──────────────────────────────────────────────────────
+// ── Default deps ───────────────────────────────────────────────────────────
 
-function loadDeps(): GenerateFilesDeps {
+function makeDefaultDeps(): GenerateFilesDeps {
+  const __filename = fileURLToPath(import.meta.url)
+  const __dirname = dirname(__filename)
+
   return {
-    readFile: (p) => readFileSync(p, 'utf-8'),
-    mkdir: (p) => mkdirSync(p, { recursive: true }),
-    writeFile: (p, c) => writeFileSync(p, c, 'utf-8'),
-    // Resolves to packages/cli/templates/new/ in the monorepo,
-    // and node_modules/@hypersonic-js/cli/templates/new/ when installed.
-    templatesDir: join(dirname(fileURLToPath(import.meta.url)), '../../../templates/new'),
+    readFile: (filePath) => readFileSync(filePath, 'utf-8'),
+    mkdir: (dirPath) => mkdirSync(dirPath, { recursive: true }),
+    writeFile: (filePath, content) => writeFileSync(filePath, content, 'utf-8'),
+    templatesDir: join(__dirname, '../../../templates/new'),
   }
 }
 
-// ── Main ───────────────────────────────────────────────────────────────────
+// ── generateFiles ──────────────────────────────────────────────────────────
 
 /**
- * Reads every template file, substitutes project-specific placeholders,
- * and writes the results into `projectDir`.
- *
- * Substitutions applied:
- *   {{PROJECT_NAME}} → projectName
- *   {{SECRET}}       → secret
+ * Reads every template file, applies placeholder substitution, and writes it
+ * into the target project directory.
  */
 export async function generateFiles(
   opts: GenerateFilesOptions,
-  deps: GenerateFilesDeps = loadDeps(),
+  deps: GenerateFilesDeps = makeDefaultDeps(),
 ): Promise<WrittenFile[]> {
   const { projectDir, projectName, secret } = opts
   const { readFile, mkdir, writeFile, templatesDir } = deps
-  const vars = { PROJECT_NAME: projectName, SECRET: secret }
+
+  const vars: Record<string, string> = {
+    PROJECT_NAME: projectName,
+    SECRET: secret,
+  }
+
   const written: WrittenFile[] = []
 
   for (const { src, dest } of TEMPLATE_FILES) {
-    const raw = readFile(join(templatesDir, src))
-    const content = applySubstitutions(raw, vars)
+    const srcPath = join(templatesDir, src)
     const destPath = join(projectDir, dest)
+
+    const raw = readFile(srcPath)
+    const content = applySubstitutions(raw, vars)
 
     mkdir(dirname(destPath))
     writeFile(destPath, content)
+
     written.push({ dest })
   }
 
