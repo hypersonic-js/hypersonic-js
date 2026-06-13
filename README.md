@@ -5,7 +5,7 @@ A TypeScript framework for building full-stack monoliths fast. Hypersonic.js bun
 ## Quick start 
 
 ```bash
-npm install @hypersonic-js/cli
+npm install -g @hypersonic-js/cli
 ```
 ```bash
 npm hypersonic new

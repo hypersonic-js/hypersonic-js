@@ -24,6 +24,8 @@ features:
     details: Sessions, OAuth providers, and brute-force protection pre-wired into your database models.
   - title: Admin Dashboard
     details: Automatically generated React dashboard from your Prisma models. Manage data without writing a line of code.
+  - title: CLI
+  - details: Scaffold an app template and run useful admin commands.
   - title: Email Backend — Coming Soon
     details: First-class email configuration and transactional sending built directly into the framework.
   - title: Background Jobs — Coming Soon
