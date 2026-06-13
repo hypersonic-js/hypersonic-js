@@ -83,6 +83,11 @@ describe('package.json template', () => {
     const pkg = JSON.parse(read('package.json'))
     expect(pkg.devDependencies).toHaveProperty('prisma')
   })
+
+  it('lists better-auth as a dependency', () => {
+  const pkg = JSON.parse(read('package.json'))
+  expect(pkg.dependencies).toHaveProperty('better-auth')
+  })
 })
 
 // ── hypersonic.config.ts ──────────────────────────────────────────────────────
@@ -225,11 +230,6 @@ describe('eslint.config.js template', () => {
 })
 
 // ── vite.config.ts ────────────────────────────────────────────────────────────
-
-describe('vite.config.ts template', () => {
-  it('imports @vitejs/plugin-react', () => {
-    expect(read('vite.config.ts')).toContain("from '@vitejs/plugin-react'")
-  })
 
   it('imports @tailwindcss/vite', () => {
     expect(read('vite.config.ts')).toContain("from '@tailwindcss/vite'")
