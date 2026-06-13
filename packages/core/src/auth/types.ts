@@ -15,6 +15,10 @@ export interface AuthSetupOptions {
     github?: SocialProviderCredentials
     google?: SocialProviderCredentials
   }
+  /**
+   * Better Auth rate-limit settings.
+   */
+  rateLimit?: { enabled?: boolean }
 }
 
 // Re-exported so consumers can type the auth instance without importing better-auth directly

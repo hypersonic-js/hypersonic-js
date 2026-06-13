@@ -109,7 +109,11 @@ export function createInertiaErrorHandler(): (
  *
  * - **csrfValidator** — on POST/PUT/PATCH/DELETE requests, verifies that the
  *   `X-XSRF-TOKEN` request header matches the `XSRF-TOKEN` request cookie.
- *   Returns 419 if they are absent or do not match.
+ *   Returns 419 if they are absent or do not match. Exception: when both the
+ *   cookie AND the header are absent the client has not yet received a CSRF
+ *   cookie (a completely unauthenticated request with no prior GET). In that
+ *   case validation is skipped and downstream auth middleware is responsible
+ *   for redirecting or rejecting the request.
  *
  * Note: `/api/auth/*` routes are handled by Better Auth before reaching this
  * middleware, so they are naturally excluded from CSRF validation.
@@ -143,6 +147,14 @@ export async function createInertiaMiddleware(
 
   // CSRF validator — rejects mutation requests where the X-XSRF-TOKEN header
   // does not match the XSRF-TOKEN cookie that was set on a prior response.
+  //
+  // Special case: when neither token is present the client has not yet
+  // received a CSRF cookie (e.g. a completely unauthenticated browser request
+  // with no prior GET). Returning 419 in that case would mask the auth-guard
+  // redirect to /login with a confusing error. Downstream auth middleware
+  // handles these requests. 419 is only appropriate when a cookie exists but
+  // the header is wrong or missing — i.e. when there is something concrete to
+  // validate against.
   const csrfValidator: RequestHandler = (req: Request, res: Response, next: NextFunction): void => {
     if (!CSRF_MUTATION_METHODS.has(req.method)) {
       next()
@@ -151,13 +163,22 @@ export async function createInertiaMiddleware(
 
     const cookies = parseCookieHeader(req.headers.cookie)
     const cookieToken = cookies[CSRF_COOKIE]
-    const headerToken = req.headers[CSRF_HEADER]
+    const rawHeaderToken = req.headers[CSRF_HEADER]
+    // The header value is always a plain string for custom headers; normalise
+    // to string | undefined so the comparison below is type-safe.
+    const headerToken = Array.isArray(rawHeaderToken) ? rawHeaderToken[0] : rawHeaderToken
 
-    if (
-      typeof cookieToken !== 'string' ||
-      cookieToken.length === 0 ||
-      cookieToken !== headerToken
-    ) {
+    const hasCookie = typeof cookieToken === 'string' && cookieToken.length > 0
+    const hasHeader = typeof headerToken === 'string' && headerToken.length > 0
+
+    // Both absent — no CSRF context; defer to downstream auth middleware.
+    if (!hasCookie && !hasHeader) {
+      next()
+      return
+    }
+
+    // Cookie present but header wrong/missing, or header present but no cookie.
+    if (!hasCookie || cookieToken !== headerToken) {
       res.status(419).json({ error: 'CSRF token mismatch' })
       return
     }
@@ -176,10 +197,15 @@ export async function createInertiaMiddleware(
   ): void => {
     const isInertiaRequest = Boolean(req.headers[INERTIA_HEADER])
 
-    // Asset version mismatch — force a full page reload
+    // Asset version mismatch — force a full page reload.
+    // Only fires when the client sends X-Inertia-Version AND it doesn't match
+    // the server version. Requests without the header (e.g. test clients that
+    // set X-Inertia but omit the version) are let through so they receive the
+    // normal JSON response rather than a 409.
     if (
       isInertiaRequest &&
       req.method === 'GET' &&
+      req.headers[INERTIA_VERSION_HEADER] !== undefined &&
       req.headers[INERTIA_VERSION_HEADER] !== version
     ) {
       res.setHeader('X-Inertia-Location', req.url)

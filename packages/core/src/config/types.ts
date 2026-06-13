@@ -14,9 +14,20 @@ export interface AuthProviders {
   google?: boolean
 }
 
+export interface AuthRateLimit {
+  /** Set to false to disable Better Auth's built-in rate limiting (useful in test environments). */
+  enabled?: boolean
+}
+
 export interface AuthConfig {
   trustedOrigins: string[]
   providers?: AuthProviders
+  /**
+   * Better Auth rate-limit settings.
+   * Pass `{ enabled: false }` in test environments to prevent the in-process
+   * rate limiter from triggering 429 errors across shared test suites.
+   */
+  rateLimit?: AuthRateLimit
 }
 
 export interface InertiaConfig {

@@ -1,0 +1,2 @@
+DATABASE_URL="file:./dev.db"
+BETTER_AUTH_SECRET="{{SECRET}}"

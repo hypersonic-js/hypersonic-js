@@ -1,7 +1,7 @@
 {
   "name": "@hypersonic-js/complete",
   "version": "0.2.0",
-  "description": "The complete Hypersonic.js framework — all packages in one install",
+  "description": "The complete Hypersonic.js framework — all production packages in one install",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

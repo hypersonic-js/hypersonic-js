@@ -1,12 +1,74 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import express from 'express'
-import type { Request, Response, NextFunction } from 'express'
+/**
+ * Integration tests for the test-app routes.
+ *
+ * Uses a real Postgres database and real Better Auth sessions.
+ * No Prisma delegates are mocked; no sessions are faked.
+ *
+ * CSRF: mutation requests (POST / DELETE) require both the XSRF-TOKEN cookie
+ * and the X-XSRF-TOKEN header. Both are obtained via getCredentials() in
+ * beforeAll and stored in the Credentials objects used throughout.
+ *
+ * Inertia: GET requests to Inertia pages are sent with X-Inertia: true so the
+ * middleware returns assertable JSON ({ component, props, url, version })
+ * rather than a full HTML page.
+ */
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest'
 import request from 'supertest'
+import {
+  buildTestApp,
+  signUp,
+  signIn,
+  getCredentials,
+  cleanPosts,
+  cleanDatabase,
+} from './helpers/setup.js'
+import type { TestApp, Credentials } from './helpers/setup.js'
+import { parseId } from '../src/routes.js'
 
-import { registerRoutes, parseId } from '../src/routes.js'
-import type { PrismaRouteClient, AuthLike, SessionUser } from '../src/types.js'
+// ─── Setup ────────────────────────────────────────────────────────────────────
 
-// ─── parseId unit tests ────────────────────────────────────────────────────
+let testApp: TestApp
+let regularUser: { id: string; email: string }
+let _otherUser: { id: string; email: string }
+let userCredentials: Credentials
+let otherCredentials: Credentials
+
+beforeAll(async () => {
+  testApp = await buildTestApp()
+
+  const u1 = await signUp(testApp.express, {
+    email: 'routes-user@test.com',
+    name: 'Routes User',
+    password: 'Password123!',
+  })
+  regularUser = u1.user
+  userCredentials = await getCredentials(
+    testApp.express,
+    await signIn(testApp.express, 'routes-user@test.com', 'Password123!'),
+  )
+
+  const u2 = await signUp(testApp.express, {
+    email: 'routes-other@test.com',
+    name: 'Other User',
+    password: 'Password123!',
+  })
+  _otherUser = u2.user
+  otherCredentials = await getCredentials(
+    testApp.express,
+    await signIn(testApp.express, 'routes-other@test.com', 'Password123!'),
+  )
+})
+
+beforeEach(async () => {
+  await cleanPosts(testApp.prisma)
+})
+
+afterAll(async () => {
+  await cleanDatabase(testApp.prisma)
+  await testApp.prisma.$disconnect()
+})
+
+// ─── parseId unit tests ───────────────────────────────────────────────────────
 
 describe('parseId', () => {
   it('parses a numeric string to an integer', () => {
@@ -17,11 +79,11 @@ describe('parseId', () => {
     expect(isNaN(parseId('abc'))).toBe(true)
   })
 
-  it('parses the first element when given a string array', () => {
+  it('parses the first element of a string array', () => {
     expect(parseId(['7', '8'])).toBe(7)
   })
 
-  it('returns NaN when given an empty array', () => {
+  it('returns NaN for an empty array', () => {
     expect(isNaN(parseId([]))).toBe(true)
   })
 
@@ -30,279 +92,322 @@ describe('parseId', () => {
   })
 })
 
-// ─── Test fixtures ────────────────────────────────────────────────────────────
-
-const testUser: SessionUser = { id: 'user-1', name: 'Alice', email: 'alice@example.com' }
-const otherUser: SessionUser = { id: 'user-2', name: 'Bob', email: 'bob@example.com' }
-
-const testPost = {
-  id: 1,
-  title: 'Hello world',
-  body: 'First post body',
-  userId: 'user-1',
-  user: { id: 'user-1', name: 'Alice' },
-  createdAt: new Date(),
-  updatedAt: new Date(),
-}
-
-const mockAuth: { api: { getSession: ReturnType<typeof vi.fn> } } = {
-  api: { getSession: vi.fn() },
-}
-
-const mockPrisma = {
-  post: {
-    findMany: vi.fn(),
-    findUnique: vi.fn(),
-    create: vi.fn(),
-    delete: vi.fn(),
-  },
-}
-
-// ─── Test app factory ─────────────────────────────────────────────────────────
-
-function buildApp(sessionUser: SessionUser | null = null) {
-  mockAuth.api.getSession.mockResolvedValue(
-    sessionUser ? { user: sessionUser } : null,
-  )
-
-  const app = express()
-  app.use(express.json())
-  app.use(express.urlencoded({ extended: true }))
-
-  // Stub res.inertia so Inertia routes return assertable JSON in tests
-  app.use((_req: Request, res: Response, next: NextFunction) => {
-    res.inertia = (component: string, props: Record<string, unknown> = {}) => {
-      res.json({ component, props })
-    }
-    next()
-  })
-
-  registerRoutes(app, mockPrisma as unknown as PrismaRouteClient, mockAuth as AuthLike)
-  return app
-}
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
-beforeEach(() => {
-  vi.clearAllMocks()
-})
+// ─── GET /health ──────────────────────────────────────────────────────────────
 
 describe('GET /health', () => {
-  it('returns 200 with status ok', async () => {
-    const res = await request(buildApp()).get('/health')
+  it('returns 200 with { status: "ok" }', async () => {
+    const res = await request(testApp.express).get('/health')
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ status: 'ok' })
   })
 })
 
+// ─── GET / ───────────────────────────────────────────────────────────────────
+
 describe('GET /', () => {
   it('redirects to /posts', async () => {
-    const res = await request(buildApp()).get('/')
+    const res = await request(testApp.express).get('/')
     expect(res.status).toBe(302)
     expect(res.headers['location']).toBe('/posts')
   })
 })
 
+// ─── GET /login ───────────────────────────────────────────────────────────────
+
 describe('GET /login', () => {
   it('renders the Auth/Login Inertia page', async () => {
-    const res = await request(buildApp()).get('/login')
+    const res = await request(testApp.express)
+      .get('/login')
+      .set('X-Inertia', 'true')
     expect(res.status).toBe(200)
     expect(res.body.component).toBe('Auth/Login')
   })
 })
 
+// ─── GET /register ────────────────────────────────────────────────────────────
+
 describe('GET /register', () => {
   it('renders the Auth/Register Inertia page', async () => {
-    const res = await request(buildApp()).get('/register')
+    const res = await request(testApp.express)
+      .get('/register')
+      .set('X-Inertia', 'true')
     expect(res.status).toBe(200)
     expect(res.body.component).toBe('Auth/Register')
   })
 
   it('returns empty props', async () => {
-    const res = await request(buildApp()).get('/register')
+    const res = await request(testApp.express)
+      .get('/register')
+      .set('X-Inertia', 'true')
     expect(res.body.props).toEqual({})
   })
 })
 
+// ─── auth guard ───────────────────────────────────────────────────────────────
+
 describe('auth guard', () => {
-  it('redirects to /login when there is no session', async () => {
-    const res = await request(buildApp(null)).get('/posts')
+  it('redirects to /login when there is no session cookie', async () => {
+    const res = await request(testApp.express).get('/posts')
     expect(res.status).toBe(302)
     expect(res.headers['location']).toBe('/login')
   })
 
-  it('calls through to the route when a session exists', async () => {
-    mockPrisma.post.findMany.mockResolvedValue([])
-    const res = await request(buildApp(testUser)).get('/posts')
+  it('calls through to the route when a real session cookie is present', async () => {
+    const res = await request(testApp.express)
+      .get('/posts')
+      .set('Cookie', userCredentials.cookie)
+      .set('X-Inertia', 'true')
     expect(res.status).toBe(200)
   })
 })
 
+// ─── GET /posts ───────────────────────────────────────────────────────────────
+
 describe('GET /posts', () => {
-  it('returns the Posts/Index page with posts and user', async () => {
-    mockPrisma.post.findMany.mockResolvedValue([testPost])
-    const res = await request(buildApp(testUser)).get('/posts')
+  it('renders Posts/Index with posts from the database', async () => {
+    await testApp.prisma.post.create({
+      data: { title: 'Hello World', body: 'First post', userId: regularUser.id },
+    })
+
+    const res = await request(testApp.express)
+      .get('/posts')
+      .set('Cookie', userCredentials.cookie)
+      .set('X-Inertia', 'true')
+
     expect(res.status).toBe(200)
     expect(res.body.component).toBe('Posts/Index')
     expect(res.body.props.posts).toHaveLength(1)
-    expect(res.body.props.user.id).toBe(testUser.id)
+    expect(res.body.props.posts[0].title).toBe('Hello World')
   })
 
-  it('queries posts ordered by createdAt descending', async () => {
-    mockPrisma.post.findMany.mockResolvedValue([])
-    await request(buildApp(testUser)).get('/posts')
-    expect(mockPrisma.post.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: { createdAt: 'desc' } }),
-    )
+  it('returns posts ordered by createdAt descending', async () => {
+    await testApp.prisma.post.create({
+      data: { title: 'First', body: 'body', userId: regularUser.id },
+    })
+    // Small delay to get distinct createdAt values
+    await new Promise((r) => setTimeout(r, 10))
+    await testApp.prisma.post.create({
+      data: { title: 'Second', body: 'body', userId: regularUser.id },
+    })
+
+    const res = await request(testApp.express)
+      .get('/posts')
+      .set('Cookie', userCredentials.cookie)
+      .set('X-Inertia', 'true')
+
+    const titles = (res.body.props.posts as Array<{ title: string }>).map((p) => p.title)
+    expect(titles[0]).toBe('Second')
+    expect(titles[1]).toBe('First')
+  })
+
+  it('includes the session user in the response props', async () => {
+    const res = await request(testApp.express)
+      .get('/posts')
+      .set('Cookie', userCredentials.cookie)
+      .set('X-Inertia', 'true')
+
+    expect(res.body.props.user).toMatchObject({ email: regularUser.email })
   })
 })
+
+// ─── GET /posts/:id ───────────────────────────────────────────────────────────
 
 describe('GET /posts/:id', () => {
   it('returns 404 for a non-numeric id', async () => {
-    const res = await request(buildApp(testUser)).get('/posts/abc')
+    const res = await request(testApp.express)
+      .get('/posts/abc')
+      .set('Cookie', userCredentials.cookie)
     expect(res.status).toBe(404)
   })
 
-  it('returns 404 when the post does not exist', async () => {
-    mockPrisma.post.findUnique.mockResolvedValue(null)
-    const res = await request(buildApp(testUser)).get('/posts/99')
+  it('returns 404 when the post does not exist in the database', async () => {
+    const res = await request(testApp.express)
+      .get('/posts/999999')
+      .set('Cookie', userCredentials.cookie)
     expect(res.status).toBe(404)
     expect(res.body.error).toBe('Post not found')
   })
 
-  it('renders the Posts/Show page when the post exists', async () => {
-    mockPrisma.post.findUnique.mockResolvedValue(testPost)
-    const res = await request(buildApp(testUser)).get('/posts/1')
+  it('renders Posts/Show with the real post data', async () => {
+    const post = await testApp.prisma.post.create({
+      data: { title: 'Show Me', body: 'Post body', userId: regularUser.id },
+    })
+
+    const res = await request(testApp.express)
+      .get(`/posts/${post.id}`)
+      .set('Cookie', userCredentials.cookie)
+      .set('X-Inertia', 'true')
+
     expect(res.status).toBe(200)
     expect(res.body.component).toBe('Posts/Show')
-    expect(res.body.props.post.id).toBe(1)
-    expect(res.body.props.user.id).toBe(testUser.id)
-  })
-
-  it('returns 500 when the DB throws unexpectedly', async () => {
-    mockPrisma.post.findUnique.mockRejectedValue(new Error('DB exploded'))
-    const res = await request(buildApp(testUser)).get('/posts/1')
-    expect(res.status).toBe(500)
-    expect(res.body.error).toBe('Internal Server Error')
+    expect(res.body.props.post.id).toBe(post.id)
+    expect(res.body.props.post.title).toBe('Show Me')
+    expect(res.body.props.user).toMatchObject({ email: regularUser.email })
   })
 })
 
+// ─── POST /posts ──────────────────────────────────────────────────────────────
+
 describe('POST /posts', () => {
   it('redirects to /login when unauthenticated', async () => {
-    const res = await request(buildApp(null))
+    const res = await request(testApp.express)
       .post('/posts')
       .send({ title: 'Test', body: 'Body' })
     expect(res.status).toBe(302)
     expect(res.headers['location']).toBe('/login')
   })
 
-  it('creates a post and redirects to /posts', async () => {
-    mockPrisma.post.create.mockResolvedValue(testPost)
-    const res = await request(buildApp(testUser))
+  it('creates a real post in the database', async () => {
+    await request(testApp.express)
       .post('/posts')
-      .send({ title: 'Hello world', body: 'First post body' })
+      .set('Cookie', userCredentials.cookie)
+      .set('X-XSRF-TOKEN', userCredentials.csrfToken)
+      .send({ title: 'My Post', body: 'My Body' })
+
+    const post = await testApp.prisma.post.findFirst({ where: { title: 'My Post' } })
+    expect(post).not.toBeNull()
+    expect(post?.body).toBe('My Body')
+  })
+
+  it('redirects to /posts after creation', async () => {
+    const res = await request(testApp.express)
+      .post('/posts')
+      .set('Cookie', userCredentials.cookie)
+      .set('X-XSRF-TOKEN', userCredentials.csrfToken)
+      .send({ title: 'Redirect Test', body: 'body' })
     expect(res.status).toBe(302)
     expect(res.headers['location']).toBe('/posts')
   })
 
-  it('creates a post with the session user id', async () => {
-    mockPrisma.post.create.mockResolvedValue(testPost)
-    await request(buildApp(testUser))
+  it('assigns the post to the session user', async () => {
+    await request(testApp.express)
       .post('/posts')
-      .send({ title: 'Hello world', body: 'Body' })
-    expect(mockPrisma.post.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ userId: testUser.id }),
-      }),
-    )
+      .set('Cookie', userCredentials.cookie)
+      .set('X-XSRF-TOKEN', userCredentials.csrfToken)
+      .send({ title: 'Owned Post', body: 'body' })
+
+    const post = await testApp.prisma.post.findFirst({ where: { title: 'Owned Post' } })
+    expect(post?.userId).toBe(regularUser.id)
   })
 
   it('falls back to empty strings for missing title and body', async () => {
-    mockPrisma.post.create.mockResolvedValue(testPost)
-    await request(buildApp(testUser)).post('/posts').send({})
-    expect(mockPrisma.post.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ title: '', body: '' }),
-      }),
-    )
-  })
-
-  it('returns 500 when the DB throws unexpectedly', async () => {
-    mockPrisma.post.create.mockRejectedValue(new Error('DB exploded'))
-    const res = await request(buildApp(testUser))
+    await request(testApp.express)
       .post('/posts')
-      .send({ title: 'Test', body: 'Body' })
-    expect(res.status).toBe(500)
-    expect(res.body.error).toBe('Internal Server Error')
+      .set('Cookie', userCredentials.cookie)
+      .set('X-XSRF-TOKEN', userCredentials.csrfToken)
+      .send({})
+
+    const post = await testApp.prisma.post.findFirst({
+      where: { userId: regularUser.id },
+      orderBy: { createdAt: 'desc' },
+    })
+    expect(post?.title).toBe('')
+    expect(post?.body).toBe('')
   })
 })
 
+// ─── DELETE /posts/:id ────────────────────────────────────────────────────────
+
 describe('DELETE /posts/:id', () => {
   it('redirects to /login when unauthenticated', async () => {
-    const res = await request(buildApp(null)).delete('/posts/1')
+    const post = await testApp.prisma.post.create({
+      data: { title: 'To Delete', body: 'body', userId: regularUser.id },
+    })
+    const res = await request(testApp.express).delete(`/posts/${post.id}`)
     expect(res.status).toBe(302)
     expect(res.headers['location']).toBe('/login')
   })
 
   it('returns 404 for a non-numeric id', async () => {
-    const res = await request(buildApp(testUser)).delete('/posts/abc')
+    const res = await request(testApp.express)
+      .delete('/posts/abc')
+      .set('Cookie', userCredentials.cookie)
+      .set('X-XSRF-TOKEN', userCredentials.csrfToken)
     expect(res.status).toBe(404)
   })
 
-  it('returns 404 when the post does not exist', async () => {
-    mockPrisma.post.findUnique.mockResolvedValue(null)
-    const res = await request(buildApp(testUser)).delete('/posts/99')
+  it('returns 404 when the post does not exist in the database', async () => {
+    const res = await request(testApp.express)
+      .delete('/posts/999999')
+      .set('Cookie', userCredentials.cookie)
+      .set('X-XSRF-TOKEN', userCredentials.csrfToken)
     expect(res.status).toBe(404)
     expect(res.body.error).toBe('Post not found')
   })
 
-  it('returns 401 when the user does not own the post', async () => {
-    mockPrisma.post.findUnique.mockResolvedValue(testPost) // owned by user-1
-    const res = await request(buildApp(otherUser)).delete('/posts/1') // logged in as user-2
+  it('returns 401 when the session user does not own the post', async () => {
+    const post = await testApp.prisma.post.create({
+      data: { title: 'Owned by user', body: 'body', userId: regularUser.id },
+    })
+
+    const res = await request(testApp.express)
+      .delete(`/posts/${post.id}`)
+      .set('Cookie', otherCredentials.cookie)       // logged in as otherUser
+      .set('X-XSRF-TOKEN', otherCredentials.csrfToken)
     expect(res.status).toBe(401)
   })
 
-  it('deletes the post and redirects to /posts', async () => {
-    mockPrisma.post.findUnique.mockResolvedValue(testPost)
-    mockPrisma.post.delete.mockResolvedValue(testPost)
-    const res = await request(buildApp(testUser)).delete('/posts/1')
-    expect(res.status).toBe(303)
-    expect(res.headers['location']).toBe('/posts')
-    expect(mockPrisma.post.delete).toHaveBeenCalledWith({ where: { id: 1 } })
+  it('deletes the post from the database', async () => {
+    const post = await testApp.prisma.post.create({
+      data: { title: 'Delete Me', body: 'body', userId: regularUser.id },
+    })
+
+    await request(testApp.express)
+      .delete(`/posts/${post.id}`)
+      .set('Cookie', userCredentials.cookie)
+      .set('X-XSRF-TOKEN', userCredentials.csrfToken)
+
+    const gone = await testApp.prisma.post.findUnique({ where: { id: post.id } })
+    expect(gone).toBeNull()
   })
 
-  it('redirects to Referer on 404 for an Inertia DELETE request', async () => {
-    mockPrisma.post.findUnique.mockResolvedValue(null)
-    const res = await request(buildApp(testUser))
-      .delete('/posts/99')
+  it('redirects to /posts after deletion', async () => {
+    const post = await testApp.prisma.post.create({
+      data: { title: 'Gone', body: 'body', userId: regularUser.id },
+    })
+
+    const res = await request(testApp.express)
+      .delete(`/posts/${post.id}`)
+      .set('Cookie', userCredentials.cookie)
+      .set('X-XSRF-TOKEN', userCredentials.csrfToken)
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/posts')
+  })
+
+  it('redirects to the Referer on a 404 Inertia DELETE', async () => {
+    const res = await request(testApp.express)
+      .delete('/posts/999999')
+      .set('Cookie', userCredentials.cookie)
+      .set('X-XSRF-TOKEN', userCredentials.csrfToken)
       .set('X-Inertia', 'true')
       .set('Referer', '/posts')
     expect(res.status).toBe(303)
     expect(res.headers['location']).toBe('/posts')
   })
 
-  it('redirects to / on 401 for an Inertia DELETE request with no Referer', async () => {
-    mockPrisma.post.findUnique.mockResolvedValue(testPost)
-    const res = await request(buildApp(otherUser))
-      .delete('/posts/1')
+  it('redirects to / on a 401 Inertia DELETE with no Referer', async () => {
+    const post = await testApp.prisma.post.create({
+      data: { title: 'Other Post', body: 'body', userId: regularUser.id },
+    })
+
+    const res = await request(testApp.express)
+      .delete(`/posts/${post.id}`)
+      .set('Cookie', otherCredentials.cookie)
+      .set('X-XSRF-TOKEN', otherCredentials.csrfToken)
       .set('X-Inertia', 'true')
     expect(res.status).toBe(303)
     expect(res.headers['location']).toBe('/')
   })
-
-  it('returns 500 when the DB throws unexpectedly', async () => {
-    mockPrisma.post.findUnique.mockRejectedValue(new Error('DB exploded'))
-    const res = await request(buildApp(testUser)).delete('/posts/1')
-    expect(res.status).toBe(500)
-    expect(res.body.error).toBe('Internal Server Error')
-  })
 })
 
+// ─── Error handler ────────────────────────────────────────────────────────────
+
 describe('error handler', () => {
-  it('returns 500 for unexpected errors', async () => {
-    mockPrisma.post.findMany.mockRejectedValue(new Error('DB exploded'))
-    const res = await request(buildApp(testUser)).get('/posts')
-    expect(res.status).toBe(500)
-    expect(res.body.error).toBe('Internal Server Error')
+  it('returns 404 JSON for unknown post IDs on non-Inertia requests', async () => {
+    const res = await request(testApp.express)
+      .get('/posts/999999')
+      .set('Cookie', userCredentials.cookie)
+    expect(res.status).toBe(404)
+    expect(res.body.error).toBe('Post not found')
   })
 })

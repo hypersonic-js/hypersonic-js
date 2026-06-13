@@ -101,4 +101,24 @@ describe('createAuth', () => {
     expect(call['socialProviders']).toHaveProperty('github')
     expect(call['socialProviders']).toHaveProperty('google')
   })
+
+  // ── rateLimit ─────────────────────────────────────────────────────────────
+
+  it('does not include rateLimit when the option is omitted', () => {
+    createAuth(baseOptions)
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['rateLimit']).toBeUndefined()
+  })
+
+  it('forwards rateLimit: { enabled: false } to betterAuth', () => {
+    createAuth({ ...baseOptions, rateLimit: { enabled: false } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['rateLimit']).toEqual({ enabled: false })
+  })
+
+  it('forwards rateLimit: { enabled: true } to betterAuth', () => {
+    createAuth({ ...baseOptions, rateLimit: { enabled: true } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['rateLimit']).toEqual({ enabled: true })
+  })
 })

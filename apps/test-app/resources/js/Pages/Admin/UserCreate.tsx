@@ -41,7 +41,9 @@ export default function AdminUserCreate({ model, errors, prefix }: Props) {
       f.name,
       f.kind === 'enum' && f.enumValues != null && f.enumValues.length > 0
         ? (f.enumValues[0] ?? '')
-        : '',
+        : f.prismaType === 'Boolean' && f.isRequired
+          ? 'false'
+          : '',
     ]),
   )
 
@@ -140,7 +142,14 @@ export default function AdminUserCreate({ model, errors, prefix }: Props) {
                 {field.name}
                 {field.isRequired && <span className="text-red-500"> *</span>}
               </label>
-              {field.kind === 'enum' && field.enumValues != null ? (
+              {field.prismaType === 'Boolean' ? (
+                <input
+                  type="checkbox"
+                  checked={data[field.name] === 'true'}
+                  onChange={(e) => setData(field.name, String(e.target.checked))}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                />
+              ) : field.kind === 'enum' && field.enumValues != null ? (
                 <select
                   value={data[field.name] ?? ''}
                   onChange={(e) => setData(field.name, e.target.value)}

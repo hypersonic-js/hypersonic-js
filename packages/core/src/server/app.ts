@@ -85,6 +85,7 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
     provider: config.database.provider,
     prisma,
     providers: resolveProviders(config, env),
+    rateLimit: config.auth.rateLimit,
   })
   mountAuth(app, auth)
 
