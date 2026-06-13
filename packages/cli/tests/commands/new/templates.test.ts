@@ -131,7 +131,6 @@ describe('_env template', () => {
   })
 
   it('does not contain a hardcoded secret value', () => {
-    // The only value should be the placeholder, not a real secret
     const content = read('_env')
     expect(content).not.toMatch(/BETTER_AUTH_SECRET="[a-f0-9]{32,}"/)
   })
@@ -256,12 +255,35 @@ describe('prisma/schema.prisma template', () => {
     expect(read('prisma/schema.prisma')).toContain('provider = "sqlite"')
   })
 
-  it('reads DATABASE_URL from the environment', () => {
-    expect(read('prisma/schema.prisma')).toContain('env("DATABASE_URL")')
+  it('does not contain a url property (Prisma 7 — url belongs in prisma.config.ts)', () => {
+    expect(read('prisma/schema.prisma')).not.toContain('url')
   })
 
   it('defines the User model', () => {
     expect(read('prisma/schema.prisma')).toContain('model User {')
+  })
+
+  it('User model has role field with Role enum type', () => {
+    expect(read('prisma/schema.prisma')).toContain('role          Role')
+  })
+
+  it('User model has banned field', () => {
+    expect(read('prisma/schema.prisma')).toContain('banned        Boolean')
+  })
+
+  it('User model has banReason field', () => {
+    expect(read('prisma/schema.prisma')).toContain('banReason     String?')
+  })
+
+  it('User model has banExpires field', () => {
+    expect(read('prisma/schema.prisma')).toContain('banExpires    DateTime?')
+  })
+
+  it('defines the Role enum with user and admin values', () => {
+    const content = read('prisma/schema.prisma')
+    expect(content).toContain('enum Role {')
+    expect(content).toContain('user')
+    expect(content).toContain('admin')
   })
 
   it('defines the Session model', () => {

@@ -53,13 +53,14 @@ async function loadDeps(): Promise<RunSetupDeps> {
  *
  * 1. npm install         — installs project dependencies
  * 2. prisma migrate dev  — creates the SQLite database and runs migrations
- * 3. admin scaffold      — copies admin React page components into the project
- * 4. admin generate-meta — generates prisma/admin-meta.json from the schema
- * 5. admin create-admin  — interactive: the user creates their admin account
+ * 3. prisma generate     — generates the Prisma client from the schema
+ * 4. admin scaffold      — copies admin React page components into the project
+ * 5. admin generate-meta — generates prisma/admin-meta.json from the schema
+ * 6. admin create-admin  — interactive: the user creates their admin account
  *
- * Steps 1–2 run as child processes (stdio: inherit so the user sees output).
- * Steps 3–4 call the existing CLI functions directly to avoid a second spawn.
- * Step 5 spawns `hypersonic admin create-admin` in the project directory so
+ * Steps 1–3 run as child processes (stdio: inherit so the user sees output).
+ * Steps 4–5 call the existing CLI functions directly to avoid a second spawn.
+ * Step 6 spawns `hypersonic admin create-admin` in the project directory so
  * it resolves its own node_modules (better-auth, @prisma/client, etc.) from
  * the newly-installed project rather than from the CLI's install location.
  */
@@ -84,19 +85,23 @@ export async function runSetup(
   logger.info('Running database migrations…')
   exec('npx prisma migrate dev --name init', projectDir)
 
-  // ── 3. Scaffold admin pages ──────────────────────────────────────────────
+  // ── 3. Generate Prisma client ────────────────────────────────────────────
+  logger.info('Generating Prisma client…')
+  exec('npx prisma generate', projectDir)
+
+  // ── 4. Scaffold admin pages ──────────────────────────────────────────────
   logger.info('Scaffolding admin pages…')
   const scaffoldResult = await doScaffold({ targetDir: pagesDir, force: false })
   for (const file of scaffoldResult.written) {
     logger.success(`Written  resources/js/Pages/Admin/${file}`)
   }
 
-  // ── 4. Generate admin metadata ───────────────────────────────────────────
+  // ── 5. Generate admin metadata ───────────────────────────────────────────
   logger.info('Generating admin metadata…')
   await generateAdminMeta(schemaPath, metaPath)
   logger.success('Admin meta written to prisma/admin-meta.json')
 
-  // ── 5. Create admin user (interactive subprocess) ────────────────────────
+  // ── 6. Create admin user (interactive subprocess) ────────────────────────
   logger.info('Creating your admin account…')
   exec('npx hypersonic admin create-admin', projectDir)
 }

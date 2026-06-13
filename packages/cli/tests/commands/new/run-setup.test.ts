@@ -66,6 +66,16 @@ describe('prisma migrate', () => {
     expect(cmd).toContain('--name init')
   })
 
+  it('runs prisma migrate before prisma generate', async () => {
+    const deps = makeDeps()
+    const order: string[] = []
+    vi.mocked(deps.exec).mockImplementation((cmd) => { order.push(cmd) })
+    await runSetup(BASE_OPTS, deps)
+    expect(order.findIndex((c) => c.includes('migrate'))).toBeLessThan(
+      order.findIndex((c) => c.includes('prisma generate')),
+    )
+  })
+
   it('runs prisma migrate before scaffoldAdmin', async () => {
     const deps = makeDeps()
     let migrateOrder = 0
@@ -80,6 +90,46 @@ describe('prisma migrate', () => {
     })
     await runSetup(BASE_OPTS, deps)
     expect(migrateOrder).toBeLessThan(scaffoldOrder)
+  })
+})
+
+// ── prisma generate ───────────────────────────────────────────────────────────
+
+describe('prisma generate', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('runs prisma generate with the project dir as cwd', async () => {
+    const deps = makeDeps()
+    await runSetup(BASE_OPTS, deps)
+    const call = vi.mocked(deps.exec).mock.calls.find(([c]) => c === 'npx prisma generate')
+    expect(call).toBeDefined()
+    expect(call![1]).toBe(PROJECT_DIR)
+  })
+
+  it('runs prisma generate after prisma migrate', async () => {
+    const deps = makeDeps()
+    const order: string[] = []
+    vi.mocked(deps.exec).mockImplementation((cmd) => { order.push(cmd) })
+    await runSetup(BASE_OPTS, deps)
+    expect(order.findIndex((c) => c.includes('migrate'))).toBeLessThan(
+      order.findIndex((c) => c === 'npx prisma generate'),
+    )
+  })
+
+  it('runs prisma generate before scaffoldAdmin', async () => {
+    const deps = makeDeps()
+    let generateOrder = 0
+    let scaffoldOrder = 0
+    let tick = 0
+    vi.mocked(deps.exec).mockImplementation((cmd) => {
+      if (cmd === 'npx prisma generate') generateOrder = ++tick
+    })
+    vi.mocked(deps.scaffoldAdmin).mockImplementation(async () => {
+      scaffoldOrder = ++tick
+      return { written: [], skipped: [] }
+    })
+    await runSetup(BASE_OPTS, deps)
+    expect(generateOrder).toBeLessThan(scaffoldOrder)
   })
 })
 
@@ -181,10 +231,10 @@ describe('create-admin subprocess', () => {
 describe('exec call count', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('calls exec exactly three times (npm install, prisma migrate, create-admin)', async () => {
+  it('calls exec exactly four times (npm install, prisma migrate, prisma generate, create-admin)', async () => {
     const deps = makeDeps()
     await runSetup(BASE_OPTS, deps)
-    expect(deps.exec).toHaveBeenCalledTimes(3)
+    expect(deps.exec).toHaveBeenCalledTimes(4)
   })
 })
 
@@ -204,9 +254,18 @@ describe('error handling', () => {
   it('propagates exec errors from prisma migrate', async () => {
     const deps = makeDeps()
     vi.mocked(deps.exec)
-      .mockImplementationOnce(() => undefined) // npm install succeeds
+      .mockImplementationOnce(() => undefined) // npm install
       .mockImplementationOnce(() => { throw new Error('migration failed') })
     await expect(runSetup(BASE_OPTS, deps)).rejects.toThrow('migration failed')
+  })
+
+  it('propagates exec errors from prisma generate', async () => {
+    const deps = makeDeps()
+    vi.mocked(deps.exec)
+      .mockImplementationOnce(() => undefined) // npm install
+      .mockImplementationOnce(() => undefined) // prisma migrate
+      .mockImplementationOnce(() => { throw new Error('generate failed') })
+    await expect(runSetup(BASE_OPTS, deps)).rejects.toThrow('generate failed')
   })
 
   it('propagates scaffoldAdmin errors', async () => {
@@ -226,6 +285,7 @@ describe('error handling', () => {
     vi.mocked(deps.exec)
       .mockImplementationOnce(() => undefined) // npm install
       .mockImplementationOnce(() => undefined) // prisma migrate
+      .mockImplementationOnce(() => undefined) // prisma generate
       .mockImplementationOnce(() => { throw new Error('create-admin failed') })
     await expect(runSetup(BASE_OPTS, deps)).rejects.toThrow('create-admin failed')
   })
