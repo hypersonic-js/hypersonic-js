@@ -213,15 +213,16 @@ export function createAdminRouter(
       // required columns on the User model are correctly persisted.
       router.post(`/${userSlug}`, async (req: Request, res: Response, next: NextFunction) => {
         try {
-          const body = req.body as Record<string, unknown>
-          const role = body['role']
+            const body = req.body as Record<string, unknown>
+            const coerced = coerceData(body, betterAuthMeta)
+            const role = body['role']
 
-          const extraData: Record<string, unknown> = {}
-          for (const f of betterAuthMeta.formFields) {
-            if (!BETTER_AUTH_CORE_FIELDS.has(f.name) && body[f.name] !== undefined) {
-              extraData[f.name] = body[f.name]
+            const extraData: Record<string, unknown> = {}
+            for (const f of betterAuthMeta.formFields) {
+              if (!BETTER_AUTH_CORE_FIELDS.has(f.name) && coerced[f.name] !== undefined) {
+                extraData[f.name] = coerced[f.name]
+              }
             }
-          }
 
           await createUser({
             body: {
