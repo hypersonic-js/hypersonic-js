@@ -29,7 +29,7 @@ import { parseId } from '../src/routes.js'
 
 let testApp: TestApp
 let regularUser: { id: string; email: string }
-let otherUser: { id: string; email: string }
+let _otherUser: { id: string; email: string }
 let userCredentials: Credentials
 let otherCredentials: Credentials
 
@@ -52,7 +52,7 @@ beforeAll(async () => {
     name: 'Other User',
     password: 'Password123!',
   })
-  otherUser = u2.user
+  _otherUser = u2.user
   otherCredentials = await getCredentials(
     testApp.express,
     await signIn(testApp.express, 'routes-other@test.com', 'Password123!'),

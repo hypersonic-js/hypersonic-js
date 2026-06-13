@@ -9,6 +9,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/coverage/**',
       'apps/test-app/public/**',
+      'packages/cli/templates/**',
     ],
   },
   ...tseslint.configs.recommended,

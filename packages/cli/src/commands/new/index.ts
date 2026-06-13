@@ -4,8 +4,8 @@ import { randomBytes } from 'node:crypto'
 import type { Command } from 'commander'
 import { prompt as defaultPrompt, type PromptFn } from '../../utils/prompt.js'
 import { logger } from '../../utils/logger.js'
-import { generateFiles, type GenerateFilesDeps } from './generate-files.js'
-import { runSetup, type RunSetupDeps } from './run-setup.js'
+import { generateFiles } from './generate-files.js'
+import { runSetup } from './run-setup.js'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
