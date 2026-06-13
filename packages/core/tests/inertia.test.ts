@@ -431,4 +431,19 @@ describe('createInertiaErrorHandler', () => {
     expect(res.status).toBe(500)
     expect(res.body.error).toBe('Internal Server Error')
   })
+
+  it('passes through POST with neither cookie nor header present (defers to auth guard)', async () => {
+      const app = await buildCsrfTestApp()
+      // No Cookie header, no X-XSRF-TOKEN header — completely unauthenticated
+      // request that has never received a CSRF cookie. The validator must not
+      // return 419; downstream auth middleware is responsible for this case.
+      const res = await request(app).post('/mutate')
+      expect(res.status).toBe(200)
+    })
+
+    it('passes through DELETE with neither cookie nor header present (defers to auth guard)', async () => {
+      const app = await buildCsrfTestApp()
+      const res = await request(app).delete('/mutate/1')
+      expect(res.status).toBe(200)
+    })
 })
