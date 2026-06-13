@@ -65,10 +65,12 @@ async function loadDeps(): Promise<RunSetupDeps> {
  */
 export async function runSetup(
   opts: RunSetupOptions,
-  deps: RunSetupDeps = await loadDeps(),
+  deps?: RunSetupDeps,
 ): Promise<void> {
+  // `await` cannot be used in a default parameter expression of an async
+  // function — it is a syntax error. Resolve lazily inside the body instead.
+  const { exec, scaffoldAdmin: doScaffold, generateAdminMeta } = deps ?? (await loadDeps())
   const { projectDir } = opts
-  const { exec, scaffoldAdmin: doScaffold, generateAdminMeta } = deps
 
   const pagesDir = join(projectDir, 'resources/js/Pages')
   const schemaPath = join(projectDir, 'prisma/schema.prisma')

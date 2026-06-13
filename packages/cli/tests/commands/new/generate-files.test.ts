@@ -12,7 +12,13 @@ import {
 
 function makeDeps(fileContents: Record<string, string> = {}): GenerateFilesDeps {
   return {
-    readFile: vi.fn((p: string) => fileContents[p] ?? 'template content'),
+    // Normalize backslashes to forward slashes before the dictionary lookup so
+    // that tests using forward-slash keys (e.g. '/fake/templates/new/package.json')
+    // work correctly on Windows, where path.join produces backslash paths.
+    readFile: vi.fn((p: string) => {
+      const key = p.replace(/\\/g, '/')
+      return fileContents[key] ?? 'template content'
+    }),
     mkdir: vi.fn(),
     writeFile: vi.fn(),
     templatesDir: '/fake/templates/new',
