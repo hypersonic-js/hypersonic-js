@@ -1,639 +1,677 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import express from 'express'
-import type { Request, Response, NextFunction } from 'express'
-import request from 'supertest'
-
-import { mountAdmin } from '@hypersonic-js/admin'
-import type { AdminModelMeta, AdminOptions, PrismaClientLike } from '@hypersonic-js/admin'
-
-// ─── Test-app meta ────────────────────────────────────────────────────────────
-//
-// Pre-computed AdminModelMeta[] that mirrors the test-app's Prisma schema,
-// equivalent to what `hypersonic admin generate-meta` produces from the schema.
-// Includes the Better Auth admin plugin fields (role, banned, banReason,
-// banExpires) and the Post model with its relation to User.
-
-const testAppMeta: AdminModelMeta[] = [
-  {
-    name: 'User',
-    urlSlug: 'user',
-    displayName: 'Users',
-    idField: 'id',
-    idType: 'string',
-    displayField: 'name',
-    fields: [
-      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'email', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: true, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'emailVerified', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'image', prismaType: 'String', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'role', prismaType: 'Role', kind: 'enum', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false, enumValues: ['user', 'admin'] },
-      { name: 'banned', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'banReason', prismaType: 'String', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'banExpires', prismaType: 'DateTime', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'createdAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isForeignKey: false, isList: false },
-      { name: 'updatedAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isForeignKey: false, isList: false },
-    ],
-    listFields: [
-      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'email', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: true, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'emailVerified', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'image', prismaType: 'String', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'role', prismaType: 'Role', kind: 'enum', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false, enumValues: ['user', 'admin'] },
-    ],
-    formFields: [
-      { name: 'name', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'email', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: true, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'emailVerified', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'image', prismaType: 'String', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'role', prismaType: 'Role', kind: 'enum', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false, enumValues: ['user', 'admin'] },
-    ],
-  },
-  {
-    name: 'Session',
-    urlSlug: 'session',
-    displayName: 'Sessions',
-    idField: 'id',
-    idType: 'string',
-    displayField: 'id',
-    fields: [
-      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-    ],
-    listFields: [
-      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-    ],
-    formFields: [],
-  },
-  {
-    name: 'Account',
-    urlSlug: 'account',
-    displayName: 'Accounts',
-    idField: 'id',
-    idType: 'string',
-    displayField: 'id',
-    fields: [
-      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-    ],
-    listFields: [
-      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-    ],
-    formFields: [],
-  },
-  {
-    name: 'Verification',
-    urlSlug: 'verification',
-    displayName: 'Verifications',
-    idField: 'id',
-    idType: 'string',
-    displayField: 'id',
-    fields: [
-      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-    ],
-    listFields: [
-      { name: 'id', prismaType: 'String', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-    ],
-    formFields: [],
-  },
-  {
-    name: 'Post',
-    urlSlug: 'post',
-    displayName: 'Posts',
-    idField: 'id',
-    idType: 'number',
-    displayField: 'title',
-    fields: [
-      { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'body', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'userId', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isForeignKey: true, relatedModelName: 'User', isList: false },
-      { name: 'user', prismaType: 'User', kind: 'relation', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false, relationTo: 'User' },
-      { name: 'createdAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: true, isForeignKey: false, isList: false },
-      { name: 'updatedAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isForeignKey: false, isList: false },
-    ],
-    listFields: [
-      { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'userId', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isForeignKey: true, relatedModelName: 'User', isList: false },
-      { name: 'createdAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: true, isForeignKey: false, isList: false },
-      { name: 'updatedAt', prismaType: 'DateTime', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isForeignKey: false, isList: false },
-    ],
-    formFields: [
-      { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'body', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      { name: 'userId', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: true, isForeignKey: true, relatedModelName: 'User', isList: false },
-    ],
-  },
-]
-
-// ─── Fixtures ────────────────────────────────────────────────────────────────
-
-function makeAuth(role: string | null) {
-  return {
-    api: {
-      getSession: vi.fn().mockResolvedValue(
-        role !== null ? { user: { role } } : null,
-      ),
-    },
-  }
-}
-
-function makeDelegate() {
-  return {
-    findMany: vi.fn().mockResolvedValue([]),
-    findUnique: vi.fn().mockResolvedValue(null),
-    create: vi.fn().mockResolvedValue({}),
-    update: vi.fn().mockResolvedValue({}),
-    delete: vi.fn().mockResolvedValue({}),
-    count: vi.fn().mockResolvedValue(0),
-  }
-}
-
-// Extracted so mutation tests can assert on delegate calls.
-const postDelegate = makeDelegate()
-const userDelegate = makeDelegate()
-
-const mockPrisma = {
-  $disconnect: vi.fn(),
-  post: postDelegate,
-  user: userDelegate,
-  session: makeDelegate(),
-  account: makeDelegate(),
-  verification: makeDelegate(),
-} as unknown as PrismaClientLike
-
-function baseOptions(overrides: Partial<AdminOptions> = {}): AdminOptions {
-  return {
-    meta: testAppMeta,
-    auth: makeAuth('admin'),
-    ...overrides,
-  }
-}
-
 /**
- * Builds a test Express app with an inertia stub so routes return assertable
- * JSON, then mounts the admin dashboard.
+ * Integration tests for the Hypersonic admin dashboard.
+ *
+ * Uses a real Postgres database, real Better Auth sessions, and the real Better
+ * Auth admin plugin (createUser / adminUpdateUser / removeUser). No Prisma
+ * delegates are mocked; no sessions are faked.
+ *
+ * User lifecycle
+ * ──────────────
+ * adminUser and regularUser are created once in beforeAll via Better Auth
+ * sign-up. adminUser is promoted to role "admin" via Prisma so that subsequent
+ * sign-in returns an admin session. Posts are cleaned in beforeEach; users and
+ * sessions persist across tests within the file.
+ *
+ * CSRF
+ * ────
+ * All mutation requests (POST / PATCH / DELETE) include the XSRF-TOKEN cookie
+ * and X-XSRF-TOKEN header obtained from getCredentials(). For unauthenticated
+ * mutation tests a synthetic matching token pair is constructed manually since
+ * there is no session to derive one from — this passes CSRF validation and lets
+ * the admin auth middleware return the expected 403.
+ *
+ * Inertia
+ * ───────
+ * GET requests to admin pages are sent with X-Inertia: true so the middleware
+ * returns assertable JSON ({ component, props }) rather than a full HTML page.
  */
-function buildAdminApp(options: AdminOptions) {
-  const app = express()
-  app.use(express.json())
-  app.use(express.urlencoded({ extended: true }))
+import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest'
+import request from 'supertest'
+import {
+  buildTestApp,
+  signUp,
+  signIn,
+  getCredentials,
+  setAdminRole,
+  cleanPosts,
+  cleanDatabase,
+} from './helpers/setup.js'
+import type { TestApp, Credentials } from './helpers/setup.js'
+import type { AdminOptions } from '@hypersonic-js/admin'
 
-  app.use((_req: Request, res: Response, next: NextFunction) => {
-    ;(res as unknown as Record<string, unknown>)['inertia'] = (
-      component: string,
-      props: Record<string, unknown> = {},
-    ) => res.json({ component, props })
-    next()
+// ─── Setup ────────────────────────────────────────────────────────────────────
+
+let testApp: TestApp
+let adminUser: { id: string; email: string; name: string }
+let regularUser: { id: string; email: string }
+let adminCredentials: Credentials
+let regularCredentials: Credentials
+
+beforeAll(async () => {
+  testApp = await buildTestApp()
+
+  // Admin user: sign up, promote role, then sign in so getSession returns admin.
+  const a = await signUp(testApp.express, {
+    email: 'admin@test.com',
+    name: 'Admin User',
+    password: 'Password123!',
   })
+  adminUser = a.user
+  await setAdminRole(testApp.prisma, adminUser.email)
+  adminCredentials = await getCredentials(
+    testApp.express,
+    await signIn(testApp.express, adminUser.email, 'Password123!'),
+  )
 
-  mountAdmin(app, mockPrisma, options)
-  return app
-}
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
-beforeEach(() => {
-  vi.clearAllMocks()
+  // Regular user: unprivileged, used for 403 enforcement tests.
+  const r = await signUp(testApp.express, {
+    email: 'regular@test.com',
+    name: 'Regular User',
+    password: 'Password123!',
+  })
+  regularUser = r.user
+  regularCredentials = await getCredentials(
+    testApp.express,
+    await signIn(testApp.express, regularUser.email, 'Password123!'),
+  )
 })
 
-describe('mountAdmin with test-app schema', () => {
-  describe('does not throw during mount', () => {
-    it('mounts without error using the full test-app meta', () => {
-      const app = express()
-      expect(() => mountAdmin(app, mockPrisma, baseOptions())).not.toThrow()
-    })
+beforeEach(async () => {
+  await cleanPosts(testApp.prisma)
+})
 
-    it('mounts without error at a custom prefix', () => {
-      const app = express()
-      expect(() =>
-        mountAdmin(app, mockPrisma, baseOptions({ prefix: '/cms' })),
-      ).not.toThrow()
-    })
+afterAll(async () => {
+  await cleanDatabase(testApp.prisma)
+  await testApp.prisma.$disconnect()
+})
+
+/**
+ * A synthetic matching CSRF token pair for unauthenticated mutation tests.
+ * Passes the CSRF validator (stateless: header == cookie) so the admin auth
+ * middleware can produce the expected 403 rather than a 419.
+ */
+function unauthCsrfHeaders() {
+  const token = 'synthetic-no-auth-csrf'
+  return {
+    'Cookie': `XSRF-TOKEN=${token}`,
+    'X-XSRF-TOKEN': token,
+  }
+}
+
+// ─── Authentication enforcement ───────────────────────────────────────────────
+
+describe('authentication enforcement', () => {
+  it('returns 403 when there is no active session', async () => {
+    const res = await request(testApp.express).get('/admin').set('X-Inertia', 'true')
+    expect(res.status).toBe(403)
   })
 
-  describe('authentication enforcement — role-based', () => {
-    it('returns 403 when there is no active session', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth(null) }))
-      const res = await request(app).get('/admin')
-      expect(res.status).toBe(403)
-    })
-
-    it('returns 403 when the session user has role "user"', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth('user') }))
-      const res = await request(app).get('/admin')
-      expect(res.status).toBe(403)
-    })
-
-    it('returns 403 for any non-admin role', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth('moderator') }))
-      const res = await request(app).get('/admin')
-      expect(res.status).toBe(403)
-    })
-
-    it('allows access when the session user has role "admin"', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).get('/admin')
-      expect(res.status).toBe(200)
-    })
+  it('returns 403 for a session with role "user"', async () => {
+    const res = await request(testApp.express)
+      .get('/admin')
+      .set('Cookie', regularCredentials.cookie)
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(403)
   })
 
-  describe('GET /admin — dashboard', () => {
-    it('renders the Admin/Dashboard component', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).get('/admin')
-      expect(res.status).toBe(200)
-      expect(res.body.component).toBe('Admin/Dashboard')
-    })
-
-    it('includes models in the dashboard props', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).get('/admin')
-      expect(res.body.props.models).toBeDefined()
-      expect(Array.isArray(res.body.props.models)).toBe(true)
-    })
-
-    it('exposes the Post model (not hidden by default)', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).get('/admin')
-      const models: Array<{ name: string }> = res.body.props.models
-      expect(models.some((m) => m.name === 'Post')).toBe(true)
-    })
-
-    it('exposes the User model (not in DEFAULT_HIDDEN_MODELS)', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).get('/admin')
-      const models: Array<{ name: string }> = res.body.props.models
-      expect(models.some((m) => m.name === 'User')).toBe(true)
-    })
-
-    it('hides Session by default (Better Auth internal table)', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).get('/admin')
-      const models: Array<{ name: string }> = res.body.props.models
-      expect(models.some((m) => m.name === 'Session')).toBe(false)
-    })
-
-    it('hides Account by default (Better Auth internal table)', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).get('/admin')
-      const models: Array<{ name: string }> = res.body.props.models
-      expect(models.some((m) => m.name === 'Account')).toBe(false)
-    })
-
-    it('hides Verification by default (Better Auth internal table)', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).get('/admin')
-      const models: Array<{ name: string }> = res.body.props.models
-      expect(models.some((m) => m.name === 'Verification')).toBe(false)
-    })
-
-    it('shows Session when showAuthModels is true', async () => {
-      const app = buildAdminApp(baseOptions({ showAuthModels: true }))
-      const res = await request(app).get('/admin')
-      const models: Array<{ name: string }> = res.body.props.models
-      expect(models.some((m) => m.name === 'Session')).toBe(true)
-    })
+  it('allows access for a session with role "admin"', async () => {
+    const res = await request(testApp.express)
+      .get('/admin')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(200)
   })
 
-  describe('GET /admin/post — Post model index', () => {
-    it('renders the Admin/ModelIndex component', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).get('/admin/post')
-      expect(res.status).toBe(200)
-      expect(res.body.component).toBe('Admin/ModelIndex')
-    })
+  it('returns 403 for an unauthenticated POST mutation', async () => {
+    const res = await request(testApp.express)
+      .post('/admin/post')
+      .set(unauthCsrfHeaders())
+      .send({ title: 'x', body: 'y', userId: adminUser.id })
+    expect(res.status).toBe(403)
+  })
+})
 
-    it('returns 403 for unauthenticated access', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth(null) }))
-      const res = await request(app).get('/admin/post')
-      expect(res.status).toBe(403)
-    })
+// ─── GET /admin — dashboard ───────────────────────────────────────────────────
+
+describe('GET /admin — dashboard', () => {
+  it('renders the Admin/Dashboard component', async () => {
+    const res = await request(testApp.express)
+      .get('/admin')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(200)
+    expect(res.body.component).toBe('Admin/Dashboard')
   })
 
-  describe('GET /admin/user — User model index', () => {
-    it('renders the Admin/ModelIndex component', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).get('/admin/user')
-      expect(res.status).toBe(200)
-      expect(res.body.component).toBe('Admin/ModelIndex')
-    })
+  it('includes a models array in props', async () => {
+    const res = await request(testApp.express)
+      .get('/admin')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+    expect(Array.isArray(res.body.props.models)).toBe(true)
   })
 
-  // ── POST /admin/post — create post ────────────────────────────────────────
-
-  describe('POST /admin/post — create post', () => {
-    it('creates a post and redirects to the post list', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app)
-        .post('/admin/post')
-        .send({ title: 'New Post', body: 'Post content', userId: 'user-1' })
-      expect(res.status).toBe(303)
-      expect(res.headers['location']).toBe('/admin/post')
-      expect(postDelegate.create).toHaveBeenCalledOnce()
-    })
-
-    it('passes form data through to the Prisma delegate', async () => {
-      const app = buildAdminApp(baseOptions())
-      await request(app)
-        .post('/admin/post')
-        .send({ title: 'My Title', body: 'My Body', userId: 'user-1' })
-      expect(postDelegate.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ title: 'My Title', body: 'My Body' }),
-        }),
-      )
-    })
-
-    it('returns 403 when unauthenticated', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth(null) }))
-      const res = await request(app).post('/admin/post').send({ title: 'x', body: 'y', userId: 'u1' })
-      expect(res.status).toBe(403)
-      expect(postDelegate.create).not.toHaveBeenCalled()
-    })
-
-    it('returns 403 for non-admin role', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth('user') }))
-      const res = await request(app).post('/admin/post').send({ title: 'x', body: 'y', userId: 'u1' })
-      expect(res.status).toBe(403)
-    })
+  it('shows the Post model in the dashboard', async () => {
+    const res = await request(testApp.express)
+      .get('/admin')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+    const names = (res.body.props.models as Array<{ name: string }>).map((m) => m.name)
+    expect(names).toContain('Post')
   })
 
-  // ── PATCH /admin/post/:id — update post ───────────────────────────────────
-
-  describe('PATCH /admin/post/:id — update post', () => {
-    it('updates a post and redirects to the post list', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app)
-        .patch('/admin/post/1')
-        .send({ title: 'Updated Title' })
-      expect(res.status).toBe(303)
-      expect(res.headers['location']).toBe('/admin/post')
-      expect(postDelegate.update).toHaveBeenCalledOnce()
-    })
-
-    it('passes the numeric id to the Prisma delegate', async () => {
-      const app = buildAdminApp(baseOptions())
-      await request(app).patch('/admin/post/42').send({ title: 'Updated' })
-      expect(postDelegate.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 42 } }),
-      )
-    })
-
-    it('returns 403 when unauthenticated', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth(null) }))
-      const res = await request(app).patch('/admin/post/1').send({ title: 'x' })
-      expect(res.status).toBe(403)
-      expect(postDelegate.update).not.toHaveBeenCalled()
-    })
+  it('shows the User model in the dashboard', async () => {
+    const res = await request(testApp.express)
+      .get('/admin')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+    const names = (res.body.props.models as Array<{ name: string }>).map((m) => m.name)
+    expect(names).toContain('User')
   })
 
-  // ── DELETE /admin/post/:id — delete post ──────────────────────────────────
-
-  describe('DELETE /admin/post/:id — delete post', () => {
-    it('deletes a post and redirects to the post list', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).delete('/admin/post/1')
-      expect(res.status).toBe(303)
-      expect(res.headers['location']).toBe('/admin/post')
-      expect(postDelegate.delete).toHaveBeenCalledOnce()
-    })
-
-    it('passes the numeric id to the Prisma delegate', async () => {
-      const app = buildAdminApp(baseOptions())
-      await request(app).delete('/admin/post/7')
-      expect(postDelegate.delete).toHaveBeenCalledWith({ where: { id: 7 } })
-    })
-
-    it('returns 403 when unauthenticated', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth(null) }))
-      const res = await request(app).delete('/admin/post/1')
-      expect(res.status).toBe(403)
-      expect(postDelegate.delete).not.toHaveBeenCalled()
-    })
+  it('hides Session by default (Better Auth internal table)', async () => {
+    const res = await request(testApp.express)
+      .get('/admin')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+    const names = (res.body.props.models as Array<{ name: string }>).map((m) => m.name)
+    expect(names).not.toContain('Session')
   })
 
-  // ── POST /admin/user — create user ────────────────────────────────────────
+  it('hides Account by default', async () => {
+    const res = await request(testApp.express)
+      .get('/admin')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+    const names = (res.body.props.models as Array<{ name: string }>).map((m) => m.name)
+    expect(names).not.toContain('Account')
+  })
 
-  describe('POST /admin/user — create user', () => {
-    it('creates a user and redirects to the user list', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app)
+  it('hides Verification by default', async () => {
+    const res = await request(testApp.express)
+      .get('/admin')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+    const names = (res.body.props.models as Array<{ name: string }>).map((m) => m.name)
+    expect(names).not.toContain('Verification')
+  })
+
+  it('reflects real Post record counts from the database', async () => {
+    await testApp.prisma.post.createMany({
+      data: [
+        { title: 'A', body: 'a', userId: adminUser.id },
+        { title: 'B', body: 'b', userId: adminUser.id },
+      ],
+    })
+
+    const res = await request(testApp.express)
+      .get('/admin')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+
+    const postModel = (
+      res.body.props.models as Array<{ name: string; recordCount: number }>
+    ).find((m) => m.name === 'Post')
+    expect(postModel?.recordCount).toBe(2)
+  })
+})
+
+// ─── showAuthModels option ────────────────────────────────────────────────────
+
+describe('showAuthModels option', () => {
+  it('shows Session when showAuthModels is true', async () => {
+    const altApp = await buildTestApp({ showAuthModels: true })
+    try {
+      const res = await request(altApp.express)
+        .get('/admin')
+        .set('Cookie', adminCredentials.cookie)  // works cross-app — same DB + secret
+        .set('X-Inertia', 'true')
+      const names = (res.body.props.models as Array<{ name: string }>).map((m) => m.name)
+      expect(names).toContain('Session')
+    } finally {
+      await altApp.prisma.$disconnect()
+    }
+  })
+})
+
+// ─── GET /admin/post ──────────────────────────────────────────────────────────
+
+describe('GET /admin/post — Post model index', () => {
+  it('renders the Admin/ModelIndex component', async () => {
+    const res = await request(testApp.express)
+      .get('/admin/post')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(200)
+    expect(res.body.component).toBe('Admin/ModelIndex')
+  })
+
+  it('returns 403 for unauthenticated access', async () => {
+    const res = await request(testApp.express)
+      .get('/admin/post')
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(403)
+  })
+})
+
+// ─── GET /admin/user ──────────────────────────────────────────────────────────
+
+describe('GET /admin/user — User model index', () => {
+  it('renders the Admin/ModelIndex component', async () => {
+    const res = await request(testApp.express)
+      .get('/admin/user')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-Inertia', 'true')
+    expect(res.status).toBe(200)
+    expect(res.body.component).toBe('Admin/ModelIndex')
+  })
+})
+
+// ─── POST /admin/post ─────────────────────────────────────────────────────────
+
+describe('POST /admin/post — create post', () => {
+  it('creates a real post record and redirects to the post list', async () => {
+    const res = await request(testApp.express)
+      .post('/admin/post')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
+      .send({ title: 'Admin Post', body: 'Post body', userId: adminUser.id })
+
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/post')
+
+    const post = await testApp.prisma.post.findFirst({ where: { title: 'Admin Post' } })
+    expect(post).not.toBeNull()
+    expect(post?.body).toBe('Post body')
+  })
+
+  it('stores the submitted data correctly in the database', async () => {
+    await request(testApp.express)
+      .post('/admin/post')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
+      .send({ title: 'Stored Title', body: 'Stored Body', userId: adminUser.id })
+
+    const post = await testApp.prisma.post.findFirst({ where: { title: 'Stored Title' } })
+    expect(post?.body).toBe('Stored Body')
+    expect(post?.userId).toBe(adminUser.id)
+  })
+
+  it('returns 403 when unauthenticated', async () => {
+    const res = await request(testApp.express)
+      .post('/admin/post')
+      .set(unauthCsrfHeaders())
+      .send({ title: 'x', body: 'y', userId: adminUser.id })
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 403 for a non-admin session', async () => {
+    const res = await request(testApp.express)
+      .post('/admin/post')
+      .set('Cookie', regularCredentials.cookie)
+      .set('X-XSRF-TOKEN', regularCredentials.csrfToken)
+      .send({ title: 'x', body: 'y', userId: regularUser.id })
+    expect(res.status).toBe(403)
+  })
+})
+
+// ─── PATCH /admin/post/:id ────────────────────────────────────────────────────
+
+describe('PATCH /admin/post/:id — update post', () => {
+  it('updates the post in the database and redirects to the post list', async () => {
+    const post = await testApp.prisma.post.create({
+      data: { title: 'Original Title', body: 'Original Body', userId: adminUser.id },
+    })
+
+    const res = await request(testApp.express)
+      .patch(`/admin/post/${post.id}`)
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
+      .send({ title: 'Updated Title' })
+
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/post')
+
+    const updated = await testApp.prisma.post.findUnique({ where: { id: post.id } })
+    expect(updated?.title).toBe('Updated Title')
+  })
+
+  it('returns 403 when unauthenticated', async () => {
+    const post = await testApp.prisma.post.create({
+      data: { title: 'Guarded', body: 'body', userId: adminUser.id },
+    })
+    const res = await request(testApp.express)
+      .patch(`/admin/post/${post.id}`)
+      .set(unauthCsrfHeaders())
+      .send({ title: 'x' })
+    expect(res.status).toBe(403)
+  })
+})
+
+// ─── DELETE /admin/post/:id ───────────────────────────────────────────────────
+
+describe('DELETE /admin/post/:id — delete post', () => {
+  it('deletes the post from the database and redirects to the post list', async () => {
+    const post = await testApp.prisma.post.create({
+      data: { title: 'To Delete', body: 'body', userId: adminUser.id },
+    })
+
+    const res = await request(testApp.express)
+      .delete(`/admin/post/${post.id}`)
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
+
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/post')
+
+    const gone = await testApp.prisma.post.findUnique({ where: { id: post.id } })
+    expect(gone).toBeNull()
+  })
+
+  it('returns 403 when unauthenticated', async () => {
+    const post = await testApp.prisma.post.create({
+      data: { title: 'Protected', body: 'body', userId: adminUser.id },
+    })
+    const res = await request(testApp.express)
+      .delete(`/admin/post/${post.id}`)
+      .set(unauthCsrfHeaders())
+    expect(res.status).toBe(403)
+  })
+})
+
+// ─── POST /admin/user ─────────────────────────────────────────────────────────
+//
+// User mutations go through Better Auth's admin plugin (createUser /
+// adminUpdateUser / removeUser) rather than Prisma directly.
+
+describe('POST /admin/user — create user via Better Auth admin API', () => {
+  it('creates a real user and redirects to the user list', async () => {
+    const testEmail = 'admin-created@test.com'
+    try {
+      const res = await request(testApp.express)
         .post('/admin/user')
-        .send({ name: 'Alice', email: 'alice@example.com', emailVerified: 'false' })
+        .set('Cookie', adminCredentials.cookie)
+        .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
+        .send({ name: 'Created User', email: testEmail, password: 'Password123!', role: 'user' })
+
       expect(res.status).toBe(303)
       expect(res.headers['location']).toBe('/admin/user')
-      expect(userDelegate.create).toHaveBeenCalledOnce()
-    })
 
-    it('passes form data through to the Prisma delegate', async () => {
-      const app = buildAdminApp(baseOptions())
-      await request(app)
-        .post('/admin/user')
-        .send({ name: 'Bob', email: 'bob@example.com', emailVerified: 'true' })
-      expect(userDelegate.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ name: 'Bob', email: 'bob@example.com' }),
-        }),
-      )
-    })
-
-    it('coerces emailVerified string to boolean', async () => {
-      const app = buildAdminApp(baseOptions())
-      await request(app)
-        .post('/admin/user')
-        .send({ name: 'Carol', email: 'carol@example.com', emailVerified: 'true' })
-      expect(userDelegate.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ emailVerified: true }),
-        }),
-      )
-    })
-
-    it('returns 403 when unauthenticated', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth(null) }))
-      const res = await request(app)
-        .post('/admin/user')
-        .send({ name: 'x', email: 'x@x.com', emailVerified: 'false' })
-      expect(res.status).toBe(403)
-      expect(userDelegate.create).not.toHaveBeenCalled()
-    })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const user = await (testApp.prisma.user as any).findUnique({ where: { email: testEmail } })
+      expect(user).not.toBeNull()
+      expect(user?.name).toBe('Created User')
+    } finally {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (testApp.prisma.user as any).deleteMany({ where: { email: testEmail } })
+    }
   })
 
-  // ── PATCH /admin/user/:id — update user ───────────────────────────────────
+  it('returns 403 when unauthenticated', async () => {
+    const res = await request(testApp.express)
+      .post('/admin/user')
+      .set(unauthCsrfHeaders())
+      .send({ name: 'x', email: 'x@x.com', password: 'Password123!' })
+    expect(res.status).toBe(403)
+  })
 
-  describe('PATCH /admin/user/:id — update user', () => {
-    it('updates a user and redirects to the user list', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app)
-        .patch('/admin/user/user-1')
+  it('returns 403 for a non-admin session', async () => {
+    const res = await request(testApp.express)
+      .post('/admin/user')
+      .set('Cookie', regularCredentials.cookie)
+      .set('X-XSRF-TOKEN', regularCredentials.csrfToken)
+      .send({ name: 'x', email: 'x2@x.com', password: 'Password123!' })
+    expect(res.status).toBe(403)
+  })
+})
+
+// ─── PATCH /admin/user/:id ────────────────────────────────────────────────────
+
+describe('PATCH /admin/user/:id — update user via Better Auth adminUpdateUser', () => {
+  it('updates the user record and redirects to the user list', async () => {
+    // Create a user to update
+    const { user: tempUser } = await signUp(testApp.express, {
+      email: 'patch-user@test.com',
+      name: 'Original Name',
+      password: 'Password123!',
+    })
+    try {
+      const res = await request(testApp.express)
+        .patch(`/admin/user/${tempUser.id}`)
+        .set('Cookie', adminCredentials.cookie)
+        .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
         .send({ name: 'Updated Name' })
+
       expect(res.status).toBe(303)
       expect(res.headers['location']).toBe('/admin/user')
-      expect(userDelegate.update).toHaveBeenCalledOnce()
-    })
 
-    it('passes the string id to the Prisma delegate', async () => {
-      const app = buildAdminApp(baseOptions())
-      await request(app).patch('/admin/user/abc-123').send({ name: 'Updated' })
-      expect(userDelegate.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'abc-123' } }),
-      )
-    })
-
-    it('returns 403 when unauthenticated', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth(null) }))
-      const res = await request(app).patch('/admin/user/user-1').send({ name: 'x' })
-      expect(res.status).toBe(403)
-      expect(userDelegate.update).not.toHaveBeenCalled()
-    })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const updated = await (testApp.prisma.user as any).findUnique({ where: { id: tempUser.id } })
+      expect(updated?.name).toBe('Updated Name')
+    } finally {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (testApp.prisma.session as any).deleteMany({ where: { userId: tempUser.id } })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (testApp.prisma.user as any).deleteMany({ where: { id: tempUser.id } })
+    }
   })
 
-  // ── DELETE /admin/user/:id — delete user ──────────────────────────────────
+  it('returns 403 when unauthenticated', async () => {
+    const res = await request(testApp.express)
+      .patch(`/admin/user/${adminUser.id}`)
+      .set(unauthCsrfHeaders())
+      .send({ name: 'x' })
+    expect(res.status).toBe(403)
+  })
+})
 
-  describe('DELETE /admin/user/:id — delete user', () => {
-    it('deletes a user and redirects to the user list', async () => {
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app).delete('/admin/user/user-1')
-      expect(res.status).toBe(303)
-      expect(res.headers['location']).toBe('/admin/user')
-      expect(userDelegate.delete).toHaveBeenCalledOnce()
+// ─── DELETE /admin/user/:id ───────────────────────────────────────────────────
+
+describe('DELETE /admin/user/:id — delete user via Better Auth removeUser', () => {
+  it('removes the user from the database and redirects to the user list', async () => {
+    // Sign up a user to delete — ensures a proper Better Auth account exists.
+    const { user: tempUser } = await signUp(testApp.express, {
+      email: 'delete-user@test.com',
+      name: 'Delete Me',
+      password: 'Password123!',
     })
 
-    it('passes the string id to the Prisma delegate', async () => {
-      const app = buildAdminApp(baseOptions())
-      await request(app).delete('/admin/user/abc-123')
-      expect(userDelegate.delete).toHaveBeenCalledWith({ where: { id: 'abc-123' } })
-    })
+    const res = await request(testApp.express)
+      .delete(`/admin/user/${tempUser.id}`)
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
 
-    it('returns 403 when unauthenticated', async () => {
-      const app = buildAdminApp(baseOptions({ auth: makeAuth(null) }))
-      const res = await request(app).delete('/admin/user/user-1')
-      expect(res.status).toBe(403)
-      expect(userDelegate.delete).not.toHaveBeenCalled()
-    })
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/user')
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const gone = await (testApp.prisma.user as any).findUnique({ where: { id: tempUser.id } })
+    expect(gone).toBeNull()
   })
 
-  // ── Error handling — Prisma throws ────────────────────────────────────────
+  it('returns 403 when unauthenticated', async () => {
+    const res = await request(testApp.express)
+      .delete(`/admin/user/${regularUser.id}`)
+      .set(unauthCsrfHeaders())
+    expect(res.status).toBe(403)
+  })
+})
 
-  describe('error handling — Prisma throws on admin mutations', () => {
-    it('redirects to Referer when post create fails on an Inertia request', async () => {
-      postDelegate.create.mockRejectedValueOnce(new Error('Unique constraint'))
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app)
+// ─── Error handling — real database errors ────────────────────────────────────
+
+describe('error handling — real database constraint violations', () => {
+  it('redirects to Referer when post create fails (FK violation: non-existent userId)', async () => {
+    const res = await request(testApp.express)
+      .post('/admin/post')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
+      .set('X-Inertia', 'true')
+      .set('Referer', '/admin/post/new')
+      .send({ title: 'Bad Post', body: 'body', userId: 'non-existent-user-id' })
+
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/post/new')
+  })
+
+  it('redirects to Referer when post update fails (P2025: record not found)', async () => {
+    const res = await request(testApp.express)
+      .patch('/admin/post/9999999')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
+      .set('X-Inertia', 'true')
+      .set('Referer', '/admin/post/9999999')
+      .send({ title: 'Update Ghost' })
+
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/post/9999999')
+  })
+
+  it('redirects to Referer when user create fails (unique constraint: duplicate email)', async () => {
+    // adminUser.email already exists — this triggers a unique constraint violation.
+    const res = await request(testApp.express)
+      .post('/admin/user')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
+      .set('X-Inertia', 'true')
+      .set('Referer', '/admin/user/new')
+      .send({ name: 'Dup', email: adminUser.email, password: 'Password123!' })
+
+    expect(res.status).toBe(303)
+    expect(res.headers['location']).toBe('/admin/user/new')
+  })
+
+  it('calls logger.error when a mutation fails', async () => {
+    const errorFn = vi.fn()
+    const altApp = await buildTestApp({
+      logger: { error: errorFn, warn: vi.fn(), info: vi.fn() },
+    })
+
+    try {
+      // FK violation triggers the admin error handler which calls logger.error
+      await request(altApp.express)
         .post('/admin/post')
-        .send({ title: 'Dupe', body: 'x', userId: 'u1' })
+        .set('Cookie', adminCredentials.cookie)   // valid cross-app (same DB + secret)
+        .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
         .set('X-Inertia', 'true')
-        .set('Referer', '/admin/post/new')
-      expect(res.status).toBe(303)
-      expect(res.headers['location']).toBe('/admin/post/new')
-    })
+        .send({ title: 'Fail', body: 'x', userId: 'non-existent' })
 
-    it('redirects to Referer when user create fails on an Inertia request', async () => {
-      userDelegate.create.mockRejectedValueOnce(new Error('Email taken'))
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app)
-        .post('/admin/user')
-        .send({ name: 'x', email: 'exists@example.com', emailVerified: 'false' })
-        .set('X-Inertia', 'true')
-        .set('Referer', '/admin/user/new')
-      expect(res.status).toBe(303)
-      expect(res.headers['location']).toBe('/admin/user/new')
-    })
-
-    it('redirects to Referer when post update fails on an Inertia request', async () => {
-      postDelegate.update.mockRejectedValueOnce(new Error('Record not found'))
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app)
-        .patch('/admin/post/999')
-        .send({ title: 'x' })
-        .set('X-Inertia', 'true')
-        .set('Referer', '/admin/post/999')
-      expect(res.status).toBe(303)
-      expect(res.headers['location']).toBe('/admin/post/999')
-    })
-
-    it('redirects to Referer when user update fails on an Inertia request', async () => {
-      userDelegate.update.mockRejectedValueOnce(new Error('Record not found'))
-      const app = buildAdminApp(baseOptions())
-      const res = await request(app)
-        .patch('/admin/user/ghost-id')
-        .send({ name: 'x' })
-        .set('X-Inertia', 'true')
-        .set('Referer', '/admin/user/ghost-id')
-      expect(res.status).toBe(303)
-      expect(res.headers['location']).toBe('/admin/user/ghost-id')
-    })
-
-    it('calls logger.error when a mutation fails', async () => {
-      const mockLogger = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
-      postDelegate.create.mockRejectedValueOnce(new Error('DB down'))
-      const app = buildAdminApp(baseOptions({ logger: mockLogger }))
-      await request(app)
-        .post('/admin/post')
-        .send({ title: 'Fail' })
-        .set('X-Inertia', 'true')
-      expect(mockLogger.error).toHaveBeenCalledOnce()
-    })
+      expect(errorFn).toHaveBeenCalledOnce()
+    } finally {
+      await altApp.prisma.$disconnect()
+    }
   })
 
-  // ── Custom prefix ─────────────────────────────────────────────────────────
+  it('returns 500 JSON for a mutation error on a non-Inertia request', async () => {
+    const res = await request(testApp.express)
+      .post('/admin/post')
+      .set('Cookie', adminCredentials.cookie)
+      .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
+      // No X-Inertia header — error handler returns JSON
+      .send({ title: 'Bad', body: 'x', userId: 'non-existent-user' })
 
-  describe('custom prefix', () => {
-    it('mounts at /cms instead of /admin', async () => {
-      const app = buildAdminApp(baseOptions({ prefix: '/cms' }))
-      const adminRes = await request(app).get('/admin')
-      const cmsRes = await request(app).get('/cms')
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Internal Server Error')
+  })
+})
+
+// ─── Custom prefix ────────────────────────────────────────────────────────────
+
+describe('custom prefix', () => {
+  it('mounts at /cms and returns 404 for /admin', async () => {
+    const altApp = await buildTestApp({ prefix: '/cms' })
+    try {
+      const adminRes = await request(altApp.express)
+        .get('/admin')
+        .set('Cookie', adminCredentials.cookie)
+        .set('X-Inertia', 'true')
+      const cmsRes = await request(altApp.express)
+        .get('/cms')
+        .set('Cookie', adminCredentials.cookie)
+        .set('X-Inertia', 'true')
+
       expect(adminRes.status).toBe(404)
       expect(cmsRes.status).toBe(200)
-    })
+    } finally {
+      await altApp.prisma.$disconnect()
+    }
+  })
 
-    it('dashboard at custom prefix renders Admin/Dashboard', async () => {
-      const app = buildAdminApp(baseOptions({ prefix: '/cms' }))
-      const res = await request(app).get('/cms')
+  it('renders Admin/Dashboard at the custom prefix', async () => {
+    const altApp = await buildTestApp({ prefix: '/cms' })
+    try {
+      const res = await request(altApp.express)
+        .get('/cms')
+        .set('Cookie', adminCredentials.cookie)
+        .set('X-Inertia', 'true')
       expect(res.body.component).toBe('Admin/Dashboard')
-    })
+    } finally {
+      await altApp.prisma.$disconnect()
+    }
+  })
 
-    it('POST at custom prefix creates a record and redirects', async () => {
-      const app = buildAdminApp(baseOptions({ prefix: '/cms' }))
-      const res = await request(app)
+  it('POST at custom prefix creates a real record in the database', async () => {
+    const altApp = await buildTestApp({ prefix: '/cms' })
+    try {
+      const res = await request(altApp.express)
         .post('/cms/post')
-        .send({ title: 'CMS Post', body: 'Content', userId: 'u1' })
+        .set('Cookie', adminCredentials.cookie)
+        .set('X-XSRF-TOKEN', adminCredentials.csrfToken)
+        .send({ title: 'CMS Post', body: 'Content', userId: adminUser.id })
+
       expect(res.status).toBe(303)
       expect(res.headers['location']).toBe('/cms/post')
-    })
+
+      const post = await testApp.prisma.post.findFirst({ where: { title: 'CMS Post' } })
+      expect(post).not.toBeNull()
+    } finally {
+      await altApp.prisma.$disconnect()
+    }
+  })
+})
+
+// ─── hiddenModels option ──────────────────────────────────────────────────────
+
+describe('hiddenModels option', () => {
+  it('hides an additional model when listed in hiddenModels', async () => {
+    const altApp = await buildTestApp({ hiddenModels: ['User'] })
+    try {
+      const res = await request(altApp.express)
+        .get('/admin')
+        .set('Cookie', adminCredentials.cookie)
+        .set('X-Inertia', 'true')
+      const names = (res.body.props.models as Array<{ name: string }>).map((m) => m.name)
+      expect(names).not.toContain('User')
+    } finally {
+      await altApp.prisma.$disconnect()
+    }
   })
 
-  // ── hiddenModels option ───────────────────────────────────────────────────
+  it('still shows Post when only User is hidden', async () => {
+    const altApp = await buildTestApp({ hiddenModels: ['User'] })
+    try {
+      const res = await request(altApp.express)
+        .get('/admin')
+        .set('Cookie', adminCredentials.cookie)
+        .set('X-Inertia', 'true')
+      const names = (res.body.props.models as Array<{ name: string }>).map((m) => m.name)
+      expect(names).toContain('Post')
+    } finally {
+      await altApp.prisma.$disconnect()
+    }
+  })
+})
 
-  describe('hiddenModels option', () => {
-    it('hides an additional model when listed in hiddenModels', async () => {
-      const app = buildAdminApp(baseOptions({ hiddenModels: ['User'] }))
-      const res = await request(app).get('/admin')
-      const models: Array<{ name: string }> = res.body.props.models
-      expect(models.some((m) => m.name === 'User')).toBe(false)
-    })
+// ─── AdminOptions shape ───────────────────────────────────────────────────────
 
-    it('still shows Post when only User is hidden', async () => {
-      const app = buildAdminApp(baseOptions({ hiddenModels: ['User'] }))
-      const res = await request(app).get('/admin')
-      const models: Array<{ name: string }> = res.body.props.models
-      expect(models.some((m) => m.name === 'Post')).toBe(true)
-    })
+describe('AdminOptions shape', () => {
+  it('does not have an adminEmails field', () => {
+    const opts: AdminOptions = { meta: [], auth: testApp.auth }
+    expect((opts as Record<string, unknown>)['adminEmails']).toBeUndefined()
   })
 
-  // ── AdminOptions shape ────────────────────────────────────────────────────
-
-  describe('AdminOptions shape', () => {
-    it('does not have an adminEmails field', () => {
-      const opts: AdminOptions = baseOptions()
-      expect((opts as Record<string, unknown>)['adminEmails']).toBeUndefined()
-    })
-
-    it('accepts an optional logger field', () => {
-      const logger = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
-      const opts: AdminOptions = baseOptions({ logger })
-      expect(opts.logger).toBe(logger)
-    })
+  it('accepts an optional logger field', () => {
+    const logger = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+    const opts: AdminOptions = { meta: [], auth: testApp.auth, logger }
+    expect(opts.logger).toBe(logger)
   })
 })
