@@ -231,6 +231,7 @@ describe('eslint.config.js template', () => {
 
 // ── vite.config.ts ────────────────────────────────────────────────────────────
 
+describe('vite.config.ts template', () => {
   it('imports @tailwindcss/vite', () => {
     expect(read('vite.config.ts')).toContain("from '@tailwindcss/vite'")
   })

@@ -2,6 +2,17 @@
 
 A TypeScript framework for building full-stack monoliths fast. Hypersonic.js bundles Express, Inertia.js, Prisma, Better Auth, an auto-generated admin dashboard, and a CLI into one cohesive framework — taking inspiration from Django and Rails.
 
+## Quick start 
+
+```bash
+npm install @hypersonic-js/cli
+```
+```bash
+npm hypersonic new
+```
+Your app is now scaffoled and ready to be developed!
+
+
 ## Packages
 
 | Package | Description |

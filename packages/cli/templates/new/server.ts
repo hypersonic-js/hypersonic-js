@@ -37,7 +37,7 @@ app.express.get('/', (_req, res) => {
     routes: [
       { path: '/login', description: 'Sign in to your account' },
       { path: '/register', description: 'Create a new account' },
-      { path: '/admin', description: 'Admin dashboard (admin role required)' },
+      { path: '/admin', description: 'Admin dashboard (admin role required and required to /login first)' },
     ],
   })
 })
