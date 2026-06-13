@@ -4,7 +4,6 @@ export default defineConfig({
   title: 'Hypersonic.js',
   description: 'A modern Django-inspired full-stack TypeScript framework.',
 
-  // Custom domain — no sub-path needed
   base: '/',
 
   head: [['link', { rel: 'icon', href: '/favicon.ico' }]],
@@ -24,7 +23,19 @@ export default defineConfig({
       '/guide/': [
         {
           text: 'Getting Started',
-          items: [{ text: 'Introduction', link: '/guide/' }],
+          items: [
+            { text: 'Introduction', link: '/guide/' },
+            { text: 'Quick Start', link: '/guide/quickstart' },
+          ],
+        },
+        {
+          text: 'Guides',
+          items: [
+            { text: 'Configuration', link: '/guide/configuration' },
+            { text: 'Routing & Controllers', link: '/guide/routing' },
+            { text: 'Frontend (Inertia + React)', link: '/guide/frontend' },
+            { text: 'Authentication', link: '/guide/authentication' },
+          ],
         },
       ],
     },
