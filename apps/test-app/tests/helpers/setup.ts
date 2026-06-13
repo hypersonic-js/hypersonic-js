@@ -33,7 +33,7 @@ const _require = createRequire(import.meta.url)
 const { PrismaClient: PrismaClientCtor } = _require('@prisma/client') as {
   PrismaClient: new (opts?: { adapter?: unknown }) => PrismaClient
 }
-const adminMeta = _require('../prisma/admin-meta.json') as AdminModelMeta[]
+const adminMeta = _require('../../prisma/admin-meta.json') as AdminModelMeta[]
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -66,13 +66,20 @@ export interface Credentials {
  * Optional adminOptions are merged on top of the defaults (meta, auth) so
  * individual test files can exercise alternate configurations — custom prefix,
  * hiddenModels, logger, etc. — while still using the real DB and real auth.
+ *
+ * Rate limiting is disabled so that multiple test suites running in the same
+ * process do not exhaust Better Auth's in-memory per-IP counter and start
+ * receiving 429 responses on sign-up.
  */
 export async function buildTestApp(
   adminOptions: Partial<Omit<AdminOptions, 'meta' | 'auth'>> = {},
 ): Promise<TestApp> {
   const config: HypersonicConfig = {
     server: { port: 0, host: '127.0.0.1' },
-    auth: { trustedOrigins: ['http://localhost', 'http://127.0.0.1'] },
+    auth: {
+      trustedOrigins: ['http://localhost', 'http://127.0.0.1'],
+      rateLimit: { enabled: false },
+    },
     inertia: { ssr: false },
     database: { provider: 'postgresql' },
   }

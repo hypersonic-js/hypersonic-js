@@ -29,8 +29,10 @@ pnpm install
 To target a specific package:
 
 ```bash
-pnpm test --filter @hypersonic-js/core
-pnpm build --filter @hypersonic-js/core
+pnpm test --filter @hypersonic-js/test-app
+```
+```bash
+pnpm build --filter @hypersonic-js/test-app
 ```
 
 ## Test app

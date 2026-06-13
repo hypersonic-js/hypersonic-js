@@ -176,10 +176,15 @@ export async function createInertiaMiddleware(
   ): void => {
     const isInertiaRequest = Boolean(req.headers[INERTIA_HEADER])
 
-    // Asset version mismatch — force a full page reload
+    // Asset version mismatch — force a full page reload.
+    // Only fires when the client sends X-Inertia-Version AND it doesn't match
+    // the server version. Requests without the header (e.g. test clients that
+    // set X-Inertia but omit the version) are let through so they receive the
+    // normal JSON response rather than a 409.
     if (
       isInertiaRequest &&
       req.method === 'GET' &&
+      req.headers[INERTIA_VERSION_HEADER] !== undefined &&
       req.headers[INERTIA_VERSION_HEADER] !== version
     ) {
       res.setHeader('X-Inertia-Location', req.url)

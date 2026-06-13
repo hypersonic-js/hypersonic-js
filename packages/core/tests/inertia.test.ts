@@ -147,6 +147,16 @@ describe('createInertiaMiddleware', () => {
       expect(res.headers['x-inertia-location']).toBe('/test')
     })
 
+    it('returns 200 when X-Inertia is set but X-Inertia-Version header is absent', async () => {
+      const app = await buildTestApp(false, 'v2')
+      const res = await request(app)
+        .get('/test')
+        .set('X-Inertia', 'true')
+        // no X-Inertia-Version — must not trigger version mismatch
+      expect(res.status).toBe(200)
+      expect(res.body.component).toBe('TestPage')
+    })
+
     it('does not trigger version mismatch on non-GET requests', async () => {
       const app = express()
       await createInertiaMiddleware(app, { ssr: false, version: 'v2' })
