@@ -21,11 +21,9 @@ export default defineConfig({
     },
     // Run test files sequentially in a single worker so they share the same
     // Postgres instance without racing on DB state.
+    // Vitest 4: singleFork was replaced by maxWorkers: 1 + isolate: false
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
+    maxWorkers: 1,
+    isolate: false,
   },
 })

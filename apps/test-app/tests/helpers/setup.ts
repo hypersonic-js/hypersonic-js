@@ -23,8 +23,8 @@ import { createApp, createDatabaseAdapter } from '@hypersonic-js/core'
 import type { HypersonicApp, HypersonicConfig, Env } from '@hypersonic-js/core'
 import { mountAdmin } from '@hypersonic-js/admin'
 import type { AdminModelMeta, AdminOptions } from '@hypersonic-js/admin'
-import { registerRoutes } from '../src/routes.js'
-import type { PrismaRouteClient } from '../src/types.js'
+import { registerRoutes } from '../../src/routes.js'
+import type { PrismaRouteClient } from '../../src/types.js'
 import type { PrismaClient } from '@prisma/client'
 
 // PrismaClient is CJS — use createRequire to load it in an ESM context,
