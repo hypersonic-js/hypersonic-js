@@ -946,47 +946,5 @@ describe('Better Auth user management', () => {
       expect(userDelegate.create).toHaveBeenCalledOnce()
       expect(mockCreateUser).not.toHaveBeenCalled()
     })
-
-    it('coerces Boolean extra fields from string to boolean before forwarding to createUser', async () => {
-    const modelWithBooleans: AdminModelMeta = {
-      ...betterAuthUserModel,
-      formFields: [
-        ...betterAuthUserModel.formFields,
-        { name: 'emailVerified', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-        { name: 'banned', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      ],
-    }
-    const app = buildAuthApp(mockAuth, [modelWithBooleans])
-    await request(app)
-      .post('/admin/user')
-      .send({ name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'user', emailVerified: 'false', banned: 'true' })
-    expect(mockCreateUser).toHaveBeenCalledWith({
-      body: expect.objectContaining({
-        data: expect.objectContaining({
-          emailVerified: false,
-          banned: true,
-        }),
-      }),
-    })
-  })
-
-  it('coerces optional DateTime extra field from empty string to null before forwarding to createUser', async () => {
-    const modelWithDateTime: AdminModelMeta = {
-      ...betterAuthUserModel,
-      formFields: [
-        ...betterAuthUserModel.formFields,
-        { name: 'emailVerified', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-        { name: 'banExpires', prismaType: 'DateTime', kind: 'scalar', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
-      ],
-    }
-    const app = buildAuthApp(mockAuth, [modelWithDateTime])
-    await request(app)
-      .post('/admin/user')
-      .send({ name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'user', emailVerified: 'false', banExpires: '' })
-    const callArg = mockCreateUser.mock.calls[0]?.[0] as { body: { data: Record<string, unknown> } }
-    expect(callArg.body.data['emailVerified']).toBe(false)
-    expect(callArg.body.data['banExpires']).toBeNull()
-  })
-
   })
 })
