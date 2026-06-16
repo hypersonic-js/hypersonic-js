@@ -40,8 +40,9 @@ function loadDeps(): NewCommandDeps {
  *
  * Fully interactive — no arguments accepted. Prompts:
  *   1. Directory choice  (new subdirectory | current directory)
- *   2. Warning + confirm if current directory is not empty
+ *   2. Warning + confirm if current directory is not empty   (current dir only)
  *   3. Project name      (always required)
+ *   4. Warning + confirm if new subdirectory already exists  (new dir only)
  *
  * Then generates all project files, runs npm install, runs Prisma migrations,
  * scaffolds the admin dashboard, generates admin metadata, and finally runs
@@ -99,6 +100,23 @@ export function registerNewCommand(
       // ── 4. Resolve project directory ─────────────────────────────────────
       const projectDir = useCurrentDir ? cwd() : join(cwd(), projectName)
       if (!useCurrentDir) {
+        // Guard: warn if the target subdirectory already exists and is non-empty.
+        // A thrown error means the directory does not exist yet — that is fine.
+        try {
+          const existing = readdir(projectDir)
+          if (existing.length > 0) {
+            logger.warn(
+              `Directory "${projectName}" already exists and is not empty (${existing.length} file(s) found).`,
+            )
+            const confirm = await prompt('Continue anyway? [y/N]: ')
+            if (confirm.trim().toLowerCase() !== 'y') {
+              logger.info('Aborted.')
+              return
+            }
+          }
+        } catch {
+          // Directory does not exist yet — mkdirSync will create it below.
+        }
         mkdir(projectDir, { recursive: true })
       }
 

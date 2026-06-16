@@ -101,10 +101,10 @@ describe('new directory flow (choice "1")', () => {
     )
   })
 
-  it('does not call readdirSync', async () => {
+  it('checks the target project directory for existing files', async () => {
     const deps = makeDeps({ prompt: answers('1', 'my-app') })
     await runNew(deps)
-    expect(deps.readdirSync).not.toHaveBeenCalled()
+    expect(deps.readdirSync).toHaveBeenCalledWith(join('/current/dir', 'my-app'))
   })
 
   it('treats an empty choice (pressing enter) as option 1', async () => {
@@ -137,7 +137,7 @@ describe('current directory flow (choice "2")', () => {
   })
 })
 
-// ── Non-empty directory warning ───────────────────────────────────────────────
+// ── Non-empty directory warning (current dir) ─────────────────────────────────
 
 describe('non-empty directory warning', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -200,11 +200,76 @@ describe('non-empty directory warning', () => {
     await runNew(deps)
     expect(vi.mocked(logger.warn)).not.toHaveBeenCalled()
   })
+})
 
-  it('does not check directory contents for the new directory flow', async () => {
-    const deps = makeDeps({ prompt: answers('1', 'my-app') })
+// ── New directory overwrite guard ─────────────────────────────────────────────
+
+describe('new directory overwrite guard', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('proceeds without warning when target directory does not exist', async () => {
+    const { logger } = await import('../../../src/utils/logger.js')
+    const deps = makeDeps({
+      prompt: answers('1', 'my-app'),
+      readdirSync: vi.fn().mockImplementation(() => {
+        throw new Error('ENOENT: no such file or directory')
+      }),
+    })
     await runNew(deps)
-    expect(deps.readdirSync).not.toHaveBeenCalled()
+    expect(vi.mocked(logger.warn)).not.toHaveBeenCalled()
+    expect(deps.generateFiles).toHaveBeenCalled()
+  })
+
+  it('proceeds without warning when target directory is empty', async () => {
+    const { logger } = await import('../../../src/utils/logger.js')
+    const deps = makeDeps({
+      prompt: answers('1', 'my-app'),
+      readdirSync: vi.fn().mockReturnValue([]),
+    })
+    await runNew(deps)
+    expect(vi.mocked(logger.warn)).not.toHaveBeenCalled()
+  })
+
+  it('warns when target directory already exists and is not empty', async () => {
+    const { logger } = await import('../../../src/utils/logger.js')
+    const deps = makeDeps({
+      prompt: answers('1', 'my-app', 'y'),
+      readdirSync: vi.fn().mockReturnValue(['README.md']),
+    })
+    await runNew(deps)
+    expect(vi.mocked(logger.warn)).toHaveBeenCalledWith(
+      expect.stringContaining('not empty'),
+    )
+  })
+
+  it('includes file count in the overwrite warning', async () => {
+    const { logger } = await import('../../../src/utils/logger.js')
+    const deps = makeDeps({
+      prompt: answers('1', 'my-app', 'y'),
+      readdirSync: vi.fn().mockReturnValue(['a.txt', 'b.txt']),
+    })
+    await runNew(deps)
+    expect(vi.mocked(logger.warn)).toHaveBeenCalledWith(
+      expect.stringContaining('2'),
+    )
+  })
+
+  it('aborts without calling generateFiles when user declines overwrite', async () => {
+    const deps = makeDeps({
+      prompt: answers('1', 'my-app', 'n'),
+      readdirSync: vi.fn().mockReturnValue(['README.md']),
+    })
+    await runNew(deps)
+    expect(deps.generateFiles).not.toHaveBeenCalled()
+  })
+
+  it('proceeds when user confirms overwrite of existing directory', async () => {
+    const deps = makeDeps({
+      prompt: answers('1', 'my-app', 'y'),
+      readdirSync: vi.fn().mockReturnValue(['README.md']),
+    })
+    await runNew(deps)
+    expect(deps.generateFiles).toHaveBeenCalled()
   })
 })
 
