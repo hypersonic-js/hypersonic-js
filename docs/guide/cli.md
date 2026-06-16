@@ -1,58 +1,74 @@
-import { defineConfig } from 'vitepress'
+# CLI
 
-export default defineConfig({
-  title: 'Hypersonic.js',
-  description: 'A modern Django-inspired full-stack TypeScript framework.',
+Hypersonic ships a CLI for scaffolding projects and managing the admin dashboard.
 
-  base: '/',
+```bash
+npm install -g @hypersonic-js/cli
+```
 
-  head: [['link', { rel: 'icon', href: '/favicon.ico' }]],
+## hypersonic new
 
-  themeConfig: {
-    logo: '/logo.svg',
+Scaffolds a new project interactively. Run this once to create a project — see [Quick Start](/guide/quickstart) for the full walkthrough.
 
-    nav: [
-      { text: 'Guide', link: '/guide/' },
-      {
-        text: 'GitHub',
-        link: 'https://github.com/hypersonic-js/hypersonic-js',
-      },
-    ],
+```bash
+hypersonic new
+```
 
-    sidebar: {
-      '/guide/': [
-        {
-          text: 'Getting Started',
-          items: [
-            { text: 'Introduction', link: '/guide/' },
-            { text: 'Quick Start', link: '/guide/quickstart' },
-          ],
-        },
-        {
-          text: 'Guides',
-          items: [
-            { text: 'Configuration', link: '/guide/configuration' },
-            { text: 'Routing & Controllers', link: '/guide/routing' },
-            { text: 'Frontend (Inertia + React)', link: '/guide/frontend' },
-            { text: 'Authentication', link: '/guide/authentication' },
-            { text: 'Security', link: '/guide/security' },
-            { text: 'CLI', link: '/guide/cli' },
-          ],
-        },
-      ],
-    },
+## hypersonic admin
 
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/hypersonic-js/hypersonic-js' },
-    ],
+The `admin` group contains three subcommands for managing the admin dashboard.
 
-    footer: {
-      message: 'Released under the MIT License.',
-      copyright: 'Copyright © 2026-present Joaquim Dalton-Pereira',
-    },
+### hypersonic admin scaffold
 
-    search: {
-      provider: 'local',
-    },
-  },
-})
+Copies the four admin page components into your project. `hypersonic new` runs this automatically, so you only need it if you deleted the files or are setting up manually.
+
+```bash
+hypersonic admin scaffold
+```
+
+Writes the following files into `resources/js/Pages/Admin/`:
+
+- `Dashboard.tsx`
+- `ModelIndex.tsx`
+- `ModelForm.tsx`
+- `UserCreate.tsx`
+
+These components are schema-driven and never need to be regenerated after schema changes — only `generate-meta` needs to re-run.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--target-dir <dir>` | `resources/js/Pages` | Directory to scaffold admin pages into |
+| `-f, --force` | `false` | Overwrite existing files |
+
+### hypersonic admin generate-meta
+
+Reads your Prisma schema and writes `prisma/admin-meta.json` — the static metadata the admin dashboard uses at runtime to know which models exist and how to display them.
+
+```bash
+hypersonic admin generate-meta
+```
+
+**Re-run this every time you change your Prisma schema.** Commit `prisma/admin-meta.json` to your repository.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--schema <path>` | `prisma/schema.prisma` | Path to Prisma schema file |
+| `--output <path>` | `prisma/admin-meta.json` | Output path for the generated meta file |
+
+### hypersonic admin create-admin
+
+Creates a user with `role: admin` in your database. `hypersonic new` runs this automatically at the end of setup. Use it again to add a second admin account from the command line.
+
+```bash
+hypersonic admin create-admin
+```
+
+Prompts interactively:
+
+```
+Email: you@example.com
+Name: Your Name
+Password:
+```
+
+`DATABASE_URL` and `BETTER_AUTH_SECRET` must be set in your `.env` before running this command.

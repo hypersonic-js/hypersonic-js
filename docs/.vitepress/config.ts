@@ -1,4 +1,9 @@
 import { defineConfig } from 'vitepress'
+import { readFileSync } from 'node:fs'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   title: 'Hypersonic.js',
@@ -7,6 +12,15 @@ export default defineConfig({
   base: '/',
 
   head: [['link', { rel: 'icon', href: '/favicon.ico' }]],
+
+  transformPageData(pageData) {
+    const filePath = resolve(__dirname, '..', pageData.relativePath)
+    try {
+      pageData.frontmatter.rawMarkdown = readFileSync(filePath, 'utf-8')
+    } catch {
+      pageData.frontmatter.rawMarkdown = ''
+    }
+  },
 
   themeConfig: {
     logo: '/logo.svg',

@@ -10,7 +10,7 @@ npm install -g @hypersonic-js/cli
 ```bash
 npm hypersonic new
 ```
-Your app is now scaffoled and ready to be developed!
+Your app is now scaffolded and ready to be developed!
 
 
 ## Packages
