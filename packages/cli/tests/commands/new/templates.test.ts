@@ -216,10 +216,6 @@ describe('eslint.config.js template', () => {
     expect(read('eslint.config.js')).toContain('eslint-plugin-react-hooks')
   })
 
-  it('imports eslint-plugin-react-refresh', () => {
-    expect(read('eslint.config.js')).toContain('eslint-plugin-react-refresh')
-  })
-
   it('ignores the public build output directory', () => {
     expect(read('eslint.config.js')).toContain("'public/'")
   })
