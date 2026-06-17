@@ -41,9 +41,9 @@
     "@prisma/adapter-pg": "7.8.0",
     "@prisma/client": "7.8.0",
     "@types/node": "25.9.3",
-    "@vitest/coverage-v8": "4.1.8",
-    "better-auth": "1.6.17",
+    "@vitest/coverage-v8": "4.1.9",
+    "better-auth": "1.6.19",
     "typescript": "6.0.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.9"
   }
 }

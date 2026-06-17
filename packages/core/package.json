@@ -37,16 +37,16 @@
   "dependencies": {
     "@inertiajs/core": "3.4.0",
     "@inertiajs/react": "3.4.0",
-    "@tailwindcss/vite": "4.3.0",
+    "@tailwindcss/vite": "4.3.1",
     "@vitejs/plugin-react": "6.0.2",
-    "better-auth": "1.6.17",
+    "better-auth": "1.6.19",
     "express": "5.2.1",
     "helmet": "8.2.0",
     "pino": "10.3.1",
     "pino-http": "11.0.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "tailwindcss": "4.3.0",
+    "tailwindcss": "4.3.1",
     "vite": "8.0.16",
     "zod": "4.4.3"
   },
@@ -71,10 +71,10 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@types/supertest": "7.2.0",
-    "@vitest/coverage-v8": "4.1.8",
+    "@vitest/coverage-v8": "4.1.9",
     "prisma": "7.8.0",
     "supertest": "7.2.2",
     "typescript": "6.0.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.9"
   }
 }
