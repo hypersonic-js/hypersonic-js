@@ -56,11 +56,11 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Generate Prisma client
-        run: pnpm --filter @hypersonic/test-app exec prisma generate
-
       - name: Run database migrations
-        run: pnpm --filter @hypersonic/test-app exec prisma migrate deploy
+        run: pnpm --filter @hypersonic-js/test-app exec prisma migrate deploy
+
+      - name: Generate Prisma client
+        run: pnpm --filter @hypersonic-js/test-app exec prisma generate
 
       - name: Test
         run: pnpm test
