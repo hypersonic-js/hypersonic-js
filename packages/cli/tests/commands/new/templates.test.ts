@@ -586,6 +586,14 @@ describe('resources/js/Pages/Auth/Login.tsx template', () => {
     expect(content).toContain('submitting')
     expect(content).toContain('disabled')
   })
+
+  it('wraps the signIn call in try/catch/finally to always clear submitting state', () => {
+    const content = read('resources/js/Pages/Auth/Login.tsx')
+    expect(content).toContain('try {')
+    expect(content).toContain('} catch')
+    expect(content).toContain('} finally {')
+    expect(content).toContain('setSubmitting(false)')
+  })
 })
 
 // ── resources/js/Pages/Auth/Register.tsx ─────────────────────────────────────
@@ -627,5 +635,13 @@ describe('resources/js/Pages/Auth/Register.tsx template', () => {
     const content = read('resources/js/Pages/Auth/Register.tsx')
     expect(content).toContain('submitting')
     expect(content).toContain('disabled')
+  })
+
+  it('wraps the signUp call in try/catch/finally to always clear submitting state', () => {
+    const content = read('resources/js/Pages/Auth/Register.tsx')
+    expect(content).toContain('try {')
+    expect(content).toContain('} catch')
+    expect(content).toContain('} finally {')
+    expect(content).toContain('setSubmitting(false)')
   })
 })

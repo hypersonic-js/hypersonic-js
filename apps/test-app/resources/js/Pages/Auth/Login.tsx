@@ -14,19 +14,24 @@ export default function Login({ error }: LoginPageProps) {
     setSubmitting(true)
     setFormError('')
 
-    const result = await authClient.signIn.email({
-      email,
-      password,
-      callbackURL: '/posts',
-    })
+    try {
+      const result = await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: '/posts',
+      })
 
-    if (result.error) {
-      setFormError(result.error.message ?? 'Invalid email or password')
+      if (result.error) {
+        setFormError(result.error.message ?? 'Invalid email or password')
+        return
+      }
+
+      router.visit('/posts')
+    } catch {
+      setFormError('An unexpected error occurred. Please try again.')
+    } finally {
       setSubmitting(false)
-      return
     }
-
-    router.visit('/posts')
   }
 
   return (

@@ -17,19 +17,24 @@ export default function Login({ error }: Props) {
     setSubmitting(true)
     setFormError('')
 
-    const result = await authClient.signIn.email({
-      email,
-      password,
-      callbackURL: '/',
-    })
+    try {
+      const result = await authClient.signIn.email({
+        email,
+        password,
+        callbackURL: '/',
+      })
 
-    if (result.error) {
-      setFormError(result.error.message ?? 'Invalid email or password')
+      if (result.error) {
+        setFormError(result.error.message ?? 'Invalid email or password')
+        return
+      }
+
+      router.visit('/')
+    } catch {
+      setFormError('An unexpected error occurred. Please try again.')
+    } finally {
       setSubmitting(false)
-      return
     }
-
-    router.visit('/')
   }
 
   return (

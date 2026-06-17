@@ -14,20 +14,25 @@ export default function Register() {
     setSubmitting(true)
     setFormError('')
 
-    const result = await authClient.signUp.email({
-      name,
-      email,
-      password,
-      callbackURL: '/',
-    })
+    try {
+      const result = await authClient.signUp.email({
+        name,
+        email,
+        password,
+        callbackURL: '/',
+      })
 
-    if (result.error) {
-      setFormError(result.error.message ?? 'Could not create account')
+      if (result.error) {
+        setFormError(result.error.message ?? 'Could not create account')
+        return
+      }
+
+      router.visit('/')
+    } catch {
+      setFormError('An unexpected error occurred. Please try again.')
+    } finally {
       setSubmitting(false)
-      return
     }
-
-    router.visit('/')
   }
 
   return (
