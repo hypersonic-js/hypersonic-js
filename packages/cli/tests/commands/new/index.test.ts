@@ -194,12 +194,13 @@ describe('non-empty directory warning', () => {
   it('does not warn or prompt for confirmation when directory is empty', async () => {
     const { logger } = await import('../../../src/utils/logger.js')
     const deps = makeDeps({
-      prompt: answers('2', 'my-app'),
-      readdirSync: vi.fn().mockReturnValue([]),
+     prompt: answers('2', 'my-app'),
+     readdirSync: vi.fn().mockReturnValue([]),
     })
     await runNew(deps)
     expect(vi.mocked(logger.warn)).not.toHaveBeenCalled()
-  })
+    expect(deps.prompt).toHaveBeenCalledTimes(2) // dir choice + project name only
+   })
 })
 
 // ── New directory overwrite guard ─────────────────────────────────────────────
