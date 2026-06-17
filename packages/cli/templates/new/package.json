@@ -12,10 +12,10 @@
   "dependencies": {
     "@hypersonic-js/complete": "0.2.0",
     "@prisma/adapter-better-sqlite3": "7.8.0",
-    "better-sqlite3": "12.10.0",
+    "better-sqlite3": "12.11.1",
     "dotenv": "17.4.2",
     "@prisma/client": "7.8.0",
-    "better-auth": "1.6.17"
+    "better-auth": "1.6.19"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -33,7 +33,7 @@
     "react-dom": "19.2.7",
     "tailwindcss": "4.3.1",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.61.0",
+    "typescript-eslint": "8.61.1",
     "vite": "8.0.16"
   }
 }
