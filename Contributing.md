@@ -55,11 +55,12 @@ See [`apps/test-app/README.md`](./apps/test-app/Readme.md) for full details incl
 
 This repo uses [Changesets](https://github.com/changesets/changesets).
 
-| Command | Description |
-|---|---|
-| `pnpm changeset` | Describe what changed (patch/minor/major) |
-| `pnpm changeset version` | Bump versions + update CHANGELOG.md |
-| `pnpm release` | Build + generate licenses + publish to npm |
+| Command                  | Description                                |
+|--------------------------|--------------------------------------------|
+| `pnpm changeset`         | Describe what changed (patch/minor/major)  |
+| `pnpm changeset version` | Bump versions + update CHANGELOG.md        |
+| `npm login`              | Authenticate through the terminal          |
+| `pnpm release`           | Build + generate licenses + publish to npm |
 
 ## Code Quality
 
