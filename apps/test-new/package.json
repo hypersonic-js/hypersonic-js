@@ -1,0 +1,8 @@
+{
+  "name": "wb",
+  "version": "0.0.1",
+  "private": true,
+  "devDependencies": {
+    "@hypersonic-js/cli": "workspace:*"
+  }
+}

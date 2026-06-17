@@ -147,6 +147,16 @@ describe('createInertiaMiddleware', () => {
       expect(res.headers['x-inertia-location']).toBe('/test')
     })
 
+    it('returns 200 when X-Inertia is set but X-Inertia-Version header is absent', async () => {
+      const app = await buildTestApp(false, 'v2')
+      const res = await request(app)
+        .get('/test')
+        .set('X-Inertia', 'true')
+        // no X-Inertia-Version — must not trigger version mismatch
+      expect(res.status).toBe(200)
+      expect(res.body.component).toBe('TestPage')
+    })
+
     it('does not trigger version mismatch on non-GET requests', async () => {
       const app = express()
       await createInertiaMiddleware(app, { ssr: false, version: 'v2' })
@@ -421,4 +431,19 @@ describe('createInertiaErrorHandler', () => {
     expect(res.status).toBe(500)
     expect(res.body.error).toBe('Internal Server Error')
   })
+
+  it('passes through POST with neither cookie nor header present (defers to auth guard)', async () => {
+      const app = await buildCsrfTestApp()
+      // No Cookie header, no X-XSRF-TOKEN header — completely unauthenticated
+      // request that has never received a CSRF cookie. The validator must not
+      // return 419; downstream auth middleware is responsible for this case.
+      const res = await request(app).post('/mutate')
+      expect(res.status).toBe(200)
+    })
+
+    it('passes through DELETE with neither cookie nor header present (defers to auth guard)', async () => {
+      const app = await buildCsrfTestApp()
+      const res = await request(app).delete('/mutate/1')
+      expect(res.status).toBe(200)
+    })
 })

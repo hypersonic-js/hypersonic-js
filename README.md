@@ -1,17 +1,35 @@
 # Hypersonic.js
 
-Hypersonic.js is the end to end typescript modern monolith. This framework is inspired by Django. Hypersonic.js
-packages Express with Inertia.js, Better Auth and Prisma. The framework is currently in beta, so expect other exciting features
-coming soon including an admin dashboard, background jobs and first class AI support. 
+A TypeScript framework for building full-stack monoliths fast. Hypersonic.js bundles Express, Inertia.js, Prisma, Better Auth, an auto-generated admin dashboard, and a CLI into one cohesive framework — taking inspiration from Django and Rails.
 
-## Get started with our docs
+## Quick start 
 
-See **[hypersonic-js.com](https://hypersonic-js.com)** to start building with Hypersonic.
+```bash
+npm install -g @hypersonic-js/cli
+```
+```bash
+npm hypersonic new
+```
+Your app is now scaffolded and ready to be developed!
 
-## Start contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup instructions, Turbo commands, and the release process.
+## Packages
+
+| Package | Description |
+|---|---|
+| [`@hypersonic-js/complete`](https://npmjs.com/package/@hypersonic-js/complete) | Everything in one install |
+| [`@hypersonic-js/core`](https://npmjs.com/package/@hypersonic-js/core) | Server, Inertia, config, and auth |
+| [`@hypersonic-js/admin`](https://npmjs.com/package/@hypersonic-js/admin) | Auto-generated Prisma admin dashboard |
+| [`@hypersonic-js/cli`](https://npmjs.com/package/@hypersonic-js/cli) | Developer CLI tooling |
+
+## Documentation
+
+**[hypersonic-js.com](https://hypersonic-js.com)** — quick start, API docs, and examples.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup instructions, commands, and the release process.
 
 ## License
 
-MIT (c) 2026 Joaquim Dalton-Pereira
+MIT © 2026 Joaquim Dalton-Pereira

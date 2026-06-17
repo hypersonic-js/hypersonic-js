@@ -1,74 +1,32 @@
 # Introduction
 
-Hypersonic.js is a full-stack TypeScript framework inspired by Django's "batteries included" philosophy. One installation gives you a production-ready backend, a React frontend with SSR, a database ORM, and authentication — all pre-wired and type-safe end to end.
+Hypersonic.js is a full-stack TypeScript framework inspired by Django's "batteries included" philosophy. One installation gives you a production-ready Express backend, a React frontend with Inertia.js, Prisma ORM, and Better Auth — all pre-wired and type-safe end to end.
 
+## Philosophy
 
-## Requirements
+Most TypeScript stacks require you to glue together six or seven packages yourself, figure out how they interact, and maintain that wiring forever. Hypersonic takes the opposite approach: make the common case zero-config and keep everything in one cohesive layer.
 
-- Node.js `^24.0.0`
-- A supported database (Postgres, MySQL, MongoDB, or SQLite)
-
-## Installation
-
-```bash
-npm install @hypersonic-js/complete
-npm install --save-dev prisma @prisma/client
-```
-
-Or install only what you need:
-
-```bash
-npm install @hypersonic-js/core
-```
-
-## Quick start
-
-**`hypersonic.config.ts`** at your project root:
-
-```ts
-import { defineConfig } from '@hypersonic-js/complete'
-
-export default defineConfig({
-  server: {
-    port: 3000,
-    host: 'localhost',
-  },
-  auth: {
-    trustedOrigins: ['http://localhost:3000'],
-  },
-  inertia: {
-    ssr: true,
-  },
-})
-```
-
-**`.env`**:
-
-```bash
-DATABASE_URL="postgresql://localhost:5432/myapp"
-BETTER_AUTH_SECRET="your-secret-at-least-32-characters-long"
-```
-
-**`server.ts`**:
-
-```ts
-import { PrismaClient } from '@prisma/client'
-import { createApp, loadConfig } from '@hypersonic-js/complete'
-
-const { config, env } = await loadConfig()
-const app = await createApp({ config, env, prisma: new PrismaClient() })
-
-await app.start()
-```
+You write controllers (Express route handlers), views (React components), and a Prisma schema. The framework handles the rest.
 
 ## Core stack
 
 | Layer | Library |
 |---|---|
 | HTTP server | Express 5 |
-| Database ORM | Prisma |
-| Frontend bridge | Inertia.js + React |
+| Database ORM | Prisma 7 |
+| Frontend bridge | Inertia.js + React 19 |
 | Styling | Tailwind CSS 4 |
 | Authentication | Better Auth |
 
-More guides coming soon.
+## Packages
+
+| Package | Description |
+|---|---|
+| `@hypersonic-js/complete` | Everything in one install — recommended |
+| `@hypersonic-js/core` | Server, Inertia, config, and auth only |
+| `@hypersonic-js/admin` | Auto-generated Prisma admin dashboard |
+| `@hypersonic-js/cli` | Developer CLI (`hypersonic admin …`) |
+
+## Ready to build?
+
+Follow the [Quick Start](/guide/quickstart) to go from zero to a running app in under ten minutes.

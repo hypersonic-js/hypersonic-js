@@ -21,6 +21,17 @@ updates:
       - dependency-name: "@turbo/windows-64"
       - dependency-name: "@turbo/windows-arm64"
 
+  # ── CLI new-project template (not a workspace member) ─────────────────────
+  - package-ecosystem: "npm"
+    directory: "/packages/cli/templates/new"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      cli-template-dependencies:
+        patterns:
+          - "*"
+
   # ── GitHub Actions ─────────────────────────────────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"

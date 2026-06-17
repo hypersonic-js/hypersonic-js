@@ -17,14 +17,19 @@ type PrismaAdapterClient = Parameters<typeof prismaAdapter>[0]
 /**
  * Creates and returns a configured Better Auth instance.
  * OAuth social providers are only wired in when credentials are supplied.
+ * The rateLimit option is only forwarded when explicitly provided, allowing
+ * test environments to pass `{ enabled: false }` to suppress the in-process
+ * rate limiter and avoid 429s across shared test suites.
  *
- * Two targeted casts remain after this refactor:
+ * Three targeted casts remain:
  *  - `prisma as PrismaAdapterClient`: our public API keeps `prisma: unknown`
  *    to stay agnostic of the generated PrismaClient types; the adapter's own
  *    PrismaClient is an empty interface so the cast is safe at runtime.
  *  - `socialProviders as BetterAuthOptions['socialProviders']`: our plain record
  *    satisfies the runtime contract but TypeScript cannot verify it against the
  *    `SocialProviders` mapped type without a cast.
+ *  - `rateLimit as BetterAuthOptions['rateLimit']`: our `{ enabled?: boolean }`
+ *    subset is a valid runtime value for Better Auth's rateLimit field.
  */
 export function createAuth(options: AuthSetupOptions): AuthInstance {
   const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {}
@@ -49,6 +54,10 @@ export function createAuth(options: AuthSetupOptions): AuthInstance {
 
   if (hasSocialProviders) {
     authOptions.socialProviders = socialProviders as BetterAuthOptions['socialProviders']
+  }
+
+  if (options.rateLimit !== undefined) {
+    authOptions.rateLimit = options.rateLimit as BetterAuthOptions['rateLimit']
   }
 
   return betterAuth(authOptions) as AuthInstance

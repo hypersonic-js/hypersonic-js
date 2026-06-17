@@ -20,10 +20,10 @@
     "access": "public"
   },
   "engines": {
-    "node": "^24.0.0"
+    "node": ">=24.0.0"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node --input-type=module --eval \"import{cpSync}from'node:fs';cpSync('templates','dist/templates',{recursive:true})\"",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "type-check": "tsc --noEmit",

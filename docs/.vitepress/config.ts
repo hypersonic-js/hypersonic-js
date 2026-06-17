@@ -1,13 +1,26 @@
 import { defineConfig } from 'vitepress'
+import { readFileSync } from 'node:fs'
+import { resolve, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   title: 'Hypersonic.js',
   description: 'A modern Django-inspired full-stack TypeScript framework.',
 
-  // Custom domain — no sub-path needed
   base: '/',
 
   head: [['link', { rel: 'icon', href: '/favicon.ico' }]],
+
+  transformPageData(pageData) {
+    const filePath = resolve(__dirname, '..', pageData.relativePath)
+    try {
+      pageData.frontmatter.rawMarkdown = readFileSync(filePath, 'utf-8')
+    } catch {
+      pageData.frontmatter.rawMarkdown = ''
+    }
+  },
 
   themeConfig: {
     logo: '/logo.svg',
@@ -24,7 +37,21 @@ export default defineConfig({
       '/guide/': [
         {
           text: 'Getting Started',
-          items: [{ text: 'Introduction', link: '/guide/' }],
+          items: [
+            { text: 'Introduction', link: '/guide/' },
+            { text: 'Quick Start', link: '/guide/quickstart' },
+          ],
+        },
+        {
+          text: 'Guides',
+          items: [
+            { text: 'Configuration', link: '/guide/configuration' },
+            { text: 'Routing & Controllers', link: '/guide/routing' },
+            { text: 'Frontend (Inertia + React)', link: '/guide/frontend' },
+            { text: 'Authentication', link: '/guide/authentication' },
+            { text: 'Security', link: '/guide/security' },
+            { text: 'CLI', link: '/guide/cli' },
+          ],
         },
       ],
     },
