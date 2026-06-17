@@ -6,9 +6,15 @@ const { frontmatter } = useData()
 const copied = ref(false)
 
 async function copy() {
-  await navigator.clipboard.writeText(frontmatter.value.rawMarkdown ?? '')
-  copied.value = true
-  setTimeout(() => { copied.value = false }, 2000)
+  try {
+    await navigator.clipboard.writeText(frontmatter.value.rawMarkdown ?? '')
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  } catch {
+    // Clipboard write can fail in restricted contexts (e.g. non-HTTPS, Firefox
+    // without a user gesture, or embedded iframes). Fail silently — the button
+    // simply does nothing rather than emitting an unhandled promise rejection.
+  }
 }
 </script>
 

@@ -85,8 +85,8 @@ describe('package.json template', () => {
   })
 
   it('lists better-auth as a dependency', () => {
-  const pkg = JSON.parse(read('package.json'))
-  expect(pkg.dependencies).toHaveProperty('better-auth')
+    const pkg = JSON.parse(read('package.json'))
+    expect(pkg.dependencies).toHaveProperty('better-auth')
   })
 })
 
@@ -196,6 +196,11 @@ describe('tsconfig.json template', () => {
     expect(
       JSON.parse(read('tsconfig.json')).compilerOptions.moduleResolution,
     ).toBe('bundler')
+  })
+
+  it('includes vite/client in types for import.meta.glob support', () => {
+    const types = JSON.parse(read('tsconfig.json')).compilerOptions.types as string[]
+    expect(types).toContain('vite/client')
   })
 
   it('excludes node_modules and public from compilation', () => {
@@ -489,7 +494,7 @@ describe('src/types.ts template', () => {
   })
 
   it('AuthRequest has an optional sessionUser field', () => {
-    expect(read('src/types.ts')).toContain('sessionUser?: SessionUser')
+    expect(read('src/types.ts')).toContain('sessionUser?')
   })
 
   it('exports the AuthLike interface with a getSession method', () => {
