@@ -326,6 +326,15 @@ describe('prisma.config.ts template', () => {
   it('loads dotenv/config', () => {
     expect(read('prisma.config.ts')).toContain("'dotenv/config'")
   })
+
+  it('throws a descriptive error when DATABASE_URL is not defined', () => {
+    expect(read('prisma.config.ts')).toContain('throw new Error')
+    expect(read('prisma.config.ts')).toContain('DATABASE_URL is not defined')
+  })
+
+  it('does not use an unsafe type cast for DATABASE_URL', () => {
+    expect(read('prisma.config.ts')).not.toContain('as string')
+  })
 })
 
 // ── server.ts ─────────────────────────────────────────────────────────────────
