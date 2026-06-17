@@ -1,6 +1,6 @@
 {
   "name": "@hypersonic-js/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "The core of Hypersonic.js — a modern Django-inspired full-stack TypeScript framework",
   "type": "module",
   "main": "./dist/index.js",

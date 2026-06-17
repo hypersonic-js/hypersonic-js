@@ -1,5 +1,13 @@
 # @hypersonic-js/cli
 
+## 0.2.1
+
+### Patch Changes
+
+- Added new scaffold command to CLI and fixed CSRF bug and improved Ineraasset/version mismatch handling
+- Updated dependencies
+  - @hypersonic-js/admin@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
