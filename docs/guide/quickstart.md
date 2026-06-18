@@ -51,7 +51,7 @@ cd my-app
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — your app is running.
+Open `http://localhost:3000` — your app is running.
 
 ## Next steps
 
