@@ -1,7 +1,6 @@
 import { execSync } from 'node:child_process'
 import { join } from 'node:path'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { scaffoldAdmin } from '@hypersonic-js/admin'
 import { runGenerateMeta } from '../admin/generate-meta.js'
 import { logger } from '../../utils/logger.js'
 
@@ -26,7 +25,10 @@ export interface RunSetupDeps {
 // ── Dependency loader ──────────────────────────────────────────────────────
 
 async function loadDeps(): Promise<RunSetupDeps> {
-  const { getDMMF } = await import('@prisma/get-dmmf')
+  const [{ getDMMF }, { scaffoldAdmin }] = await Promise.all([
+    import('@prisma/get-dmmf'),
+    import('@hypersonic-js/admin'),
+  ])
 
   return {
     exec: (command, cwd) => execSync(command, { cwd, stdio: 'inherit' }),

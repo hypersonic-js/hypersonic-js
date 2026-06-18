@@ -1,5 +1,13 @@
 # @hypersonic-js/cli
 
+## 0.2.3
+
+### Patch Changes
+
+- fix lingering CLI import issues
+- Updated dependencies
+  - @hypersonic-js/admin@0.2.3
+
 ## 0.2.2
 
 ### Patch Changes
