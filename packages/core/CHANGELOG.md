@@ -1,5 +1,11 @@
 # `@hypersonic-js/core`
 
+## 0.2.2
+
+### Patch Changes
+
+- Change express to a prod dep of admin
+
 ## 0.2.1
 
 ### Patch Changes
