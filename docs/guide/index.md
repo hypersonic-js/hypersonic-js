@@ -12,10 +12,10 @@ You write controllers (Express route handlers), views (React components), and a 
 
 | Layer | Library |
 |---|---|
-| HTTP server | Express 5 |
-| Database ORM | Prisma 7 |
-| Frontend bridge | Inertia.js + React 19 |
-| Styling | Tailwind CSS 4 |
+| HTTP server | Express |
+| Database ORM | Prisma |
+| Frontend bridge | Inertia.js + React |
+| Styling | Tailwind CSS |
 | Authentication | Better Auth |
 
 ## Packages

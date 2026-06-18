@@ -3,7 +3,7 @@
 All dependencies used by Hypersonic.js and their respective licenses.
 655 packages across 13 license types.
 
-_Generated: 2026-06-17_
+_Generated: 2026-06-18_
 
 ---
 

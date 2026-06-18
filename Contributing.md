@@ -59,7 +59,6 @@ This repo uses [Changesets](https://github.com/changesets/changesets).
 |--------------------------|--------------------------------------------|
 | `pnpm changeset`         | Describe what changed (patch/minor/major)  |
 | `pnpm changeset version` | Bump versions + update CHANGELOG.md        |
-| `npm login`              | Authenticate through the terminal          |
 | `pnpm release`           | Build + generate licenses + publish to npm |
 
 ## Code Quality
