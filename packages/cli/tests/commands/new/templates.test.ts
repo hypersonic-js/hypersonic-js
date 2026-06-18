@@ -157,23 +157,23 @@ describe('.env.example template', () => {
   })
 })
 
-// ── .gitignore ────────────────────────────────────────────────────────────────
+// ── _gitignore (written as .gitignore) ───────────────────────────────────────
 
-describe('.gitignore template', () => {
+describe('_gitignore template (written as .gitignore)', () => {
   it('ignores node_modules/', () => {
-    expect(read('.gitignore')).toContain('node_modules/')
+    expect(read('_gitignore')).toContain('node_modules/')
   })
 
   it('ignores .env', () => {
-    expect(read('.gitignore')).toContain('.env')
+    expect(read('_gitignore')).toContain('.env')
   })
 
   it('ignores SQLite database files', () => {
-    expect(read('.gitignore')).toContain('.db')
+    expect(read('_gitignore')).toContain('.db')
   })
 
   it('ignores the Vite build output directory', () => {
-    expect(read('.gitignore')).toContain('public/')
+    expect(read('_gitignore')).toContain('public/')
   })
 })
 

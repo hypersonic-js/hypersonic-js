@@ -74,6 +74,12 @@ describe('TEMPLATE_FILES', () => {
     expect(entry!.dest).toBe('.env')
   })
 
+  it('maps _gitignore src to .gitignore dest', () => {
+    const entry = TEMPLATE_FILES.find((f) => f.src === '_gitignore')
+    expect(entry).toBeDefined()
+    expect(entry!.dest).toBe('.gitignore')
+  })
+
   it('contains package.json', () => {
     expect(TEMPLATE_FILES.some((f) => f.dest === 'package.json')).toBe(true)
   })
@@ -137,6 +143,10 @@ describe('TEMPLATE_FILES', () => {
   it('has no src path named .env (would be git-ignored)', () => {
     expect(TEMPLATE_FILES.every((f) => f.src !== '.env')).toBe(true)
   })
+
+  it('has no src path named .gitignore (would be stripped by npm)', () => {
+    expect(TEMPLATE_FILES.every((f) => f.src !== '.gitignore')).toBe(true)
+  })
 })
 
 // ── generateFiles ─────────────────────────────────────────────────────────────
@@ -199,6 +209,14 @@ describe('generateFiles', () => {
     const destPaths = vi.mocked(deps.writeFile).mock.calls.map(([p]) => p)
     expect(destPaths).toContain(join(BASE_OPTS.projectDir, '.env'))
     expect(destPaths.every((p) => !p.endsWith('_env'))).toBe(true)
+  })
+
+  it('writes _gitignore template to .gitignore dest path', async () => {
+    const deps = makeDeps()
+    await generateFiles(BASE_OPTS, deps)
+    const destPaths = vi.mocked(deps.writeFile).mock.calls.map(([p]) => p)
+    expect(destPaths).toContain(join(BASE_OPTS.projectDir, '.gitignore'))
+    expect(destPaths.every((p) => !p.endsWith('_gitignore'))).toBe(true)
   })
 
   it('returns one WrittenFile entry per template file', async () => {

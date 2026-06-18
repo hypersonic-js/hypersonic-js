@@ -34,16 +34,17 @@ export interface GenerateFilesDeps {
  * `src`  — filename inside templates/new/ (relative, may differ from dest)
  * `dest` — filename written into the project (relative to projectDir)
  *
- * The only src↔dest rename is `_env` → `.env`: the root .gitignore has a bare
- * `.env` pattern that matches files at any depth, so the template is stored
- * under a neutral name and renamed on write.
+ * Two src↔dest renames exist to prevent npm from stripping files at publish
+ * time and to avoid accidental git-ignore hits:
+ *   `_env`       → `.env`       (root .gitignore has a bare `.env` pattern)
+ *   `_gitignore` → `.gitignore` (npm strips .gitignore files when publishing)
  */
 export const TEMPLATE_FILES = [
   { src: 'package.json',                              dest: 'package.json' },
   { src: 'hypersonic.config.ts',                      dest: 'hypersonic.config.ts' },
   { src: '_env',                                      dest: '.env' },
   { src: '.env.example',                              dest: '.env.example' },
-  { src: '.gitignore',                                dest: '.gitignore' },
+  { src: '_gitignore',                                dest: '.gitignore' },
   { src: 'tsconfig.json',                             dest: 'tsconfig.json' },
   { src: 'eslint.config.js',                          dest: 'eslint.config.js' },
   { src: 'vite.config.ts',                            dest: 'vite.config.ts' },

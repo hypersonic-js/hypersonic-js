@@ -1,6 +1,6 @@
 {
   "name": "@hypersonic-js/complete",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "The complete Hypersonic.js framework — all production packages in one install",
   "type": "module",
   "main": "./dist/index.js",

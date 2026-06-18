@@ -1,5 +1,14 @@
 # @hypersonic-js/complete
 
+## 0.2.4
+
+### Patch Changes
+
+- fix template misconfiguration in CLI
+- Updated dependencies
+  - @hypersonic-js/admin@0.2.4
+  - @hypersonic-js/core@0.2.4
+
 ## 0.2.3
 
 ### Patch Changes

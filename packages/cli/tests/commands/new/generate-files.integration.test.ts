@@ -129,6 +129,20 @@ describe('generateFiles — _env rename', () => {
   })
 })
 
+// ── _gitignore → .gitignore rename ────────────────────────────────────────────
+
+describe('generateFiles — _gitignore rename', () => {
+  it('writes a .gitignore file', async () => {
+    await generateFiles({ projectDir: tmpDir, projectName: 'app', secret: 'd'.repeat(64) })
+    expect(existsSync(join(tmpDir, '.gitignore'))).toBe(true)
+  })
+
+  it('does not write a file named _gitignore', async () => {
+    await generateFiles({ projectDir: tmpDir, projectName: 'app', secret: 'd'.repeat(64) })
+    expect(existsSync(join(tmpDir, '_gitignore'))).toBe(false)
+  })
+})
+
 // ── Nested directories created ────────────────────────────────────────────────
 
 describe('generateFiles — directory creation', () => {
