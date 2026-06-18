@@ -1,5 +1,4 @@
 import type { Command } from 'commander'
-import { scaffoldAdmin } from '@hypersonic-js/admin'
 import { logger } from '../../utils/logger.js'
 
 /**
@@ -22,6 +21,7 @@ export function registerAdminScaffold(adminCommand: Command): void {
     )
     .option('-f, --force', 'Overwrite existing files', false)
     .action(async (opts: { targetDir: string; force: boolean }) => {
+      const { scaffoldAdmin } = await import('@hypersonic-js/admin')
       logger.info(`Scaffolding admin pages into ${opts.targetDir}/Admin/…`)
 
       const result = await scaffoldAdmin({

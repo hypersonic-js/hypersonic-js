@@ -1,6 +1,6 @@
 {
   "name": "@hypersonic-js/admin",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Auto-generated admin dashboard for Hypersonic.js — full CRUD from your Prisma schema",
   "type": "module",
   "main": "./dist/index.js",
