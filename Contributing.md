@@ -16,14 +16,15 @@ pnpm install
 
 ## Common commands
 
-| Command | Description |
-|---|---|
-| `pnpm build` | Build all packages |
-| `pnpm test` | Run all tests |
-| `pnpm test:coverage` | Run tests with coverage |
-| `pnpm lint` | Lint all packages |
-| `pnpm docs:dev` | Start the docs dev server |
-| `pnpm docs:build` | Build the docs |
+| Command | Description                          |
+|---|--------------------------------------|
+| `pnpm build` | Build all packages                   |
+| `pnpm test` | Run all tests                        |
+| `pnpm test:coverage` | Run tests with coverage              |
+| `pnpm lint` | Lint all packages                    |
+| `pnpm type-check` | Find type problems all packages      |
+| `pnpm docs:dev` | Start the docs dev server            |
+| `pnpm docs:build` | Build the docs                       |
 | `pnpm run licenses` | Regenerate `THIRD_PARTY_LICENSES.md` |
 
 To target a specific package:
