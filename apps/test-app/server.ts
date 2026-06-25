@@ -3,13 +3,16 @@ import { createRequire } from 'node:module'
 import type { PrismaClient as PrismaClientType } from '@prisma/client'
 import { createApp, loadConfig, createDatabaseAdapter } from '@hypersonic-js/core'
 import { mountAdmin } from '@hypersonic-js/admin'
-import type { AdminModelMeta } from '@hypersonic-js/admin'
+import type { AdminModelMeta, AdminAuthLike } from '@hypersonic-js/admin'
 import { registerRoutes } from './src/routes.ts'
 import type { PrismaRouteClient } from './src/types.ts'
 
 const require = createRequire(import.meta.url)
 const adminMeta = require('./prisma/admin-meta.json') as AdminModelMeta[]
-const { PrismaClient } = require('@prisma/client') as { PrismaClient: typeof PrismaClientType }
+
+const { PrismaClient } = require('@prisma/client') as {
+  PrismaClient: new (opts?: { adapter?: unknown }) => PrismaClientType
+}
 
 const { config, env } = await loadConfig()
 
@@ -22,7 +25,7 @@ registerRoutes(app.express, prisma as unknown as PrismaRouteClient, app.auth)
 
 mountAdmin(app.express, prisma, {
   meta: adminMeta,
-  auth: app.auth,
+  auth: app.auth as AdminAuthLike,
   logger: app.logger,
 })
 

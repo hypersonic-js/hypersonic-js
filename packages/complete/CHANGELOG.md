@@ -1,5 +1,14 @@
 # @hypersonic-js/complete
 
+## 0.2.5
+
+### Patch Changes
+
+- Bump deps in cli templates
+- Updated dependencies
+  - @hypersonic-js/admin@0.2.5
+  - @hypersonic-js/core@0.2.5
+
 ## 0.2.4
 
 ### Patch Changes

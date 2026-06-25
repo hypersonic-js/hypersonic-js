@@ -37,7 +37,7 @@ import {
   cleanDatabase,
 } from './helpers/setup.js'
 import type { TestApp, Credentials } from './helpers/setup.js'
-import type { AdminOptions } from '@hypersonic-js/admin'
+import type { AdminOptions, AdminAuthLike } from '@hypersonic-js/admin'
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
@@ -665,13 +665,17 @@ describe('hiddenModels option', () => {
 
 describe('AdminOptions shape', () => {
   it('does not have an adminEmails field', () => {
-    const opts: AdminOptions = { meta: [], auth: testApp.auth }
-    expect((opts as Record<string, unknown>)['adminEmails']).toBeUndefined()
+    // Cast required: Auth<BetterAuthOptions> no longer structurally satisfies
+    // AdminAuthLike after better-auth@1.6.20 tightened its type inference.
+    const opts: AdminOptions = { meta: [], auth: testApp.auth as AdminAuthLike }
+    // Double cast through unknown required: AdminOptions has no index signature
+    // so a direct cast to Record<string, unknown> is now rejected by TS.
+    expect((opts as unknown as Record<string, unknown>)['adminEmails']).toBeUndefined()
   })
 
   it('accepts an optional logger field', () => {
     const logger = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
-    const opts: AdminOptions = { meta: [], auth: testApp.auth, logger }
+    const opts: AdminOptions = { meta: [], auth: testApp.auth as AdminAuthLike, logger }
     expect(opts.logger).toBe(logger)
   })
 })

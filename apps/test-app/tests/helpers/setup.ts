@@ -22,7 +22,7 @@ import type { Response as SupertestResponse } from 'supertest'
 import { createApp, createDatabaseAdapter } from '@hypersonic-js/core'
 import type { HypersonicApp, HypersonicConfig, Env } from '@hypersonic-js/core'
 import { mountAdmin } from '@hypersonic-js/admin'
-import type { AdminModelMeta, AdminOptions } from '@hypersonic-js/admin'
+import type { AdminModelMeta, AdminOptions, AdminAuthLike } from '@hypersonic-js/admin'
 import { registerRoutes } from '../../src/routes.js'
 import type { PrismaRouteClient } from '../../src/types.js'
 import type { PrismaClient } from '@prisma/client'
@@ -93,9 +93,14 @@ export async function buildTestApp(
 
   registerRoutes(app.express, prisma as unknown as PrismaRouteClient, app.auth)
 
+  // Auth<BetterAuthOptions> does not include `role` in its user type when the
+  // admin plugin is not explicitly wired into the BetterAuth call, so TypeScript
+  // cannot verify structural compatibility with AdminAuthLike after
+  // better-auth@1.6.20 tightened its inference. At runtime the DB user row
+  // always carries `role`, so the cast is safe.
   mountAdmin(app.express, prisma, {
     meta: adminMeta,
-    auth: app.auth,
+    auth: app.auth as AdminAuthLike,
     ...adminOptions,
   })
 
