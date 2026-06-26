@@ -15,12 +15,12 @@ const { mockRateLimiterMiddleware, mockRateLimit } = vi.hoisted(() => {
 
 vi.mock('express-rate-limit', () => ({
   rateLimit: mockRateLimit,
-  MemoryStore: vi.fn(() => ({ increment: vi.fn(), decrement: vi.fn(), resetKey: vi.fn() })),
+  MemoryStore: vi.fn(function () { return { increment: vi.fn(), decrement: vi.fn(), resetKey: vi.fn() } }),
 }))
 
 // rate-limit-redis mock
 vi.mock('rate-limit-redis', () => ({
-  RedisStore: vi.fn(() => ({ __type: 'RedisStore' })),
+   RedisStore: vi.fn(function () { return { __type: 'RedisStore' } }),
 }))
 
 // Redis mock

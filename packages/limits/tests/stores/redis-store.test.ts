@@ -30,7 +30,7 @@ vi.mock('redis', () => ({
 // declared with vi.hoisted() to avoid the temporal dead zone after hoisting.
 const { mockRedisStore, MockRedisStoreConstructor } = vi.hoisted(() => {
   const mockRedisStore = { __type: 'RedisStore' }
-  const MockRedisStoreConstructor = vi.fn(() => mockRedisStore)
+  const MockRedisStoreConstructor = vi.fn(function () { return mockRedisStore })
   return { mockRedisStore, MockRedisStoreConstructor }
 })
 
