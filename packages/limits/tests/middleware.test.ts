@@ -4,9 +4,14 @@ import type { Request, Response, NextFunction } from 'express'
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
 // express-rate-limit mock — captures the handler and skip options, executes
-// configurable behaviour so we can test the compound middleware logic
-const mockRateLimiterMiddleware = vi.fn()
-const mockRateLimit = vi.fn(() => mockRateLimiterMiddleware)
+// configurable behaviour so we can test the compound middleware logic.
+// vi.mock() is hoisted above all const declarations, so variables directly read
+// inside a factory must be declared with vi.hoisted() to avoid the TDZ.
+const { mockRateLimiterMiddleware, mockRateLimit } = vi.hoisted(() => {
+  const mockRateLimiterMiddleware = vi.fn()
+  const mockRateLimit = vi.fn(() => mockRateLimiterMiddleware)
+  return { mockRateLimiterMiddleware, mockRateLimit }
+})
 
 vi.mock('express-rate-limit', () => ({
   rateLimit: mockRateLimit,

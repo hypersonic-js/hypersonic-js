@@ -282,11 +282,25 @@ describe('createApp', () => {
     })
 
     it('throws a descriptive error when @hypersonic-js/limits is not installed', async () => {
-      vi.doMock('@hypersonic-js/limits', () => {
-        throw Object.assign(new Error("Cannot find module '@hypersonic-js/limits'"), {
-          code: 'ERR_MODULE_NOT_FOUND',
-        })
-      })
+      // A factory that throws is wrapped by Vitest into "[vitest] There was an
+      // error when mocking a module" whose message does not match the isNotFound
+      // check in resolveLimitsAuthConfig. Instead, return a Proxy that only throws
+      // when buildAuthLimitsConfig is accessed — that throw lands inside the source
+      // try block (import + property access both live there), is caught, recognised
+      // as ERR_MODULE_NOT_FOUND, and re-thrown as the user-friendly error.
+      vi.doMock('@hypersonic-js/limits', () =>
+        new Proxy({} as Record<string, unknown>, {
+          get(_target, prop) {
+            if (prop === 'buildAuthLimitsConfig') {
+              throw Object.assign(
+                new Error("Cannot find module '@hypersonic-js/limits'"),
+                { code: 'ERR_MODULE_NOT_FOUND' },
+              )
+            }
+            return undefined
+          },
+        }),
+      )
       const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'memory' } }
       await expect(
         createApp({ config: configWithLimits, env, prisma: mockPrisma }),

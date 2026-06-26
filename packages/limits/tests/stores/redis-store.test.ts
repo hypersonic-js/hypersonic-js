@@ -26,8 +26,13 @@ vi.mock('redis', () => ({
   createClient: vi.fn(() => mockClient),
 }))
 
-const mockRedisStore = { __type: 'RedisStore' }
-const MockRedisStoreConstructor = vi.fn(() => mockRedisStore)
+// MockRedisStoreConstructor is directly read inside the factory, so it must be
+// declared with vi.hoisted() to avoid the temporal dead zone after hoisting.
+const { mockRedisStore, MockRedisStoreConstructor } = vi.hoisted(() => {
+  const mockRedisStore = { __type: 'RedisStore' }
+  const MockRedisStoreConstructor = vi.fn(() => mockRedisStore)
+  return { mockRedisStore, MockRedisStoreConstructor }
+})
 
 vi.mock('rate-limit-redis', () => ({
   RedisStore: MockRedisStoreConstructor,
