@@ -210,7 +210,7 @@ describe('createLimiter — with blockDuration', () => {
   it('returns 429 immediately when client is already blocked', async () => {
     // Simulate a blocked client by pre-blocking via the memory store
     const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    const handler = limit({ requests: 1, windowMs: 60_000, blockDuration: 300_000 })
+    const _handler = limit({ requests: 1, windowMs: 60_000, blockDuration: 300_000 })
     const req = makeReq('blocked-ip')
     const res = makeRes()
     const nextFn = vi.fn()
@@ -250,7 +250,7 @@ describe('createLimiter — with blockDuration', () => {
   it('uses the custom message in 429 responses', async () => {
     mockRateLimiterMiddleware.mockImplementation((_req: unknown, _res: unknown, n: NextFunction) => n())
     const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    const handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000, message: 'Slow down!' })
+    const _handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000, message: 'Slow down!' })
     const options = mockRateLimit.mock.calls[0]![0] as {
       handler: (req: Partial<Request>, res: ReturnType<typeof makeRes>) => void
       message: { message: string }
