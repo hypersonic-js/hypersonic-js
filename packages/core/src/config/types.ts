@@ -49,6 +49,28 @@ export interface LoggingConfig {
   level: LogLevel
 }
 
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+
+/** Storage backend for `@hypersonic-js/limits`. */
+export type LimitsBackend = 'memory' | 'database' | 'redis'
+
+/**
+ * Configuration for the `@hypersonic-js/limits` package.
+ * When present, `createApp` automatically wires the same backend into
+ * Better Auth's auth-endpoint rate limiting.
+ */
+export interface LimitsConfig {
+  /**
+   * Storage backend to use for rate limit counters and block tracking.
+   * - `memory`   — in-process Map, zero config, single-server only.
+   * - `database` — Prisma-backed, requires `RateLimit` + `AuthRateLimit` models in your schema.
+   * - `redis`    — Redis-backed, requires `REDIS_URL` in `.env`.
+   */
+  backend: LimitsBackend
+}
+
+// ── Root config ───────────────────────────────────────────────────────────────
+
 export interface HypersonicConfig {
   server: ServerConfig
   auth: AuthConfig
@@ -59,4 +81,10 @@ export interface HypersonicConfig {
    * Omit to use the framework default (level: 'error').
    */
   logging?: LoggingConfig
+  /**
+   * Rate limiting configuration — requires `@hypersonic-js/limits` to be installed.
+   * When set, `createApp` automatically wires the same backend into
+   * Better Auth's auth-endpoint rate limiting.
+   */
+  limits?: LimitsConfig
 }

@@ -121,4 +121,45 @@ describe('createAuth', () => {
     const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
     expect(call['rateLimit']).toEqual({ enabled: true })
   })
+
+  it('forwards rateLimit with storage: secondary-storage when provided', () => {
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, storage: 'secondary-storage' } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['rateLimit']).toEqual({ enabled: true, storage: 'secondary-storage' })
+  })
+
+  it('forwards rateLimit with customStorage when provided', () => {
+    const customStorage = { get: vi.fn(), set: vi.fn() }
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, customStorage } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    const rl = call['rateLimit'] as { customStorage: unknown }
+    expect(rl.customStorage).toBe(customStorage)
+  })
+
+  // ── secondaryStorage ───────────────────────────────────────────────────────
+
+  it('does not include secondaryStorage when the option is omitted', () => {
+    createAuth(baseOptions)
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['secondaryStorage']).toBeUndefined()
+  })
+
+  it('forwards secondaryStorage to betterAuth when provided', () => {
+    const secondaryStorage = { get: vi.fn(), set: vi.fn(), delete: vi.fn() }
+    createAuth({ ...baseOptions, secondaryStorage })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['secondaryStorage']).toBe(secondaryStorage)
+  })
+
+  it('can combine secondaryStorage and rateLimit.storage: secondary-storage', () => {
+    const secondaryStorage = { get: vi.fn(), set: vi.fn(), delete: vi.fn() }
+    createAuth({
+      ...baseOptions,
+      rateLimit: { enabled: true, storage: 'secondary-storage' },
+      secondaryStorage,
+    })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['secondaryStorage']).toBe(secondaryStorage)
+    expect((call['rateLimit'] as { storage: string }).storage).toBe('secondary-storage')
+  })
 })

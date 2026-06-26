@@ -20,16 +20,20 @@ type PrismaAdapterClient = Parameters<typeof prismaAdapter>[0]
  * The rateLimit option is only forwarded when explicitly provided, allowing
  * test environments to pass `{ enabled: false }` to suppress the in-process
  * rate limiter and avoid 429s across shared test suites.
+ * The secondaryStorage option is forwarded when provided — the limits package
+ * sets this automatically when the Redis backend is configured.
  *
- * Three targeted casts remain:
+ * Four targeted casts remain:
  *  - `prisma as PrismaAdapterClient`: our public API keeps `prisma: unknown`
  *    to stay agnostic of the generated PrismaClient types; the adapter's own
  *    PrismaClient is an empty interface so the cast is safe at runtime.
  *  - `socialProviders as BetterAuthOptions['socialProviders']`: our plain record
  *    satisfies the runtime contract but TypeScript cannot verify it against the
  *    `SocialProviders` mapped type without a cast.
- *  - `rateLimit as BetterAuthOptions['rateLimit']`: our `{ enabled?: boolean }`
- *    subset is a valid runtime value for Better Auth's rateLimit field.
+ *  - `rateLimit as BetterAuthOptions['rateLimit']`: our extended subset is a
+ *    valid runtime value for Better Auth's rateLimit field.
+ *  - `secondaryStorage as BetterAuthOptions['secondaryStorage']`: our interface
+ *    structurally satisfies Better Auth's SecondaryStorage type.
  */
 export function createAuth(options: AuthSetupOptions): AuthInstance {
   const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {}
@@ -58,6 +62,11 @@ export function createAuth(options: AuthSetupOptions): AuthInstance {
 
   if (options.rateLimit !== undefined) {
     authOptions.rateLimit = options.rateLimit as BetterAuthOptions['rateLimit']
+  }
+
+  if (options.secondaryStorage !== undefined) {
+    authOptions.secondaryStorage =
+      options.secondaryStorage as BetterAuthOptions['secondaryStorage']
   }
 
   return betterAuth(authOptions) as AuthInstance

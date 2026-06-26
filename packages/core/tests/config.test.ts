@@ -86,6 +86,46 @@ describe('buildEnvSchema', () => {
       buildEnvSchema(baseConfig).safeParse({ ...baseEnv, DATABASE_URL: '' }).success,
     ).toBe(false)
   })
+
+  // ── limits backend — REDIS_URL ───────────────────────────────────────────
+
+  it('does not require REDIS_URL when limits is not configured', () => {
+    expect(buildEnvSchema(baseConfig).safeParse(baseEnv).success).toBe(true)
+  })
+
+  it('does not require REDIS_URL when limits.backend is memory', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'memory' } }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(true)
+  })
+
+  it('does not require REDIS_URL when limits.backend is database', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'database' } }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(true)
+  })
+
+  it('requires REDIS_URL when limits.backend is redis', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'redis' } }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(false)
+  })
+
+  it('accepts a valid REDIS_URL when limits.backend is redis', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'redis' } }
+    expect(
+      buildEnvSchema(config).safeParse({ ...baseEnv, REDIS_URL: 'redis://localhost:6379' }).success,
+    ).toBe(true)
+  })
+
+  it('rejects an empty REDIS_URL when limits.backend is redis', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'redis' } }
+    expect(
+      buildEnvSchema(config).safeParse({ ...baseEnv, REDIS_URL: '' }).success,
+    ).toBe(false)
+  })
+
+  it('the error message mentions REDIS_URL when it is missing', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'redis' } }
+    expect(() => validateEnv(config, baseEnv)).toThrowError(/REDIS_URL/)
+  })
 })
 
 describe('validateEnv', () => {

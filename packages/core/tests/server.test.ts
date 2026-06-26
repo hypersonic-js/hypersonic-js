@@ -37,6 +37,13 @@ vi.mock('pino-http', () => ({
   pinoHttp: vi.fn(() => (_req: unknown, _res: unknown, next: () => void) => next()),
 }))
 
+vi.mock('@hypersonic-js/limits', () => ({
+  buildAuthLimitsConfig: vi.fn().mockResolvedValue({
+    rateLimit: { enabled: true, storage: 'secondary-storage' },
+    secondaryStorage: { get: vi.fn(), set: vi.fn(), delete: vi.fn() },
+  }),
+}))
+
 import { createApp } from '../src/server/app.js'
 import { createLifecycle } from '../src/server/lifecycle.js'
 import { disconnectPrismaClient } from '../src/database/client.js'
@@ -223,6 +230,68 @@ describe('createApp', () => {
       app.express.get('/h', (_req, res) => res.json({ ok: true }))
       const res = await request(app.express).get('/h')
       expect(res.headers['content-security-policy']).toBeUndefined()
+    })
+  })
+
+  // ── limits integration ─────────────────────────────────────────────────────
+
+  describe('limits integration', () => {
+    it('does not call buildAuthLimitsConfig when config.limits is not set', async () => {
+      const { buildAuthLimitsConfig } = await import('@hypersonic-js/limits')
+      vi.clearAllMocks()
+      await createApp({ config, env, prisma: mockPrisma })
+      expect(buildAuthLimitsConfig).not.toHaveBeenCalled()
+    })
+
+    it('calls buildAuthLimitsConfig when config.limits is set', async () => {
+      const { buildAuthLimitsConfig } = await import('@hypersonic-js/limits')
+      vi.clearAllMocks()
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'memory' } }
+      await createApp({ config: configWithLimits, env, prisma: mockPrisma })
+      expect(buildAuthLimitsConfig).toHaveBeenCalledWith({ backend: 'memory' }, env, mockPrisma)
+    })
+
+    it('skips limits wiring when rateLimit.enabled is false', async () => {
+      const { buildAuthLimitsConfig } = await import('@hypersonic-js/limits')
+      vi.clearAllMocks()
+      const configWithLimitsDisabled: HypersonicConfig = {
+        ...config,
+        limits: { backend: 'redis' },
+        auth: { ...config.auth, rateLimit: { enabled: false } },
+      }
+      await createApp({ config: configWithLimitsDisabled, env, prisma: mockPrisma })
+      expect(buildAuthLimitsConfig).not.toHaveBeenCalled()
+    })
+
+    it('wires the secondaryStorage returned by buildAuthLimitsConfig into betterAuth', async () => {
+      const { betterAuth } = await import('better-auth')
+      vi.clearAllMocks()
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis' } }
+      await createApp({ config: configWithLimits, env, prisma: mockPrisma })
+      const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+      expect(call['secondaryStorage']).toBeDefined()
+    })
+
+    it('wires the rateLimit config returned by buildAuthLimitsConfig into betterAuth', async () => {
+      const { betterAuth } = await import('better-auth')
+      vi.clearAllMocks()
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'memory' } }
+      await createApp({ config: configWithLimits, env, prisma: mockPrisma })
+      const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+      expect((call['rateLimit'] as { enabled: boolean }).enabled).toBe(true)
+    })
+
+    it('throws a descriptive error when @hypersonic-js/limits is not installed', async () => {
+      vi.doMock('@hypersonic-js/limits', () => {
+        throw Object.assign(new Error("Cannot find module '@hypersonic-js/limits'"), {
+          code: 'ERR_MODULE_NOT_FOUND',
+        })
+      })
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'memory' } }
+      await expect(
+        createApp({ config: configWithLimits, env, prisma: mockPrisma }),
+      ).rejects.toThrow('@hypersonic-js/limits is not installed')
+      vi.doUnmock('@hypersonic-js/limits')
     })
   })
 })

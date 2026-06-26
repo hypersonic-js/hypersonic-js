@@ -11,6 +11,7 @@ import { createLogger } from '../logger/index.js'
 import type { CreateAppOptions, HypersonicApp } from './types.js'
 import type { Env } from '../config/env.js'
 import type { HypersonicConfig } from '../config/types.js'
+import type { AuthRateLimitOptions, BetterAuthSecondaryStorage } from '../auth/types.js'
 
 function resolveProviders(
   config: HypersonicConfig,
@@ -37,11 +38,68 @@ function resolveProviders(
 }
 
 /**
+ * Dynamically imports @hypersonic-js/limits and calls buildAuthLimitsConfig
+ * to derive the Better Auth rate limit and secondaryStorage configuration
+ * that matches the configured limits backend.
+ *
+ * Dynamic import avoids a hard dependency in core on the limits package —
+ * users only need @hypersonic-js/limits installed if they set config.limits.
+ */
+async function resolveLimitsAuthConfig(
+  config: HypersonicConfig,
+  env: Env,
+  prisma: unknown,
+): Promise<{
+  rateLimit?: AuthRateLimitOptions
+  secondaryStorage?: BetterAuthSecondaryStorage
+}> {
+  if (config.limits === undefined) return {}
+
+  let buildAuthLimitsConfig: (
+    c: HypersonicConfig['limits'],
+    e: Env,
+    p?: unknown,
+  ) => Promise<{
+    rateLimit?: AuthRateLimitOptions
+    secondaryStorage?: BetterAuthSecondaryStorage
+  }>
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const limitsModule = await import('@hypersonic-js/limits')
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    buildAuthLimitsConfig = limitsModule.buildAuthLimitsConfig as typeof buildAuthLimitsConfig
+  } catch (err: unknown) {
+    const isNotFound =
+      err instanceof Error &&
+      (err.message.includes('Cannot find module') ||
+        err.message.includes('MODULE_NOT_FOUND') ||
+        err.message.includes('ERR_MODULE_NOT_FOUND'))
+
+    if (isNotFound) {
+      throw new Error(
+        'Hypersonic: config.limits is set but @hypersonic-js/limits is not installed.\n' +
+          'Run: pnpm add @hypersonic-js/limits',
+      )
+    }
+    throw err
+  }
+
+  return buildAuthLimitsConfig(config.limits, env, prisma)
+}
+
+/**
  * Creates and returns a fully wired Hypersonic application.
  * The auth instance created internally is returned on `app.auth` so
  * callers can pass it to route registration without creating a second instance.
  * The Pino logger is returned on `app.logger` and can be passed to mountAdmin
  * or used directly in route handlers.
+ *
+ * When `config.limits` is set, `createApp` automatically wires the same storage
+ * backend into Better Auth's auth-endpoint rate limiting via a dynamic import of
+ * `@hypersonic-js/limits`. The user-level `config.auth.rateLimit.enabled: false`
+ * override (used to suppress rate limiting in tests) is always respected and
+ * takes priority over the limits-derived configuration.
  */
 export async function createApp(options: CreateAppOptions): Promise<HypersonicApp> {
   const { config, env, prisma } = options
@@ -79,13 +137,26 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
 
   setPrismaClient(prisma)
 
+  // Resolve Better Auth rate limit config from the limits backend.
+  // When `enabled: false` is set (test environments), skip limits wiring
+  // so the disabled flag is always honoured.
+  let rateLimitOptions: AuthRateLimitOptions | undefined = config.auth.rateLimit
+  let secondaryStorage: BetterAuthSecondaryStorage | undefined
+
+  if (config.limits !== undefined && rateLimitOptions?.enabled !== false) {
+    const limitsAuth = await resolveLimitsAuthConfig(config, env, prisma)
+    rateLimitOptions = limitsAuth.rateLimit
+    secondaryStorage = limitsAuth.secondaryStorage
+  }
+
   const auth = createAuth({
     secret: env.BETTER_AUTH_SECRET,
     trustedOrigins: config.auth.trustedOrigins,
     provider: config.database.provider,
     prisma,
     providers: resolveProviders(config, env),
-    rateLimit: config.auth.rateLimit,
+    rateLimit: rateLimitOptions,
+    secondaryStorage,
   })
   mountAuth(app, auth)
 
