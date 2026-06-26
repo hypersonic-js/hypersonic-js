@@ -1,8 +1,4 @@
-export type LimitsBackend = 'memory' | 'database' | 'redis'
-
-export interface LimitsConfig {
-  backend: LimitsBackend
-}
+export type { LimitsBackend, LimitsConfig } from '@hypersonic-js/core'
 
 export interface LimitOptions {
   /** Maximum number of requests allowed within windowMs. */

@@ -66,7 +66,7 @@ async function resolveLimitsAuthConfig(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const limitsModule = await import('@hypersonic-js/limits')
+    const limitsModule = await import('@hypersonic-js/limits' as string)
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     buildAuthLimitsConfig = limitsModule.buildAuthLimitsConfig as typeof buildAuthLimitsConfig
   } catch (err: unknown) {

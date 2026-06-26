@@ -1,4 +1,5 @@
 import { RedisStore } from 'rate-limit-redis'
+import type { RedisReply } from 'rate-limit-redis'
 import type { Store } from 'express-rate-limit'
 import type { BlockStore } from '../block-store.js'
 
@@ -7,7 +8,7 @@ import type { BlockStore } from '../block-store.js'
  * Defined here so we can mock it in tests without importing `redis` directly.
  */
 export interface RedisClientLike {
-  sendCommand(args: string[]): Promise<unknown>
+  sendCommand(args: string[]): Promise<RedisReply>
   get(key: string): Promise<string | null>
   set(key: string, value: string, options?: { PX?: number }): Promise<string | null>
   setEx(key: string, seconds: number, value: string): Promise<string>

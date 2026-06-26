@@ -311,9 +311,6 @@ importers:
 
   packages/limits:
     dependencies:
-      '@hypersonic-js/core':
-        specifier: workspace:*
-        version: link:../core
       '@prisma/client':
         specifier: 7.8.0
         version: 7.8.0(prisma@7.8.0(@types/react@19.2.17)(better-sqlite3@12.10.0)(magicast@0.5.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3))(typescript@6.0.3)
@@ -330,6 +327,9 @@ importers:
         specifier: 6.0.1
         version: 6.0.1
     devDependencies:
+      '@hypersonic-js/core':
+        specifier: workspace:*
+        version: link:../core
       '@types/express':
         specifier: 5.0.6
         version: 5.0.6

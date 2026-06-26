@@ -1,26 +1,10 @@
+import type { BetterAuthCustomStorage, BetterAuthSecondaryStorage } from '@hypersonic-js/core'
 import type { LimitsConfig } from './types.js'
 import type { PrismaAuthRateLimitModel } from './stores/prisma-store.js'
 
-// ── Better Auth storage interfaces ────────────────────────────────────────────
-
-/**
- * Better Auth `rateLimit.customStorage` shape.
- * The value object matches Better Auth's internal RateLimitRecord.
- */
-export interface BetterAuthCustomStorage {
-  get(key: string): Promise<{ count: number; lastRequest: number } | null>
-  set(key: string, value: { count: number; lastRequest: number }): Promise<void>
-}
-
-/**
- * Better Auth `secondaryStorage` shape — used when storage is 'secondary-storage'.
- * Keys and values are plain strings; TTL is in seconds.
- */
-export interface BetterAuthSecondaryStorage {
-  get(key: string): Promise<string | null>
-  set(key: string, value: string, ttl?: number): Promise<void>
-  delete(key: string): Promise<void>
-}
+// Re-exported so consumers who import from @hypersonic-js/limits directly
+// continue to get the canonical types without a breaking change.
+export type { BetterAuthCustomStorage, BetterAuthSecondaryStorage } from '@hypersonic-js/core'
 
 /**
  * The configuration object that `buildAuthLimitsConfig` returns.
