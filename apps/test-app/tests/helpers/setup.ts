@@ -16,13 +16,15 @@
  * value — pass both on every mutation request.
  */
 import { createRequire } from 'node:module'
-import type { Application } from 'express'
+import type { Application, RequestHandler } from 'express'
 import requestLib from 'supertest'
 import type { Response as SupertestResponse } from 'supertest'
 import { createApp, createDatabaseAdapter } from '@hypersonic-js/core'
 import type { HypersonicApp, HypersonicConfig, Env } from '@hypersonic-js/core'
 import { mountAdmin } from '@hypersonic-js/admin'
 import type { AdminModelMeta, AdminOptions, AdminAuthLike } from '@hypersonic-js/admin'
+import { createLimiter } from '@hypersonic-js/limits'
+import type { LimitOptions, LimitsBackend } from '@hypersonic-js/limits'
 import { registerRoutes } from '../../src/routes.js'
 import type { PrismaRouteClient } from '../../src/types.js'
 import type { PrismaClient } from '@prisma/client'
@@ -45,6 +47,9 @@ export const BETTER_AUTH_SECRET =
   process.env['BETTER_AUTH_SECRET'] ??
   'ci-test-secret-do-not-use-in-production-!!'
 
+/** Connection string for the Redis instance used by limits.test.ts. */
+export const REDIS_URL = process.env['REDIS_URL'] ?? 'redis://localhost:6379'
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type TestApp = HypersonicApp & { prisma: PrismaClient }
@@ -57,6 +62,16 @@ export interface Credentials {
   csrfToken: string
 }
 
+/**
+ * Configures a real `@hypersonic-js/limits` rate limiter for `POST /posts`
+ * in a single buildTestApp() call. Backend is restricted to memory and redis
+ * — the two backends exercised by limits.test.ts.
+ */
+export interface TestLimitsOptions {
+  backend: Extract<LimitsBackend, 'memory' | 'redis'>
+  options: LimitOptions
+}
+
 // ── App factory ───────────────────────────────────────────────────────────────
 
 /**
@@ -67,12 +82,19 @@ export interface Credentials {
  * individual test files can exercise alternate configurations — custom prefix,
  * hiddenModels, logger, etc. — while still using the real DB and real auth.
  *
+ * Optional `limits` builds a real `@hypersonic-js/limits` rate limiter
+ * (memory or redis backend) via createLimiter and wires it onto `POST /posts`
+ * only. Omit it to get the unthrottled route used by every other test file.
+ * Each call builds a brand-new limiter, so calling buildTestApp() again is
+ * the standard way to get a clean rate-limit counter for the memory backend.
+ *
  * Rate limiting is disabled so that multiple test suites running in the same
  * process do not exhaust Better Auth's in-memory per-IP counter and start
  * receiving 429 responses on sign-up.
  */
 export async function buildTestApp(
   adminOptions: Partial<Omit<AdminOptions, 'meta' | 'auth'>> = {},
+  limits?: TestLimitsOptions,
 ): Promise<TestApp> {
   const config: HypersonicConfig = {
     server: { port: 0, host: '127.0.0.1' },
@@ -91,7 +113,16 @@ export async function buildTestApp(
 
   const app = await createApp({ config, env, prisma })
 
-  registerRoutes(app.express, prisma as unknown as PrismaRouteClient, app.auth)
+  let postsLimiter: RequestHandler | undefined
+  if (limits) {
+    const limit = await createLimiter({
+      config: { backend: limits.backend },
+      env: { REDIS_URL },
+    })
+    postsLimiter = limit(limits.options)
+  }
+
+  registerRoutes(app.express, prisma as unknown as PrismaRouteClient, app.auth, { postsLimiter })
 
   // Auth<BetterAuthOptions> does not include `role` in its user type when the
   // admin plugin is not explicitly wired into the BetterAuth call, so TypeScript
