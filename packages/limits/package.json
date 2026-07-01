@@ -1,7 +1,7 @@
 {
-  "name": "@hypersonic-js/complete",
+  "name": "@hypersonic-js/limits",
   "version": "0.2.5",
-  "description": "The complete Hypersonic.js framework — all production packages in one install",
+  "description": "Rate limiting for Hypersonic.js — memory, database, and Redis backed",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,6 +21,12 @@
   "license": "MIT",
   "author": "Joaquim Dalton-Pereira",
   "homepage": "https://hypersonic-js.com",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
@@ -29,12 +35,27 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
-    "@hypersonic-js/admin": "workspace:*",
+    "express-rate-limit": "8.5.2",
+    "rate-limit-redis": "5.0.0"
+  },
+  "peerDependencies": {
     "@hypersonic-js/core": "workspace:*",
-    "@hypersonic-js/limits": "workspace:*"
+    "@prisma/client": "7.8.0",
+    "express": "5.2.1",
+    "redis": "6.0.1"
+  },
+  "peerDependenciesMeta": {
+    "redis": {
+      "optional": true
+    },
+    "@prisma/client": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "@types/node": "25.9.3",
+    "@hypersonic-js/core": "workspace:*",
+    "@types/express": "5.0.6",
+    "@types/node": "26.0.1",
     "@vitest/coverage-v8": "4.1.9",
     "typescript": "6.0.3",
     "vitest": "4.1.9"

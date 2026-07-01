@@ -11,7 +11,8 @@ const baseShape = {
 /**
  * Builds a Zod schema for environment variables.
  * Required vars are derived from what is enabled in the config —
- * e.g. enabling GitHub OAuth makes GITHUB_CLIENT_ID required.
+ * e.g. enabling GitHub OAuth makes GITHUB_CLIENT_ID required,
+ * and setting limits.backend to 'redis' makes REDIS_URL required.
  */
 export function buildEnvSchema(config: HypersonicConfig): z.ZodObject<z.ZodRawShape> {
   const shape: Record<string, z.ZodType> = { ...baseShape }
@@ -34,6 +35,12 @@ export function buildEnvSchema(config: HypersonicConfig): z.ZodObject<z.ZodRawSh
       .min(1, 'GOOGLE_CLIENT_SECRET is required when Google provider is enabled')
   }
 
+  if (config.limits?.backend === 'redis') {
+    shape['REDIS_URL'] = z
+      .string()
+      .min(1, 'REDIS_URL is required when limits.backend is "redis"')
+  }
+
   return z.object(shape as z.ZodRawShape)
 }
 
@@ -44,6 +51,11 @@ export type Env = {
   GITHUB_CLIENT_SECRET?: string
   GOOGLE_CLIENT_ID?: string
   GOOGLE_CLIENT_SECRET?: string
+  /**
+   * Required when `limits.backend` is `'redis'`.
+   * Format: `redis[s]://[[username][:password]@][host][:port][/db]`
+   */
+  REDIS_URL?: string
 }
 
 /**

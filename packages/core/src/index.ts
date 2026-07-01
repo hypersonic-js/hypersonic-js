@@ -10,6 +10,8 @@ export type {
   AuthProviders,
   DatabaseConfig,
   DatabaseProvider,
+  LimitsConfig,
+  LimitsBackend,
 } from './config/types.js'
 export type { Env } from './config/env.js'
 export type { LoadedConfig } from './config/loader.js'
@@ -26,7 +28,13 @@ export type { PrismaClientLike } from './database/client.js'
 // Auth
 export { createAuth } from './auth/setup.js'
 export { mountAuth } from './auth/middleware.js'
-export type { AuthSetupOptions, SocialProviderCredentials } from './auth/types.js'
+export type {
+  AuthSetupOptions,
+  SocialProviderCredentials,
+  BetterAuthSecondaryStorage,
+  BetterAuthCustomStorage,
+  AuthRateLimitOptions,
+} from './auth/types.js'
 
 // Inertia
 export { createInertiaMiddleware, createInertiaErrorHandler } from './inertia/middleware.js'

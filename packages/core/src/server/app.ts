@@ -11,6 +11,7 @@ import { createLogger } from '../logger/index.js'
 import type { CreateAppOptions, HypersonicApp } from './types.js'
 import type { Env } from '../config/env.js'
 import type { HypersonicConfig } from '../config/types.js'
+import type { AuthRateLimitOptions, BetterAuthSecondaryStorage } from '../auth/types.js'
 
 function resolveProviders(
   config: HypersonicConfig,
@@ -37,11 +38,75 @@ function resolveProviders(
 }
 
 /**
+ * Resolves Better Auth's rate-limit config from the injected `limitsPlugin`.
+ *
+ * `core` never imports `@hypersonic-js/limits` — the caller passes the
+ * resolver in (see `CreateAppOptions.limitsPlugin`). When `config.limits` is
+ * set but no plugin was provided, this throws immediately with a descriptive
+ * error rather than silently ignoring the config block.
+ */
+async function resolveLimitsAuthConfig(options: CreateAppOptions): Promise<{
+  rateLimit?: AuthRateLimitOptions
+  secondaryStorage?: BetterAuthSecondaryStorage
+  close?: () => Promise<void>
+}> {
+  const { config, env, prisma, limitsPlugin } = options
+
+  if (config.limits === undefined) return {}
+
+  if (limitsPlugin === undefined) {
+    throw new Error(
+      'Hypersonic: config.limits is set but no limitsPlugin was passed to createApp.\n' +
+        'Import buildAuthLimitsConfig from @hypersonic-js/limits and pass it in:\n' +
+        "  import { buildAuthLimitsConfig } from '@hypersonic-js/limits'\n" +
+        '  createApp({ config, env, prisma, limitsPlugin: buildAuthLimitsConfig })',
+    )
+  }
+
+  return limitsPlugin(config.limits, env, prisma)
+}
+
+/**
+ * Best-effort release of the limits plugin's connection (e.g. Redis) when
+ * app setup fails partway through, after the connection was already opened.
+ * Errors from `closeLimitsAuth` itself are swallowed — the original setup
+ * error is always what the caller sees, since that's the actionable
+ * failure. Mirrors the same best-effort pattern used for block-store writes
+ * in `@hypersonic-js/limits`'s middleware.
+ */
+async function closeLimitsAuthBestEffort(
+  closeLimitsAuth: (() => Promise<void>) | undefined,
+): Promise<void> {
+  if (closeLimitsAuth === undefined) return
+
+  try {
+    await closeLimitsAuth()
+  } catch {
+    // Best-effort — the original setup error takes priority over a
+    // secondary failure while releasing the connection.
+  }
+}
+
+/**
  * Creates and returns a fully wired Hypersonic application.
  * The auth instance created internally is returned on `app.auth` so
  * callers can pass it to route registration without creating a second instance.
  * The Pino logger is returned on `app.logger` and can be passed to mountAdmin
  * or used directly in route handlers.
+ *
+ * When `config.limits` is set, pass `limitsPlugin` (see `CreateAppOptions`) to
+ * wire the same storage backend into Better Auth's auth-endpoint rate
+ * limiting. The user-level `config.auth.rateLimit.enabled: false` override
+ * (used to suppress rate limiting in tests) is always respected and takes
+ * priority over the limits-derived configuration.
+ *
+ * When the limits plugin opens an external connection (e.g. Redis, for the
+ * `redis` backend's Better Auth secondaryStorage), that connection is
+ * released automatically when `app.stop()` is called, via the plugin's
+ * returned `close`. If a later setup step (createAuth, mountAuth, or
+ * createInertiaMiddleware) throws before the lifecycle — and therefore
+ * `app.stop()` — exists to call, that same `close` is invoked here as a
+ * best-effort cleanup so the connection isn't leaked.
  */
 export async function createApp(options: CreateAppOptions): Promise<HypersonicApp> {
   const { config, env, prisma } = options
@@ -79,22 +144,45 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
 
   setPrismaClient(prisma)
 
-  const auth = createAuth({
-    secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins: config.auth.trustedOrigins,
-    provider: config.database.provider,
-    prisma,
-    providers: resolveProviders(config, env),
-    rateLimit: config.auth.rateLimit,
-  })
-  mountAuth(app, auth)
+  // Resolve Better Auth rate limit config from the injected limits plugin.
+  // When `enabled: false` is set (test environments), skip limits wiring
+  // so the disabled flag is always honoured.
+  let rateLimitOptions: AuthRateLimitOptions | undefined = config.auth.rateLimit
+  let secondaryStorage: BetterAuthSecondaryStorage | undefined
+  let closeLimitsAuth: (() => Promise<void>) | undefined
 
-  await createInertiaMiddleware(app, {
-    ssr: config.inertia.ssr,
-    version: config.inertia.version,
-  })
+  if (config.limits !== undefined && rateLimitOptions?.enabled !== false) {
+    const limitsAuth = await resolveLimitsAuthConfig(options)
+    rateLimitOptions = limitsAuth.rateLimit
+    secondaryStorage = limitsAuth.secondaryStorage
+    closeLimitsAuth = limitsAuth.close
+  }
 
-  const { start, stop } = createLifecycle(app, config)
+  // From this point on, closeLimitsAuth may hold an open connection (e.g.
+  // Redis). If any remaining setup step throws, release it before
+  // rethrowing — app.stop() doesn't exist yet to do that for us.
+  try {
+    const auth = createAuth({
+      secret: env.BETTER_AUTH_SECRET,
+      trustedOrigins: config.auth.trustedOrigins,
+      provider: config.database.provider,
+      prisma,
+      providers: resolveProviders(config, env),
+      rateLimit: rateLimitOptions,
+      secondaryStorage,
+    })
+    mountAuth(app, auth)
 
-  return { express: app, auth, logger, start, stop }
+    await createInertiaMiddleware(app, {
+      ssr: config.inertia.ssr,
+      version: config.inertia.version,
+    })
+
+    const { start, stop } = createLifecycle(app, config, closeLimitsAuth)
+
+    return { express: app, auth, logger, start, stop }
+  } catch (err) {
+    await closeLimitsAuthBestEffort(closeLimitsAuth)
+    throw err
+  }
 }

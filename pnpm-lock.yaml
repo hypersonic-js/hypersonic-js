@@ -52,6 +52,9 @@ importers:
       '@hypersonic-js/cli':
         specifier: workspace:*
         version: link:../../packages/cli
+      '@hypersonic-js/limits':
+        specifier: workspace:*
+        version: link:../../packages/limits
       '@inertiajs/react':
         specifier: 3.4.0
         version: 3.4.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -94,6 +97,9 @@ importers:
       react-dom:
         specifier: 19.2.7
         version: 19.2.7(react@19.2.7)
+      redis:
+        specifier: 6.0.1
+        version: 6.0.1
       supertest:
         specifier: 7.2.2
         version: 7.2.2
@@ -207,6 +213,9 @@ importers:
       '@hypersonic-js/core':
         specifier: workspace:*
         version: link:../core
+      '@hypersonic-js/limits':
+        specifier: workspace:*
+        version: link:../limits
     devDependencies:
       '@types/node':
         specifier: 25.9.3
@@ -305,6 +314,43 @@ importers:
       vitest:
         specifier: 4.1.9
         version: 4.1.9(@types/node@25.9.3)(@vitest/coverage-v8@4.1.9)(vite@8.0.16(@types/node@25.9.3)(jiti@2.7.0))
+
+  packages/limits:
+    dependencies:
+      '@prisma/client':
+        specifier: 7.8.0
+        version: 7.8.0(prisma@7.8.0(@types/react@19.2.17)(better-sqlite3@12.10.0)(magicast@0.5.3)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3))(typescript@6.0.3)
+      express:
+        specifier: 5.2.1
+        version: 5.2.1
+      express-rate-limit:
+        specifier: 8.5.2
+        version: 8.5.2(express@5.2.1)
+      rate-limit-redis:
+        specifier: 5.0.0
+        version: 5.0.0(express-rate-limit@8.5.2(express@5.2.1))
+      redis:
+        specifier: 6.0.1
+        version: 6.0.1
+    devDependencies:
+      '@hypersonic-js/core':
+        specifier: workspace:*
+        version: link:../core
+      '@types/express':
+        specifier: 5.0.6
+        version: 5.0.6
+      '@types/node':
+        specifier: 26.0.1
+        version: 26.0.1
+      '@vitest/coverage-v8':
+        specifier: 4.1.9
+        version: 4.1.9(vitest@4.1.9)
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 4.1.9
+        version: 4.1.9(@types/node@26.0.1)(@vitest/coverage-v8@4.1.9)(vite@8.0.16(@types/node@26.0.1)(jiti@2.7.0))
 
   scripts:
     devDependencies:
@@ -1123,6 +1169,42 @@ packages:
       '@types/react':
         optional: true
 
+  '@redis/bloom@6.0.1':
+    resolution: {integrity: sha512-6ys5hhea+47n7o97ZFI4GvdzTQk/arIsXZgH159l6IVtJ4rZaB+KVdAfwvIxlmGA7z+NNlO8UxjTeQrenqjZcQ==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      '@redis/client': ^6.0.1
+
+  '@redis/client@6.0.1':
+    resolution: {integrity: sha512-SwYl64hKHE/NeO2VSSG1y/4zIm0cNepyOZtQrOpLiNRHmH2FdWBOecNzsLiXCQdFCF9MCyoPXwAbaG2iMO0A7Q==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      '@node-rs/xxhash': ^1.1.0
+      '@opentelemetry/api': '>=1 <2'
+    peerDependenciesMeta:
+      '@node-rs/xxhash':
+        optional: true
+      '@opentelemetry/api':
+        optional: true
+
+  '@redis/json@6.0.1':
+    resolution: {integrity: sha512-KD1OztCYh7O9TkKMU9qZcFIKoudIGqmgXsOhQVq5A3REGrnl+wg0kporQFQCO+fcxe/nhvDgmBtXrm3diPGczA==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      '@redis/client': ^6.0.1
+
+  '@redis/search@6.0.1':
+    resolution: {integrity: sha512-G09OujS3eOtQnP7kZC5eZTiazwgeimlo6Pf3vHnE1jO7rfqrtmMI0R1/ZXfzoW8p9vB4QiH538aEsWaHKd8l5w==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      '@redis/client': ^6.0.1
+
+  '@redis/time-series@6.0.1':
+    resolution: {integrity: sha512-8aLGSDtCpnPTLD7lEiHHmuDCFppctLdT8geFIDf/7LWV9y8Vre6RB+aBZrgkeo3X1oPmTt1IbVAQVxsuJvkODw==}
+    engines: {node: '>= 20.0.0'}
+    peerDependencies:
+      '@redis/client': ^6.0.1
+
   '@rolldown/binding-android-arm64@1.0.3':
     resolution: {integrity: sha512-454rs7jHngixp/NMxd5srYD57OnzSlZ/eFTETjORQHLwJG1lRtmNOJcBerZlfu4GjKqeq8aCCIQrMdHyhI51Hw==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -1575,6 +1657,9 @@ packages:
 
   '@types/node@25.9.3':
     resolution: {integrity: sha512-603BddQMv3pUcr4U2dhujk83N2tTDVr/34wII2B6bJy6g+8WD6yUb11jszNs0gdi4PesVWl7ABt8nYMVpnLUcg==}
+
+  '@types/node@26.0.1':
+    resolution: {integrity: sha512-fc3KiUoBt6kie0N9bIW3E47vZsuaMf0PM2AaUpLCLT0s/LvX1nxAim6Fc049cNxODPpGm6qRAuUOB86SkRuPQw==}
 
   '@types/pg@8.20.0':
     resolution: {integrity: sha512-bEPFOaMAHTEP1EzpvHTbmwR8UsFyHSKsRisLIHVMXnpNefSbGA1bD6CVy+qKjGSqmZqNqBDV2azOBo8TgkcVow==}
@@ -2111,6 +2196,10 @@ packages:
   chownr@1.1.4:
     resolution: {integrity: sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg==}
 
+  cluster-key-slot@1.1.2:
+    resolution: {integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==}
+    engines: {node: '>=0.10.0'}
+
   combined-stream@1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
     engines: {node: '>= 0.8'}
@@ -2372,6 +2461,12 @@ packages:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
     engines: {node: '>=12.0.0'}
 
+  express-rate-limit@8.5.2:
+    resolution: {integrity: sha512-5Kb34ipNX694DH48vN9irak1Qx30nb0PLYHXfJgw4YEjiC3ZEmZJhwOp+VfiCYwFzvFTdB9QkArYS5kXa2cx2A==}
+    engines: {node: '>= 16'}
+    peerDependencies:
+      express: '>= 4.11'
+
   express@5.2.1:
     resolution: {integrity: sha512-hIS4idWWai69NezIdRt2xFVofaF4j+6INOpJlVOLDO8zXGpUVEVzIYk12UUi2JzjEzWL3IOAxcTubgz9Po0yXw==}
     engines: {node: '>= 18'}
@@ -2621,6 +2716,10 @@ packages:
 
   ini@1.3.8:
     resolution: {integrity: sha512-JV/yugV2uzW5iMRSiZAyDtQd+nxtUnjeLt0acNdw98kKLrvuRVyB80tsREOE7yvGVgalhZ6RNXCmEHkUKBKxew==}
+
+  ip-address@10.2.0:
+    resolution: {integrity: sha512-/+S6j4E9AHvW9SWMSEY9Xfy66O5PWvVEJ08O0y5JGyEKQpojb0K0GKpz/v5HJ/G0vi3D2sjGK78119oXZeE0qA==}
+    engines: {node: '>= 12'}
 
   ipaddr.js@1.9.1:
     resolution: {integrity: sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==}
@@ -3212,6 +3311,12 @@ packages:
     resolution: {integrity: sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==}
     engines: {node: '>= 0.6'}
 
+  rate-limit-redis@5.0.0:
+    resolution: {integrity: sha512-+M9el8KZjZ2HXM6/E38jFGmozBbN4C200iLE8+80TgS+8PzSfAAvD1zkx2oWu6YEgSrdiJJNrd4LCFm5vjVJkg==}
+    engines: {node: '>= 16'}
+    peerDependencies:
+      express-rate-limit: '>= 8.5.0'
+
   raw-body@3.0.2:
     resolution: {integrity: sha512-K5zQjDllxWkf7Z5xJdV0/B0WTNqx6vxG70zJE4N0kBs4LovmEYWJzQGxC9bS9RAKu3bgM40lrd5zoLJ12MQ5BA==}
     engines: {node: '>= 0.10'}
@@ -3250,6 +3355,10 @@ packages:
 
   real-require@1.0.0:
     resolution: {integrity: sha512-P4nbQYQfePJxRSmY+v/KINxVucm4NF3p3s7pJveMTtom52FR4YGltUQLB8idDXwDDWW+eYrWDFbuzUnjoWHF7g==}
+
+  redis@6.0.1:
+    resolution: {integrity: sha512-54FoTBdFw10Y602pShvk8CGJlSH55nY+CNAZaVk8YdxY3rENihdYm2lXrujrtupYTHyrVSZUxOdeStNQbNvnQg==}
+    engines: {node: '>= 20.0.0'}
 
   regex-recursion@6.0.2:
     resolution: {integrity: sha512-0YCaSCq2VRIebiaUviZNs0cBz1kg5kVS2UKUfNIx8YVs1cN3AV7NTctO5FOKBA+UT2BPJIWZauYHPqJODG50cg==}
@@ -3556,6 +3665,9 @@ packages:
 
   undici-types@7.24.6:
     resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
+
+  undici-types@8.3.0:
+    resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
 
   unist-util-is@6.0.1:
     resolution: {integrity: sha512-LsiILbtBETkDz8I9p1dQ0uyRUWuaQzd/cuEeS1hoRSyW5E5XGmTzlwY1OrNzzakGowI9Dr/I8HVaw4hTtnxy8g==}
@@ -4597,6 +4709,26 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.17
 
+  '@redis/bloom@6.0.1(@redis/client@6.0.1)':
+    dependencies:
+      '@redis/client': 6.0.1
+
+  '@redis/client@6.0.1':
+    dependencies:
+      cluster-key-slot: 1.1.2
+
+  '@redis/json@6.0.1(@redis/client@6.0.1)':
+    dependencies:
+      '@redis/client': 6.0.1
+
+  '@redis/search@6.0.1(@redis/client@6.0.1)':
+    dependencies:
+      '@redis/client': 6.0.1
+
+  '@redis/time-series@6.0.1(@redis/client@6.0.1)':
+    dependencies:
+      '@redis/client': 6.0.1
+
   '@rolldown/binding-android-arm64@1.0.3':
     optional: true
 
@@ -4861,7 +4993,7 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 25.9.3
+      '@types/node': 26.0.1
 
   '@types/chai@5.2.3':
     dependencies:
@@ -4870,7 +5002,7 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.0.1
 
   '@types/cookiejar@2.1.5': {}
 
@@ -4884,7 +5016,7 @@ snapshots:
 
   '@types/express-serve-static-core@5.1.1':
     dependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.0.1
       '@types/qs': 6.15.1
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.1
@@ -4924,9 +5056,13 @@ snapshots:
     dependencies:
       undici-types: 7.24.6
 
+  '@types/node@26.0.1':
+    dependencies:
+      undici-types: 8.3.0
+
   '@types/pg@8.20.0':
     dependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.0.1
       pg-protocol: 1.14.0
       pg-types: 2.2.0
 
@@ -4944,18 +5080,18 @@ snapshots:
 
   '@types/send@1.2.1':
     dependencies:
-      '@types/node': 25.9.3
+      '@types/node': 26.0.1
 
   '@types/serve-static@2.2.0':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 25.9.3
+      '@types/node': 26.0.1
 
   '@types/superagent@8.1.10':
     dependencies:
       '@types/cookiejar': 2.1.5
       '@types/methods': 1.1.4
-      '@types/node': 25.9.3
+      '@types/node': 26.0.1
       form-data: 4.0.6
 
   '@types/supertest@7.2.0':
@@ -5100,6 +5236,14 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 8.0.16(@types/node@25.9.3)(jiti@2.7.0)
+
+  '@vitest/mocker@4.1.9(vite@8.0.16(@types/node@26.0.1)(jiti@2.7.0))':
+    dependencies:
+      '@vitest/spy': 4.1.9
+      estree-walker: 3.0.3
+      magic-string: 0.30.21
+    optionalDependencies:
+      vite: 8.0.16(@types/node@26.0.1)(jiti@2.7.0)
 
   '@vitest/pretty-format@4.1.9':
     dependencies:
@@ -5481,6 +5625,8 @@ snapshots:
 
   chownr@1.1.4: {}
 
+  cluster-key-slot@1.1.2: {}
+
   combined-stream@1.0.8:
     dependencies:
       delayed-stream: 1.0.0
@@ -5729,6 +5875,11 @@ snapshots:
   expand-template@2.0.3: {}
 
   expect-type@1.3.0: {}
+
+  express-rate-limit@8.5.2(express@5.2.1):
+    dependencies:
+      express: 5.2.1
+      ip-address: 10.2.0
 
   express@5.2.1:
     dependencies:
@@ -6009,6 +6160,8 @@ snapshots:
   inherits@2.0.4: {}
 
   ini@1.3.8: {}
+
+  ip-address@10.2.0: {}
 
   ipaddr.js@1.9.1: {}
 
@@ -6526,6 +6679,10 @@ snapshots:
 
   range-parser@1.2.1: {}
 
+  rate-limit-redis@5.0.0(express-rate-limit@8.5.2(express@5.2.1)):
+    dependencies:
+      express-rate-limit: 8.5.2(express@5.2.1)
+
   raw-body@3.0.2:
     dependencies:
       bytes: 3.1.2
@@ -6570,6 +6727,17 @@ snapshots:
   real-require@0.2.0: {}
 
   real-require@1.0.0: {}
+
+  redis@6.0.1:
+    dependencies:
+      '@redis/bloom': 6.0.1(@redis/client@6.0.1)
+      '@redis/client': 6.0.1
+      '@redis/json': 6.0.1(@redis/client@6.0.1)
+      '@redis/search': 6.0.1(@redis/client@6.0.1)
+      '@redis/time-series': 6.0.1(@redis/client@6.0.1)
+    transitivePeerDependencies:
+      - '@node-rs/xxhash'
+      - '@opentelemetry/api'
 
   regex-recursion@6.0.2:
     dependencies:
@@ -6934,6 +7102,8 @@ snapshots:
 
   undici-types@7.24.6: {}
 
+  undici-types@8.3.0: {}
+
   unist-util-is@6.0.1:
     dependencies:
       '@types/unist': 3.0.3
@@ -7002,6 +7172,18 @@ snapshots:
       tinyglobby: 0.2.17
     optionalDependencies:
       '@types/node': 25.9.3
+      fsevents: 2.3.3
+      jiti: 2.7.0
+
+  vite@8.0.16(@types/node@26.0.1)(jiti@2.7.0):
+    dependencies:
+      lightningcss: 1.32.0
+      picomatch: 4.0.4
+      postcss: 8.5.15
+      rolldown: 1.0.3
+      tinyglobby: 0.2.17
+    optionalDependencies:
+      '@types/node': 26.0.1
       fsevents: 2.3.3
       jiti: 2.7.0
 
@@ -7078,6 +7260,34 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 25.9.3
+      '@vitest/coverage-v8': 4.1.9(vitest@4.1.9)
+    transitivePeerDependencies:
+      - msw
+
+  vitest@4.1.9(@types/node@26.0.1)(@vitest/coverage-v8@4.1.9)(vite@8.0.16(@types/node@26.0.1)(jiti@2.7.0)):
+    dependencies:
+      '@vitest/expect': 4.1.9
+      '@vitest/mocker': 4.1.9(vite@8.0.16(@types/node@26.0.1)(jiti@2.7.0))
+      '@vitest/pretty-format': 4.1.9
+      '@vitest/runner': 4.1.9
+      '@vitest/snapshot': 4.1.9
+      '@vitest/spy': 4.1.9
+      '@vitest/utils': 4.1.9
+      es-module-lexer: 2.1.0
+      expect-type: 1.3.0
+      magic-string: 0.30.21
+      obug: 2.1.3
+      pathe: 2.0.3
+      picomatch: 4.0.4
+      std-env: 4.1.0
+      tinybench: 2.9.0
+      tinyexec: 1.2.4
+      tinyglobby: 0.2.17
+      tinyrainbow: 3.1.0
+      vite: 8.0.16(@types/node@26.0.1)(jiti@2.7.0)
+      why-is-node-running: 2.3.0
+    optionalDependencies:
+      '@types/node': 26.0.1
       '@vitest/coverage-v8': 4.1.9(vitest@4.1.9)
     transitivePeerDependencies:
       - msw

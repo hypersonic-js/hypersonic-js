@@ -68,4 +68,28 @@ model Verification {
   updatedAt  DateTime?
 }
 
+// ── Required by @hypersonic-js/limits (database backend only) ─────────────
+// Remove these two models if you are using the memory or redis backend.
+
+model RateLimit {
+  id         String    @id @default(cuid())
+  key        String    @unique
+  points     Int       @default(0)
+  expireAt   DateTime?
+  blockUntil DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("rate_limits")
+}
+
+model AuthRateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int    @default(0)
+  lastRequest BigInt
+
+  @@map("auth_rate_limits")
+}
+
 // ── Your models go here ────────────────────────────────────────────────────

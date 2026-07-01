@@ -8,7 +8,19 @@ export interface Lifecycle {
   stop: () => Promise<void>
 }
 
-export function createLifecycle(app: Application, config: HypersonicConfig): Lifecycle {
+/**
+ * Builds the start/stop lifecycle for a Hypersonic app's HTTP server.
+ *
+ * `onStop`, when provided, is awaited during `stop()` alongside disconnecting
+ * Prisma — used by `createApp` to release the Redis connection opened for
+ * Better Auth's `secondaryStorage` when `config.limits.backend` is `'redis'`.
+ * Not part of core's public API — internal to `createApp`.
+ */
+export function createLifecycle(
+  app: Application,
+  config: HypersonicConfig,
+  onStop?: () => Promise<void>,
+): Lifecycle {
   let server: Server | null = null
 
   async function start(): Promise<void> {
@@ -20,9 +32,7 @@ export function createLifecycle(app: Application, config: HypersonicConfig): Lif
     })
   }
 
-  async function stop(): Promise<void> {
-    await disconnectPrismaClient()
-
+  function closeServer(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (server === null) {
         resolve()
@@ -40,6 +50,26 @@ export function createLifecycle(app: Application, config: HypersonicConfig): Lif
         }
       })
     })
+  }
+
+  /**
+   * Disconnects Prisma and awaits `onStop`, then closes the HTTP server.
+   * The server close is guaranteed via `finally` so a rejection from either
+   * step never leaves the listener open. The original error (from Prisma or
+   * `onStop`) still propagates to the caller unless closing the server also
+   * fails — in that case the close error takes precedence, per standard
+   * try/finally semantics.
+   */
+  async function stop(): Promise<void> {
+    try {
+      await disconnectPrismaClient()
+
+      if (onStop !== undefined) {
+        await onStop()
+      }
+    } finally {
+      await closeServer()
+    }
   }
 
   return { start, stop }

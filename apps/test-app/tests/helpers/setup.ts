@@ -16,13 +16,15 @@
  * value — pass both on every mutation request.
  */
 import { createRequire } from 'node:module'
-import type { Application } from 'express'
+import type { Application, RequestHandler } from 'express'
 import requestLib from 'supertest'
 import type { Response as SupertestResponse } from 'supertest'
 import { createApp, createDatabaseAdapter } from '@hypersonic-js/core'
 import type { HypersonicApp, HypersonicConfig, Env } from '@hypersonic-js/core'
 import { mountAdmin } from '@hypersonic-js/admin'
 import type { AdminModelMeta, AdminOptions, AdminAuthLike } from '@hypersonic-js/admin'
+import { createLimiter, buildAuthLimitsConfig } from '@hypersonic-js/limits'
+import type { LimitOptions, LimitsBackend } from '@hypersonic-js/limits'
 import { registerRoutes } from '../../src/routes.js'
 import type { PrismaRouteClient } from '../../src/types.js'
 import type { PrismaClient } from '@prisma/client'
@@ -45,9 +47,28 @@ export const BETTER_AUTH_SECRET =
   process.env['BETTER_AUTH_SECRET'] ??
   'ci-test-secret-do-not-use-in-production-!!'
 
+/**
+ * Connection string for the Redis instance used by limits.test.ts and
+ * auth-limits-lifecycle.test.ts. Points at a dedicated logical DB (index 1,
+ * via the `/1` path segment) rather than the server default (DB 0) — both
+ * suites call `flushDb()` between tests, which wipes every key in whichever
+ * DB is selected. Using a dedicated index means that flush can never touch
+ * unrelated keys on a shared local Redis instance or another db-0 consumer.
+ */
+export const REDIS_URL = process.env['REDIS_URL'] ?? 'redis://localhost:6379/1'
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type TestApp = HypersonicApp & { prisma: PrismaClient }
+export type TestApp = HypersonicApp & {
+  prisma: PrismaClient
+  /**
+   * Releases the `POST /posts` rate limiter's resources (the Redis
+   * connection, for the redis backend). Present only when `limits` was
+   * passed to buildTestApp(); no-op backends still return a resolving
+   * function. Call this in afterEach/afterAll alongside prisma teardown.
+   */
+  closeLimiter?: () => Promise<void>
+}
 
 /** Cookie string (session + CSRF) and token value for mutation requests. */
 export interface Credentials {
@@ -55,6 +76,16 @@ export interface Credentials {
   cookie: string
   /** Raw token value for the X-XSRF-TOKEN header. */
   csrfToken: string
+}
+
+/**
+ * Configures a real `@hypersonic-js/limits` rate limiter for `POST /posts`
+ * in a single buildTestApp() call. Backend is restricted to memory and redis
+ * — the two backends exercised by limits.test.ts.
+ */
+export interface TestLimitsOptions {
+  backend: Extract<LimitsBackend, 'memory' | 'redis'>
+  options: LimitOptions
 }
 
 // ── App factory ───────────────────────────────────────────────────────────────
@@ -67,31 +98,70 @@ export interface Credentials {
  * individual test files can exercise alternate configurations — custom prefix,
  * hiddenModels, logger, etc. — while still using the real DB and real auth.
  *
- * Rate limiting is disabled so that multiple test suites running in the same
- * process do not exhaust Better Auth's in-memory per-IP counter and start
- * receiving 429 responses on sign-up.
+ * Optional `limits` builds a real `@hypersonic-js/limits` rate limiter
+ * (memory or redis backend) via createLimiter and wires it onto `POST /posts`
+ * only. Omit it to get the unthrottled route used by every other test file.
+ * Each call builds a brand-new limiter, so calling buildTestApp() again is
+ * the standard way to get a clean rate-limit counter for the memory backend.
+ * The returned TestApp exposes `closeLimiter` to release it during teardown.
+ *
+ * Optional `authRedisLimits`, when true, sets `config.limits = { backend:
+ * 'redis' }`, leaves `auth.rateLimit` unset (rather than the usual
+ * `{ enabled: false }`), and passes `buildAuthLimitsConfig` as `createApp`'s
+ * `limitsPlugin` — createApp never imports `@hypersonic-js/limits` itself,
+ * so this is how Better Auth's own auth-endpoint rate limiting gets wired to
+ * a dedicated Redis secondaryStorage connection. This is for
+ * auth-limits-lifecycle.test.ts only — Better Auth's real rate limiter is
+ * active in this mode, so keep request volume in that test low.
+ *
+ * Rate limiting is disabled by default so that multiple test suites running
+ * in the same process do not exhaust Better Auth's in-memory per-IP counter
+ * and start receiving 429 responses on sign-up.
  */
 export async function buildTestApp(
   adminOptions: Partial<Omit<AdminOptions, 'meta' | 'auth'>> = {},
+  limits?: TestLimitsOptions,
+  authRedisLimits?: boolean,
 ): Promise<TestApp> {
   const config: HypersonicConfig = {
     server: { port: 0, host: '127.0.0.1' },
     auth: {
       trustedOrigins: ['http://localhost', 'http://127.0.0.1'],
-      rateLimit: { enabled: false },
+      // Omit rateLimit entirely (rather than set it to undefined) when
+      // authRedisLimits is true, so createApp's `rateLimitOptions?.enabled
+      // !== false` check sees it as unset and proceeds with limits wiring.
+      ...(authRedisLimits === true ? {} : { rateLimit: { enabled: false } }),
     },
     inertia: { ssr: false },
     database: { provider: 'postgresql' },
+    // Same reasoning — omit the key rather than assign undefined.
+    ...(authRedisLimits === true ? { limits: { backend: 'redis' as const } } : {}),
   }
 
-  const env: Env = { DATABASE_URL, BETTER_AUTH_SECRET }
+  const env: Env = { DATABASE_URL, BETTER_AUTH_SECRET, REDIS_URL }
 
   const adapter = await createDatabaseAdapter('postgresql', DATABASE_URL)
   const prisma = new PrismaClientCtor({ adapter }) as PrismaClient
 
-  const app = await createApp({ config, env, prisma })
+  const app = await createApp({
+    config,
+    env,
+    prisma,
+    ...(authRedisLimits === true ? { limitsPlugin: buildAuthLimitsConfig } : {}),
+  })
 
-  registerRoutes(app.express, prisma as unknown as PrismaRouteClient, app.auth)
+  let postsLimiter: RequestHandler | undefined
+  let closeLimiter: (() => Promise<void>) | undefined
+  if (limits) {
+    const limiter = await createLimiter({
+      config: { backend: limits.backend },
+      env: { REDIS_URL },
+    })
+    postsLimiter = limiter.limit(limits.options)
+    closeLimiter = limiter.close
+  }
+
+  registerRoutes(app.express, prisma as unknown as PrismaRouteClient, app.auth, { postsLimiter })
 
   // Auth<BetterAuthOptions> does not include `role` in its user type when the
   // admin plugin is not explicitly wired into the BetterAuth call, so TypeScript
@@ -104,7 +174,7 @@ export async function buildTestApp(
     ...adminOptions,
   })
 
-  return { ...app, prisma }
+  return { ...app, prisma, closeLimiter }
 }
 
 // ── Cookie helpers ────────────────────────────────────────────────────────────
