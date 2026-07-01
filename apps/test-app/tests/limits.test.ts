@@ -19,6 +19,13 @@
  * for the redis backend this closes the underlying Redis connection that
  * createLimiter() opens; it is a no-op for the memory backend.
  *
+ * Teardown is tolerant of setup failures: `testApp` is only assigned once
+ * `buildTestApp()` resolves inside each `it()`, so if it throws first,
+ * `testApp` is still `undefined` when `afterEach` runs. Each afterEach
+ * checks for that before touching `testApp`, so a setup failure surfaces as
+ * itself rather than being masked by a follow-on "Cannot read properties of
+ * undefined" from the cleanup hook.
+ *
  * Auth/CSRF credentials are obtained once in beforeAll from a throwaway
  * bootstrap app and reused across every test in this file — Credentials are
  * portable across app instances that share the same database and
@@ -90,14 +97,32 @@ function createPost(app: Application) {
     .send({ title: 'Rate limit test', body: 'body' })
 }
 
+/**
+ * Releases the resources opened by buildTestApp() for a single test, then
+ * clears the shared reference. A no-op when `app` is `undefined` — that
+ * happens when buildTestApp() itself threw before assignment, and in that
+ * case there is nothing to release, so the original setup error is left to
+ * surface on its own rather than being replaced by a teardown error.
+ *
+ * Clearing the shared reference (rather than just checking it) also stops a
+ * stale, already-torn-down TestApp from a failed test from being re-closed
+ * by the next test's afterEach.
+ */
+async function closeTestApp(app: TestApp | undefined): Promise<void> {
+  if (app === undefined) return
+  await app.closeLimiter?.()
+  await app.prisma.$disconnect()
+}
+
 // ─── memory backend ───────────────────────────────────────────────────────────
 
 describe('POST /posts rate limiting — memory backend', () => {
-  let testApp: TestApp
+  let testApp: TestApp | undefined
 
   afterEach(async () => {
-    await testApp.closeLimiter?.()
-    await testApp.prisma.$disconnect()
+    const app = testApp
+    testApp = undefined
+    await closeTestApp(app)
   })
 
   it('allows requests up to the configured limit', async () => {
@@ -149,7 +174,7 @@ describe('POST /posts rate limiting — memory backend', () => {
 // ─── redis backend ────────────────────────────────────────────────────────────
 
 describe('POST /posts rate limiting — redis backend', () => {
-  let testApp: TestApp
+  let testApp: TestApp | undefined
   let redisClient: ReturnType<typeof createClient>
 
   beforeAll(async () => {
@@ -163,8 +188,9 @@ describe('POST /posts rate limiting — redis backend', () => {
 
   afterEach(async () => {
     await redisClient.flushDb()
-    await testApp.closeLimiter?.()
-    await testApp.prisma.$disconnect()
+    const app = testApp
+    testApp = undefined
+    await closeTestApp(app)
   })
 
   it('allows requests up to the configured limit', async () => {

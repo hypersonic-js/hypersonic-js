@@ -10,6 +10,13 @@ vi.mock('better-auth/adapters/prisma', () => ({
 vi.mock('better-auth/node', () => ({
   toNodeHandler: vi.fn(() => vi.fn()),
 }))
+vi.mock('../src/auth/middleware.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/auth/middleware.js')>()
+  return {
+    ...actual,
+    mountAuth: vi.fn(),
+  }
+})
 vi.mock('../src/inertia/vite.js', () => ({
   createViteSetup: vi.fn(async () => ({
     middleware: (_req: unknown, _res: unknown, next: () => void) => next(),
@@ -39,7 +46,8 @@ vi.mock('pino-http', () => ({
 
 import { createApp } from '../src/server/app.js'
 import { createLifecycle } from '../src/server/lifecycle.js'
-import { disconnectPrismaClient } from '../src/database/client.js'
+import { disconnectPrismaClient, setPrismaClient } from '../src/database/client.js'
+import { mountAuth } from '../src/auth/middleware.js'
 import type { HypersonicConfig } from '../src/config/types.js'
 import type { Env } from '../src/config/env.js'
 import type { Application } from 'express'
@@ -287,6 +295,58 @@ describe('createApp', () => {
       await expect(app.stop()).resolves.toBeUndefined()
     })
   })
+
+  // ── resource cleanup on setup failure ───────────────────────────────────────
+  // Covers the leak where closeLimitsAuth (e.g. a Redis connection) was
+  // opened but a later setup step (createAuth/mountAuth/createInertiaMiddleware)
+  // throws before the lifecycle — and therefore app.stop() — exists to
+  // release it. mountAuth is mocked module-wide (see vi.mock above) so any
+  // test here can force it to throw without touching real Express internals.
+
+  describe('resource cleanup on setup failure', () => {
+    it('closes the limits auth connection if a later setup step throws', async () => {
+      const { plugin, close } = makeLimitsPlugin()
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis' } }
+      vi.mocked(mountAuth).mockImplementationOnce(() => {
+        throw new Error('mount failed')
+      })
+
+      await expect(
+        createApp({ config: configWithLimits, env, prisma: mockPrisma, limitsPlugin: plugin }),
+      ).rejects.toThrow('mount failed')
+
+      expect(close).toHaveBeenCalledOnce()
+    })
+
+    it('propagates the original setup error even when closeLimitsAuth itself rejects', async () => {
+      const close = vi.fn().mockRejectedValue(new Error('close failed'))
+      const plugin = vi.fn().mockResolvedValue({
+        rateLimit: { enabled: true, storage: 'secondary-storage' as const },
+        secondaryStorage: { get: vi.fn(), set: vi.fn(), delete: vi.fn() },
+        close,
+      })
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis' } }
+      vi.mocked(mountAuth).mockImplementationOnce(() => {
+        throw new Error('mount failed')
+      })
+
+      await expect(
+        createApp({ config: configWithLimits, env, prisma: mockPrisma, limitsPlugin: plugin }),
+      ).rejects.toThrow('mount failed')
+
+      expect(close).toHaveBeenCalledOnce()
+    })
+
+    it('does not attempt to close anything when setup fails and no limits plugin was configured', async () => {
+      vi.mocked(mountAuth).mockImplementationOnce(() => {
+        throw new Error('mount failed')
+      })
+
+      await expect(
+        createApp({ config, env, prisma: mockPrisma }),
+      ).rejects.toThrow('mount failed')
+    })
+  })
 })
 
 describe('lifecycle — via createLifecycle', () => {
@@ -358,5 +418,71 @@ describe('lifecycle — via createLifecycle', () => {
     await start()
     await stop()
     expect(onStop).toHaveBeenCalledOnce()
+  })
+
+  // ── guaranteed close() even when a prior step rejects ───────────────────────
+
+  it('still closes the server if disconnectPrismaClient() rejects', async () => {
+    const disconnectError = new Error('disconnect failed')
+    setPrismaClient({ $disconnect: vi.fn().mockRejectedValue(disconnectError) })
+
+    const mockServer = {
+      on: vi.fn().mockReturnThis(),
+      close: vi.fn((cb: () => void) => cb()),
+    }
+    const mockApp = {
+      listen: vi.fn((_port: unknown, _host: unknown, cb: () => void) => {
+        setImmediate(cb)
+        return mockServer
+      }),
+    }
+    const { start, stop } = createLifecycle(mockApp as unknown as Application, config)
+    await start()
+
+    await expect(stop()).rejects.toThrow('disconnect failed')
+    expect(mockServer.close).toHaveBeenCalledOnce()
+
+    // The rejecting $disconnect leaves the singleton registered (it only
+    // clears on success) — reset it so the shared afterEach's
+    // disconnectPrismaClient() call can complete cleanly.
+    setPrismaClient({ $disconnect: vi.fn().mockResolvedValue(undefined) })
+  })
+
+  it('still closes the server if onStop() rejects', async () => {
+    const onStop = vi.fn().mockRejectedValue(new Error('onStop failed'))
+    const mockServer = {
+      on: vi.fn().mockReturnThis(),
+      close: vi.fn((cb: () => void) => cb()),
+    }
+    const mockApp = {
+      listen: vi.fn((_port: unknown, _host: unknown, cb: () => void) => {
+        setImmediate(cb)
+        return mockServer
+      }),
+    }
+    const { start, stop } = createLifecycle(mockApp as unknown as Application, config, onStop)
+    await start()
+
+    await expect(stop()).rejects.toThrow('onStop failed')
+    expect(mockServer.close).toHaveBeenCalledOnce()
+  })
+
+  it('surfaces the server close() error when close() fails after onStop() also rejected', async () => {
+    const onStop = vi.fn().mockRejectedValue(new Error('onStop failed'))
+    const closeError = new Error('close failed')
+    const mockServer = {
+      on: vi.fn().mockReturnThis(),
+      close: vi.fn((cb: (err?: Error) => void) => cb(closeError)),
+    }
+    const mockApp = {
+      listen: vi.fn((_port: unknown, _host: unknown, cb: () => void) => {
+        setImmediate(cb)
+        return mockServer
+      }),
+    }
+    const { start, stop } = createLifecycle(mockApp as unknown as Application, config, onStop)
+    await start()
+
+    await expect(stop()).rejects.toThrow('close failed')
   })
 })

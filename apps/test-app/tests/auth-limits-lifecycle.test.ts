@@ -17,6 +17,10 @@
  * packages/limits/tests/auth-storage.test.ts (mocked). This suite's role is
  * to prove the wiring end-to-end and confirm shutdown is graceful.
  *
+ * Both tests below nest `testApp.stop()` inside their own `finally` block
+ * (rather than after it) — that guarantees the redis secondaryStorage
+ * connection is released even if `signUp` throws, instead of leaking it.
+ *
  * Better Auth's real rate limiter is active in this mode (see
  * buildTestApp's authRedisLimits parameter), so each test here signs up only
  * one user to stay well under any reasonable rate-limit threshold.
@@ -50,8 +54,7 @@ describe('Better Auth redis secondaryStorage lifecycle', () => {
       })
     } finally {
       await cleanDatabase(testApp.prisma)
+      await expect(testApp.stop()).resolves.toBeUndefined()
     }
-
-    await expect(testApp.stop()).resolves.toBeUndefined()
   })
 })

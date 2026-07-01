@@ -32,13 +32,7 @@ export function createLifecycle(
     })
   }
 
-  async function stop(): Promise<void> {
-    await disconnectPrismaClient()
-
-    if (onStop !== undefined) {
-      await onStop()
-    }
-
+  function closeServer(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (server === null) {
         resolve()
@@ -56,6 +50,26 @@ export function createLifecycle(
         }
       })
     })
+  }
+
+  /**
+   * Disconnects Prisma and awaits `onStop`, then closes the HTTP server.
+   * The server close is guaranteed via `finally` so a rejection from either
+   * step never leaves the listener open. The original error (from Prisma or
+   * `onStop`) still propagates to the caller unless closing the server also
+   * fails — in that case the close error takes precedence, per standard
+   * try/finally semantics.
+   */
+  async function stop(): Promise<void> {
+    try {
+      await disconnectPrismaClient()
+
+      if (onStop !== undefined) {
+        await onStop()
+      }
+    } finally {
+      await closeServer()
+    }
   }
 
   return { start, stop }

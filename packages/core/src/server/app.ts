@@ -67,6 +67,27 @@ async function resolveLimitsAuthConfig(options: CreateAppOptions): Promise<{
 }
 
 /**
+ * Best-effort release of the limits plugin's connection (e.g. Redis) when
+ * app setup fails partway through, after the connection was already opened.
+ * Errors from `closeLimitsAuth` itself are swallowed — the original setup
+ * error is always what the caller sees, since that's the actionable
+ * failure. Mirrors the same best-effort pattern used for block-store writes
+ * in `@hypersonic-js/limits`'s middleware.
+ */
+async function closeLimitsAuthBestEffort(
+  closeLimitsAuth: (() => Promise<void>) | undefined,
+): Promise<void> {
+  if (closeLimitsAuth === undefined) return
+
+  try {
+    await closeLimitsAuth()
+  } catch {
+    // Best-effort — the original setup error takes priority over a
+    // secondary failure while releasing the connection.
+  }
+}
+
+/**
  * Creates and returns a fully wired Hypersonic application.
  * The auth instance created internally is returned on `app.auth` so
  * callers can pass it to route registration without creating a second instance.
@@ -82,7 +103,10 @@ async function resolveLimitsAuthConfig(options: CreateAppOptions): Promise<{
  * When the limits plugin opens an external connection (e.g. Redis, for the
  * `redis` backend's Better Auth secondaryStorage), that connection is
  * released automatically when `app.stop()` is called, via the plugin's
- * returned `close`.
+ * returned `close`. If a later setup step (createAuth, mountAuth, or
+ * createInertiaMiddleware) throws before the lifecycle — and therefore
+ * `app.stop()` — exists to call, that same `close` is invoked here as a
+ * best-effort cleanup so the connection isn't leaked.
  */
 export async function createApp(options: CreateAppOptions): Promise<HypersonicApp> {
   const { config, env, prisma } = options
@@ -134,23 +158,31 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
     closeLimitsAuth = limitsAuth.close
   }
 
-  const auth = createAuth({
-    secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins: config.auth.trustedOrigins,
-    provider: config.database.provider,
-    prisma,
-    providers: resolveProviders(config, env),
-    rateLimit: rateLimitOptions,
-    secondaryStorage,
-  })
-  mountAuth(app, auth)
+  // From this point on, closeLimitsAuth may hold an open connection (e.g.
+  // Redis). If any remaining setup step throws, release it before
+  // rethrowing — app.stop() doesn't exist yet to do that for us.
+  try {
+    const auth = createAuth({
+      secret: env.BETTER_AUTH_SECRET,
+      trustedOrigins: config.auth.trustedOrigins,
+      provider: config.database.provider,
+      prisma,
+      providers: resolveProviders(config, env),
+      rateLimit: rateLimitOptions,
+      secondaryStorage,
+    })
+    mountAuth(app, auth)
 
-  await createInertiaMiddleware(app, {
-    ssr: config.inertia.ssr,
-    version: config.inertia.version,
-  })
+    await createInertiaMiddleware(app, {
+      ssr: config.inertia.ssr,
+      version: config.inertia.version,
+    })
 
-  const { start, stop } = createLifecycle(app, config, closeLimitsAuth)
+    const { start, stop } = createLifecycle(app, config, closeLimitsAuth)
 
-  return { express: app, auth, logger, start, stop }
+    return { express: app, auth, logger, start, stop }
+  } catch (err) {
+    await closeLimitsAuthBestEffort(closeLimitsAuth)
+    throw err
+  }
 }
