@@ -8,11 +8,26 @@ import { createRedisStore, RedisBlockStore } from './stores/redis-store.js'
 import { PrismaStore, PrismaBlockStore } from './stores/prisma-store.js'
 import type { PrismaRateLimitModel } from './stores/prisma-store.js'
 import type { LimitsConfig, LimitOptions } from './types.js'
+import { noopClose } from './utils.js'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-/** The function returned by createLimiter — call it to get a route middleware. */
+/** Call once per route with per-route options to get an Express RequestHandler. */
 export type LimitFactory = (options: LimitOptions) => RequestHandler
+
+/**
+ * Return value of `createLimiter()`.
+ *
+ * `limit` builds route middleware, same as before. `close` releases any
+ * resources opened for the configured backend — the Redis connection for
+ * the `redis` backend, or a no-op for `memory` and `database`. Callers that
+ * build a limiter with a bounded lifetime (e.g. per-test-app in an
+ * integration suite) should call `close()` during teardown.
+ */
+export interface Limiter {
+  limit: LimitFactory
+  close: () => Promise<void>
+}
 
 export interface CreateLimiterOptions {
   config: LimitsConfig
@@ -86,19 +101,24 @@ function buildCompoundMiddleware(
 // ── Public factory ────────────────────────────────────────────────────────────
 
 /**
- * Creates a rate limiter factory for the configured backend.
+ * Creates a rate limiter for the configured backend.
  *
- * The returned `limit()` function is called once per route with per-route
- * options and returns a standard Express `RequestHandler`:
+ * `limit()` is called once per route with per-route options and returns a
+ * standard Express `RequestHandler`. `close()` releases any resources the
+ * backend opened (e.g. the Redis connection) — call it during teardown for
+ * limiters with a bounded lifetime:
  *
  * ```ts
- * const limit = await createLimiter({ config: config.limits, env, prisma })
+ * const limiter = await createLimiter({ config: config.limits, env, prisma })
  *
  * app.express.post(
  *   '/api/auth/login',
- *   limit({ requests: 5, windowMs: 60_000, blockDuration: 300_000 }),
+ *   limiter.limit({ requests: 5, windowMs: 60_000, blockDuration: 300_000 }),
  *   loginHandler,
  * )
+ *
+ * // during shutdown:
+ * await limiter.close()
  * ```
  *
  * For the `database` backend the Prisma store is constructed per `limit()`
@@ -106,14 +126,17 @@ function buildCompoundMiddleware(
  * into the store at construction time). The BlockStore is shared across
  * calls since blocking is keyed by client IP, not by route.
  */
-export async function createLimiter(options: CreateLimiterOptions): Promise<LimitFactory> {
+export async function createLimiter(options: CreateLimiterOptions): Promise<Limiter> {
   const { config, env, prisma } = options
 
   if (config.backend === 'memory') {
     const store = createMemoryStore()
     const blockStore = new MemoryBlockStore()
-    return (limitOptions: LimitOptions): RequestHandler =>
-      buildCompoundMiddleware(store, blockStore, limitOptions)
+    return {
+      limit: (limitOptions: LimitOptions): RequestHandler =>
+        buildCompoundMiddleware(store, blockStore, limitOptions),
+      close: noopClose,
+    }
   }
 
   if (config.backend === 'redis') {
@@ -124,8 +147,11 @@ export async function createLimiter(options: CreateLimiterOptions): Promise<Limi
     }
     const { store, redisClient } = await createRedisStore(env.REDIS_URL)
     const blockStore = new RedisBlockStore(redisClient)
-    return (limitOptions: LimitOptions): RequestHandler =>
-      buildCompoundMiddleware(store, blockStore, limitOptions)
+    return {
+      limit: (limitOptions: LimitOptions): RequestHandler =>
+        buildCompoundMiddleware(store, blockStore, limitOptions),
+      close: () => redisClient.quit().then(() => undefined),
+    }
   }
 
   if (config.backend === 'database') {
@@ -135,11 +161,14 @@ export async function createLimiter(options: CreateLimiterOptions): Promise<Limi
       )
     }
     const blockStore = new PrismaBlockStore(prisma.rateLimit)
-    return (limitOptions: LimitOptions): RequestHandler => {
-      // PrismaStore is constructed per-call so each route has its own
-      // window counter while the block store is shared (keyed by client IP).
-      const store = new PrismaStore(prisma.rateLimit, limitOptions.windowMs)
-      return buildCompoundMiddleware(store, blockStore, limitOptions)
+    return {
+      limit: (limitOptions: LimitOptions): RequestHandler => {
+        // PrismaStore is constructed per-call so each route has its own
+        // window counter while the block store is shared (keyed by client IP).
+        const store = new PrismaStore(prisma.rateLimit, limitOptions.windowMs)
+        return buildCompoundMiddleware(store, blockStore, limitOptions)
+      },
+      close: noopClose,
     }
   }
 

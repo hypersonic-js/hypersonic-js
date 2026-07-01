@@ -8,7 +8,19 @@ export interface Lifecycle {
   stop: () => Promise<void>
 }
 
-export function createLifecycle(app: Application, config: HypersonicConfig): Lifecycle {
+/**
+ * Builds the start/stop lifecycle for a Hypersonic app's HTTP server.
+ *
+ * `onStop`, when provided, is awaited during `stop()` alongside disconnecting
+ * Prisma — used by `createApp` to release the Redis connection opened for
+ * Better Auth's `secondaryStorage` when `config.limits.backend` is `'redis'`.
+ * Not part of core's public API — internal to `createApp`.
+ */
+export function createLifecycle(
+  app: Application,
+  config: HypersonicConfig,
+  onStop?: () => Promise<void>,
+): Lifecycle {
   let server: Server | null = null
 
   async function start(): Promise<void> {
@@ -22,6 +34,10 @@ export function createLifecycle(app: Application, config: HypersonicConfig): Lif
 
   async function stop(): Promise<void> {
     await disconnectPrismaClient()
+
+    if (onStop !== undefined) {
+      await onStop()
+    }
 
     return new Promise((resolve, reject) => {
       if (server === null) {

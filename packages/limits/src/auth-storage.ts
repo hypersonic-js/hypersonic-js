@@ -1,6 +1,7 @@
 import type { BetterAuthCustomStorage, BetterAuthSecondaryStorage } from '@hypersonic-js/core'
 import type { LimitsConfig } from './types.js'
 import type { PrismaAuthRateLimitModel } from './stores/prisma-store.js'
+import { noopClose } from './utils.js'
 
 // Re-exported so consumers who import from @hypersonic-js/limits directly
 // continue to get the canonical types without a breaking change.
@@ -18,6 +19,12 @@ export interface BetterAuthLimitsConfig {
     customStorage?: BetterAuthCustomStorage
   }
   secondaryStorage?: BetterAuthSecondaryStorage
+  /**
+   * Releases any resources opened for this backend — the Redis connection
+   * for the `redis` backend, or a no-op for `memory` and `database`.
+   * `createApp` wires this into its `stop()` lifecycle hook.
+   */
+  close: () => Promise<void>
 }
 
 // ── Per-backend builders ──────────────────────────────────────────────────────
@@ -26,7 +33,7 @@ export interface BetterAuthLimitsConfig {
  * Memory backend: rely on Better Auth's default in-process rate limiter.
  */
 export function buildMemoryAuthStorage(): BetterAuthLimitsConfig {
-  return { rateLimit: { enabled: true } }
+  return { rateLimit: { enabled: true }, close: noopClose }
 }
 
 /**
@@ -52,7 +59,7 @@ export function buildDatabaseAuthStorage(
     },
   }
 
-  return { rateLimit: { enabled: true, customStorage } }
+  return { rateLimit: { enabled: true, customStorage }, close: noopClose }
 }
 
 /**
@@ -77,6 +84,7 @@ export async function buildRedisAuthStorage(
     set(key: string, value: string): Promise<unknown>
     setEx(key: string, seconds: number, value: string): Promise<unknown>
     del(key: string): Promise<number>
+    quit(): Promise<unknown>
   }
 
   const secondaryStorage: BetterAuthSecondaryStorage = {
@@ -98,6 +106,7 @@ export async function buildRedisAuthStorage(
   return {
     rateLimit: { enabled: true, storage: 'secondary-storage' },
     secondaryStorage,
+    close: () => typedClient.quit().then(() => undefined),
   }
 }
 

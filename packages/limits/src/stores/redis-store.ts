@@ -15,6 +15,8 @@ export interface RedisClientLike {
   exists(key: string): Promise<number>
   del(key: string | string[]): Promise<number>
   connect(): Promise<unknown>
+  /** Gracefully closes the connection — used by createLimiter()'s close(). */
+  quit(): Promise<unknown>
   on(event: string, listener: (...args: unknown[]) => void): unknown
 }
 
@@ -26,7 +28,8 @@ export interface RedisStoreResult {
 /**
  * Dynamically imports node-redis, connects a client from the given URL,
  * and returns both the express-rate-limit RedisStore and the raw client
- * (used by RedisBlockStore to track block-duration state separately).
+ * (used by RedisBlockStore to track block-duration state separately, and
+ * by createLimiter() to close the connection).
  */
 export async function createRedisStore(redisUrl: string): Promise<RedisStoreResult> {
   const { createClient } = await import('redis')

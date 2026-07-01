@@ -14,7 +14,10 @@
  * in-process counter — no manual reset needed. The redis backend persists
  * its counters in the shared Redis database across app instances, so its
  * describe block additionally flushes the database after every test via a
- * separate, directly-connected redis client.
+ * separate, directly-connected redis client. Both backends' afterEach also
+ * calls testApp.closeLimiter() to release the limiter built for that test —
+ * for the redis backend this closes the underlying Redis connection that
+ * createLimiter() opens; it is a no-op for the memory backend.
  *
  * Auth/CSRF credentials are obtained once in beforeAll from a throwaway
  * bootstrap app and reused across every test in this file — Credentials are
@@ -93,6 +96,7 @@ describe('POST /posts rate limiting — memory backend', () => {
   let testApp: TestApp
 
   afterEach(async () => {
+    await testApp.closeLimiter?.()
     await testApp.prisma.$disconnect()
   })
 
@@ -159,6 +163,7 @@ describe('POST /posts rate limiting — redis backend', () => {
 
   afterEach(async () => {
     await redisClient.flushDb()
+    await testApp.closeLimiter?.()
     await testApp.prisma.$disconnect()
   })
 

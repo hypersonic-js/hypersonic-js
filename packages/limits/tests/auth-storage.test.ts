@@ -8,6 +8,7 @@ const mockRedisSetEx = vi.fn()
 const mockRedisDel = vi.fn()
 const mockRedisConnect = vi.fn().mockResolvedValue(undefined)
 const mockRedisOn = vi.fn().mockReturnThis()
+const mockRedisQuit = vi.fn().mockResolvedValue('OK')
 
 const mockRedisClient = {
   get: mockRedisGet,
@@ -16,6 +17,7 @@ const mockRedisClient = {
   del: mockRedisDel,
   connect: mockRedisConnect,
   on: mockRedisOn,
+  quit: mockRedisQuit,
 }
 
 vi.mock('redis', () => ({
@@ -58,6 +60,11 @@ describe('buildMemoryAuthStorage', () => {
     const result = buildMemoryAuthStorage()
     expect(result.rateLimit?.customStorage).toBeUndefined()
   })
+
+  it('resolves close() without throwing', async () => {
+    const result = buildMemoryAuthStorage()
+    await expect(result.close()).resolves.toBeUndefined()
+  })
 })
 
 // ── buildDatabaseAuthStorage ──────────────────────────────────────────────────
@@ -83,6 +90,11 @@ describe('buildDatabaseAuthStorage', () => {
   it('does not include secondaryStorage', () => {
     const result = buildDatabaseAuthStorage(authRateLimit as unknown as PrismaAuthRateLimitModel)
     expect(result.secondaryStorage).toBeUndefined()
+  })
+
+  it('resolves close() without throwing', async () => {
+    const result = buildDatabaseAuthStorage(authRateLimit as unknown as PrismaAuthRateLimitModel)
+    await expect(result.close()).resolves.toBeUndefined()
   })
 
   describe('customStorage.get', () => {
@@ -140,6 +152,7 @@ describe('buildRedisAuthStorage', () => {
     vi.clearAllMocks()
     mockRedisConnect.mockResolvedValue(undefined)
     mockRedisOn.mockReturnThis()
+    mockRedisQuit.mockResolvedValue('OK')
   })
 
   it('returns rateLimit.storage: secondary-storage', async () => {
@@ -163,6 +176,19 @@ describe('buildRedisAuthStorage', () => {
       ([event]: [string]) => event === 'error',
     )![1] as (err: unknown) => void
     expect(() => errorHandler(new Error('conn failed'))).not.toThrow()
+  })
+
+  describe('close()', () => {
+    it('calls the redis client quit()', async () => {
+      const result = await buildRedisAuthStorage('redis://localhost:6379')
+      await result.close()
+      expect(mockRedisQuit).toHaveBeenCalledOnce()
+    })
+
+    it('resolves without throwing', async () => {
+      const result = await buildRedisAuthStorage('redis://localhost:6379')
+      await expect(result.close()).resolves.toBeUndefined()
+    })
   })
 
   describe('secondaryStorage.get', () => {
@@ -219,6 +245,7 @@ describe('buildAuthLimitsConfig', () => {
     vi.clearAllMocks()
     mockRedisConnect.mockResolvedValue(undefined)
     mockRedisOn.mockReturnThis()
+    mockRedisQuit.mockResolvedValue('OK')
   })
 
   const memoryConfig: LimitsConfig = { backend: 'memory' }
@@ -230,6 +257,11 @@ describe('buildAuthLimitsConfig', () => {
       const result = await buildAuthLimitsConfig(memoryConfig, {})
       expect(result.rateLimit?.enabled).toBe(true)
       expect(result.secondaryStorage).toBeUndefined()
+    })
+
+    it('returns a close function', async () => {
+      const result = await buildAuthLimitsConfig(memoryConfig, {})
+      await expect(result.close()).resolves.toBeUndefined()
     })
   })
 
@@ -245,6 +277,13 @@ describe('buildAuthLimitsConfig', () => {
         authRateLimit: authRateLimit as unknown as PrismaAuthRateLimitModel,
       })
       expect(result.rateLimit?.customStorage).toBeDefined()
+    })
+
+    it('returns a close function', async () => {
+      const result = await buildAuthLimitsConfig(databaseConfig, {}, {
+        authRateLimit: authRateLimit as unknown as PrismaAuthRateLimitModel,
+      })
+      await expect(result.close()).resolves.toBeUndefined()
     })
   })
 
@@ -265,6 +304,12 @@ describe('buildAuthLimitsConfig', () => {
       const result = await buildAuthLimitsConfig(redisConfig, { REDIS_URL: 'redis://localhost:6379' })
       expect(result.rateLimit?.storage).toBe('secondary-storage')
       expect(result.secondaryStorage).toBeDefined()
+    })
+
+    it('close() calls the redis client quit()', async () => {
+      const result = await buildAuthLimitsConfig(redisConfig, { REDIS_URL: 'redis://localhost:6379' })
+      await result.close()
+      expect(mockRedisQuit).toHaveBeenCalledOnce()
     })
   })
 })

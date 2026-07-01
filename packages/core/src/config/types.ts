@@ -56,8 +56,10 @@ export type LimitsBackend = 'memory' | 'database' | 'redis'
 
 /**
  * Configuration for the `@hypersonic-js/limits` package.
- * When present, `createApp` automatically wires the same backend into
- * Better Auth's auth-endpoint rate limiting.
+ * When present, pass `buildAuthLimitsConfig` (from `@hypersonic-js/limits`)
+ * as `createApp`'s `limitsPlugin` option to wire the same backend into
+ * Better Auth's auth-endpoint rate limiting — `createApp` does not resolve
+ * `@hypersonic-js/limits` itself. See `CreateAppOptions.limitsPlugin`.
  */
 export interface LimitsConfig {
   /**
@@ -82,9 +84,9 @@ export interface HypersonicConfig {
    */
   logging?: LoggingConfig
   /**
-   * Rate limiting configuration — requires `@hypersonic-js/limits` to be installed.
-   * When set, `createApp` automatically wires the same backend into
-   * Better Auth's auth-endpoint rate limiting.
+   * Rate limiting configuration — requires `@hypersonic-js/limits` to be
+   * installed, and its `buildAuthLimitsConfig` passed as `createApp`'s
+   * `limitsPlugin` option (see `CreateAppOptions.limitsPlugin`).
    */
   limits?: LimitsConfig
 }

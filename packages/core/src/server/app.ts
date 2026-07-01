@@ -38,52 +38,32 @@ function resolveProviders(
 }
 
 /**
- * Dynamically imports @hypersonic-js/limits and calls buildAuthLimitsConfig
- * to derive the Better Auth rate limit and secondaryStorage configuration
- * that matches the configured limits backend.
+ * Resolves Better Auth's rate-limit config from the injected `limitsPlugin`.
  *
- * Dynamic import avoids a hard dependency in core on the limits package —
- * users only need @hypersonic-js/limits installed if they set config.limits.
+ * `core` never imports `@hypersonic-js/limits` — the caller passes the
+ * resolver in (see `CreateAppOptions.limitsPlugin`). When `config.limits` is
+ * set but no plugin was provided, this throws immediately with a descriptive
+ * error rather than silently ignoring the config block.
  */
-async function resolveLimitsAuthConfig(
-  config: HypersonicConfig,
-  env: Env,
-  prisma: unknown,
-): Promise<{
+async function resolveLimitsAuthConfig(options: CreateAppOptions): Promise<{
   rateLimit?: AuthRateLimitOptions
   secondaryStorage?: BetterAuthSecondaryStorage
+  close?: () => Promise<void>
 }> {
+  const { config, env, prisma, limitsPlugin } = options
+
   if (config.limits === undefined) return {}
 
-  let buildAuthLimitsConfig: (
-    c: HypersonicConfig['limits'],
-    e: Env,
-    p?: unknown,
-  ) => Promise<{
-    rateLimit?: AuthRateLimitOptions
-    secondaryStorage?: BetterAuthSecondaryStorage
-  }>
-
-  try {
-    const limitsModule = await import('@hypersonic-js/limits' as string)
-    buildAuthLimitsConfig = limitsModule.buildAuthLimitsConfig as typeof buildAuthLimitsConfig
-  } catch (err: unknown) {
-    const isNotFound =
-      err instanceof Error &&
-      (err.message.includes('Cannot find module') ||
-        err.message.includes('MODULE_NOT_FOUND') ||
-        err.message.includes('ERR_MODULE_NOT_FOUND'))
-
-    if (isNotFound) {
-      throw new Error(
-        'Hypersonic: config.limits is set but @hypersonic-js/limits is not installed.\n' +
-          'Run: pnpm add @hypersonic-js/limits',
-      )
-    }
-    throw err
+  if (limitsPlugin === undefined) {
+    throw new Error(
+      'Hypersonic: config.limits is set but no limitsPlugin was passed to createApp.\n' +
+        'Import buildAuthLimitsConfig from @hypersonic-js/limits and pass it in:\n' +
+        "  import { buildAuthLimitsConfig } from '@hypersonic-js/limits'\n" +
+        '  createApp({ config, env, prisma, limitsPlugin: buildAuthLimitsConfig })',
+    )
   }
 
-  return buildAuthLimitsConfig(config.limits, env, prisma)
+  return limitsPlugin(config.limits, env, prisma)
 }
 
 /**
@@ -93,11 +73,16 @@ async function resolveLimitsAuthConfig(
  * The Pino logger is returned on `app.logger` and can be passed to mountAdmin
  * or used directly in route handlers.
  *
- * When `config.limits` is set, `createApp` automatically wires the same storage
- * backend into Better Auth's auth-endpoint rate limiting via a dynamic import of
- * `@hypersonic-js/limits`. The user-level `config.auth.rateLimit.enabled: false`
- * override (used to suppress rate limiting in tests) is always respected and
- * takes priority over the limits-derived configuration.
+ * When `config.limits` is set, pass `limitsPlugin` (see `CreateAppOptions`) to
+ * wire the same storage backend into Better Auth's auth-endpoint rate
+ * limiting. The user-level `config.auth.rateLimit.enabled: false` override
+ * (used to suppress rate limiting in tests) is always respected and takes
+ * priority over the limits-derived configuration.
+ *
+ * When the limits plugin opens an external connection (e.g. Redis, for the
+ * `redis` backend's Better Auth secondaryStorage), that connection is
+ * released automatically when `app.stop()` is called, via the plugin's
+ * returned `close`.
  */
 export async function createApp(options: CreateAppOptions): Promise<HypersonicApp> {
   const { config, env, prisma } = options
@@ -135,16 +120,18 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
 
   setPrismaClient(prisma)
 
-  // Resolve Better Auth rate limit config from the limits backend.
+  // Resolve Better Auth rate limit config from the injected limits plugin.
   // When `enabled: false` is set (test environments), skip limits wiring
   // so the disabled flag is always honoured.
   let rateLimitOptions: AuthRateLimitOptions | undefined = config.auth.rateLimit
   let secondaryStorage: BetterAuthSecondaryStorage | undefined
+  let closeLimitsAuth: (() => Promise<void>) | undefined
 
   if (config.limits !== undefined && rateLimitOptions?.enabled !== false) {
-    const limitsAuth = await resolveLimitsAuthConfig(config, env, prisma)
+    const limitsAuth = await resolveLimitsAuthConfig(options)
     rateLimitOptions = limitsAuth.rateLimit
     secondaryStorage = limitsAuth.secondaryStorage
+    closeLimitsAuth = limitsAuth.close
   }
 
   const auth = createAuth({
@@ -163,7 +150,7 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
     version: config.inertia.version,
   })
 
-  const { start, stop } = createLifecycle(app, config)
+  const { start, stop } = createLifecycle(app, config, closeLimitsAuth)
 
   return { express: app, auth, logger, start, stop }
 }

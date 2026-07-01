@@ -1,6 +1,6 @@
 // Middleware factory
 export { createLimiter } from './middleware.js'
-export type { LimitFactory, CreateLimiterOptions } from './middleware.js'
+export type { Limiter, LimitFactory, CreateLimiterOptions } from './middleware.js'
 
 // Better Auth integration
 export { buildAuthLimitsConfig, buildMemoryAuthStorage, buildDatabaseAuthStorage, buildRedisAuthStorage } from './auth-storage.js'

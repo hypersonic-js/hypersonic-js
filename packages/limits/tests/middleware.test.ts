@@ -29,6 +29,7 @@ const mockRedisOn = vi.fn().mockReturnThis()
 const mockRedisSet = vi.fn().mockResolvedValue('OK')
 const mockRedisExists = vi.fn().mockResolvedValue(0)
 const mockRedisSendCommand = vi.fn()
+const mockRedisQuit = vi.fn().mockResolvedValue('OK')
 
 vi.mock('redis', () => ({
   createClient: vi.fn(() => ({
@@ -37,6 +38,7 @@ vi.mock('redis', () => ({
     set: mockRedisSet,
     exists: mockRedisExists,
     sendCommand: mockRedisSendCommand,
+    quit: mockRedisQuit,
   })),
 }))
 
@@ -78,13 +80,13 @@ describe('createLimiter — backend selection', () => {
     mockRateLimit.mockReturnValue(mockRateLimiterMiddleware)
   })
 
-  it('returns a LimitFactory for the memory backend', async () => {
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+  it('returns a Limiter whose limit is a function for the memory backend', async () => {
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     expect(typeof limit).toBe('function')
   })
 
   it('the memory factory returns a RequestHandler', async () => {
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     const handler = limit({ requests: 10, windowMs: 60_000 })
     expect(typeof handler).toBe('function')
   })
@@ -95,8 +97,8 @@ describe('createLimiter — backend selection', () => {
     ).rejects.toThrow('REDIS_URL must be set')
   })
 
-  it('returns a LimitFactory for the redis backend when REDIS_URL is set', async () => {
-    const limit = await createLimiter({
+  it('returns a Limiter whose limit is a function for the redis backend when REDIS_URL is set', async () => {
+    const { limit } = await createLimiter({
       config: { backend: 'redis' },
       env: { REDIS_URL: 'redis://localhost:6379' },
     })
@@ -109,9 +111,9 @@ describe('createLimiter — backend selection', () => {
     ).rejects.toThrow('prisma must be provided')
   })
 
-  it('returns a LimitFactory for the database backend when prisma is provided', async () => {
+  it('returns a Limiter whose limit is a function for the database backend when prisma is provided', async () => {
     const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
-    const limit = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
+    const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
     expect(typeof limit).toBe('function')
   })
 
@@ -131,7 +133,7 @@ describe('createLimiter — rateLimit options', () => {
   })
 
   it('passes windowMs and limit to rateLimit()', async () => {
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     limit({ requests: 5, windowMs: 30_000 })
     expect(mockRateLimit).toHaveBeenCalledWith(
       expect.objectContaining({ windowMs: 30_000, limit: 5 }),
@@ -139,7 +141,7 @@ describe('createLimiter — rateLimit options', () => {
   })
 
   it('uses draft-8 standard headers', async () => {
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     limit({ requests: 10, windowMs: 60_000 })
     expect(mockRateLimit).toHaveBeenCalledWith(
       expect.objectContaining({ standardHeaders: 'draft-8', legacyHeaders: false }),
@@ -147,7 +149,7 @@ describe('createLimiter — rateLimit options', () => {
   })
 
   it('includes a handler in the rateLimit options', async () => {
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     limit({ requests: 10, windowMs: 60_000 })
     const options = mockRateLimit.mock.calls[0]![0] as Record<string, unknown>
     expect(typeof options['handler']).toBe('function')
@@ -163,7 +165,7 @@ describe('createLimiter — no blockDuration', () => {
   })
 
   it('returns the raw rateLimit middleware when blockDuration is undefined', async () => {
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     const handler = limit({ requests: 10, windowMs: 60_000 })
     // Without blockDuration the compound wrapper is skipped —
     // the returned handler IS the mockRateLimiterMiddleware
@@ -172,7 +174,7 @@ describe('createLimiter — no blockDuration', () => {
 
   it('calls next when rateLimit middleware calls next', async () => {
     mockRateLimiterMiddleware.mockImplementation((_req: unknown, _res: unknown, n: NextFunction) => n())
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     const handler = limit({ requests: 10, windowMs: 60_000 })
     const req = makeReq()
     const res = makeRes()
@@ -192,7 +194,7 @@ describe('createLimiter — with blockDuration', () => {
   })
 
   it('returns a wrapper function (not the raw limiter) when blockDuration is set', async () => {
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     const handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000 })
     // The wrapper is a different function (an async arrow fn)
     expect(handler).not.toBe(mockRateLimiterMiddleware)
@@ -200,7 +202,7 @@ describe('createLimiter — with blockDuration', () => {
 
   it('passes the request through to the rate limiter when client is not blocked', async () => {
     mockRateLimiterMiddleware.mockImplementation((_req: unknown, _res: unknown, n: NextFunction) => n())
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     const handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000 })
     const req = makeReq()
     const res = makeRes()
@@ -214,7 +216,7 @@ describe('createLimiter — with blockDuration', () => {
 
   it('returns 429 immediately when client is already blocked', async () => {
     // Simulate a blocked client by pre-blocking via the memory store
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     const _handler = limit({ requests: 1, windowMs: 60_000, blockDuration: 300_000 })
     const req = makeReq('blocked-ip')
     const res = makeRes()
@@ -239,7 +241,7 @@ describe('createLimiter — with blockDuration', () => {
 
   it('uses "unknown" as the key when req.ip is undefined', async () => {
     mockRateLimiterMiddleware.mockImplementation((_req: unknown, _res: unknown, n: NextFunction) => n())
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     const handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000 })
     const req = makeReq(undefined as unknown as string)
     ;(req as { ip: undefined }).ip = undefined
@@ -254,7 +256,7 @@ describe('createLimiter — with blockDuration', () => {
 
   it('uses the custom message in 429 responses', async () => {
     mockRateLimiterMiddleware.mockImplementation((_req: unknown, _res: unknown, n: NextFunction) => n())
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     const _handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000, message: 'Slow down!' })
     const options = mockRateLimit.mock.calls[0]![0] as {
       handler: (req: Partial<Request>, res: ReturnType<typeof makeRes>) => void
@@ -273,7 +275,7 @@ describe('createLimiter — handler blocks client', () => {
   })
 
   it('handler responds with 429', async () => {
-    const limit = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
     limit({ requests: 5, windowMs: 60_000, blockDuration: 300_000 })
     const options = mockRateLimit.mock.calls[0]![0] as {
       handler: (req: Partial<Request>, res: ReturnType<typeof makeRes>) => Promise<void>
@@ -289,7 +291,7 @@ describe('createLimiter — handler blocks client', () => {
     // Force the block to fail by providing a bad IP that causes internal error
     const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
     prisma.rateLimit.upsert = vi.fn().mockRejectedValue(new Error('DB error'))
-    const limit = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
+    const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
     limit({ requests: 5, windowMs: 60_000, blockDuration: 300_000 })
     const options = mockRateLimit.mock.calls[0]![0] as {
       handler: (req: Partial<Request>, res: ReturnType<typeof makeRes>) => Promise<void>
@@ -303,7 +305,7 @@ describe('createLimiter — handler blocks client', () => {
 
   it('handler does not attempt to block when blockDuration is undefined', async () => {
     const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
-    const limit = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
+    const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
     limit({ requests: 5, windowMs: 60_000 })
     const options = mockRateLimit.mock.calls[0]![0] as {
       handler: (req: Partial<Request>, res: ReturnType<typeof makeRes>) => Promise<void>
@@ -326,7 +328,7 @@ describe('createLimiter — database backend PrismaStore per call', () => {
     vi.clearAllMocks()
     mockRateLimit.mockReturnValue(mockRateLimiterMiddleware)
 
-    const limit = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
+    const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
 
     limit({ requests: 10, windowMs: 60_000 })
     limit({ requests: 5, windowMs: 30_000 })
@@ -339,5 +341,51 @@ describe('createLimiter — database backend PrismaStore per call', () => {
     ]
     expect(firstOptions[0].windowMs).toBe(60_000)
     expect(secondOptions[0].windowMs).toBe(30_000)
+  })
+})
+
+// ── close() ────────────────────────────────────────────────────────────────────
+
+describe('createLimiter — close()', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRedisConnect.mockResolvedValue(undefined)
+    mockRedisOn.mockReturnThis()
+    mockRedisQuit.mockResolvedValue('OK')
+    mockRateLimit.mockReturnValue(mockRateLimiterMiddleware)
+  })
+
+  it('resolves without throwing for the memory backend', async () => {
+    const { close } = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    await expect(close()).resolves.toBeUndefined()
+  })
+
+  it('does not touch the redis client for the memory backend', async () => {
+    const { close } = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    await close()
+    expect(mockRedisQuit).not.toHaveBeenCalled()
+  })
+
+  it('resolves without throwing for the database backend', async () => {
+    const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
+    const { close } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
+    await expect(close()).resolves.toBeUndefined()
+  })
+
+  it('calls the redis client quit() for the redis backend', async () => {
+    const { close } = await createLimiter({
+      config: { backend: 'redis' },
+      env: { REDIS_URL: 'redis://localhost:6379' },
+    })
+    await close()
+    expect(mockRedisQuit).toHaveBeenCalledOnce()
+  })
+
+  it('resolves without throwing for the redis backend', async () => {
+    const { close } = await createLimiter({
+      config: { backend: 'redis' },
+      env: { REDIS_URL: 'redis://localhost:6379' },
+    })
+    await expect(close()).resolves.toBeUndefined()
   })
 })
