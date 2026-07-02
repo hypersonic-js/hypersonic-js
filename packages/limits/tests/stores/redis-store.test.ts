@@ -10,6 +10,7 @@ const mockExists = vi.fn()
 const mockDel = vi.fn()
 const mockConnect = vi.fn().mockResolvedValue(undefined)
 const mockOn = vi.fn().mockReturnThis()
+const mockQuit = vi.fn().mockResolvedValue('OK')
 
 const mockClient = {
   sendCommand: mockSendCommand,
@@ -20,6 +21,7 @@ const mockClient = {
   del: mockDel,
   connect: mockConnect,
   on: mockOn,
+  quit: mockQuit,
 }
 
 vi.mock('redis', () => ({
@@ -38,8 +40,60 @@ vi.mock('rate-limit-redis', () => ({
   RedisStore: MockRedisStoreConstructor,
 }))
 
-import { createRedisStore, RedisBlockStore } from '../../src/stores/redis-store.js'
+import { createRedisStore, RedisBlockStore, connectRedisClient } from '../../src/stores/redis-store.js'
 import { createClient } from 'redis'
+
+// ── connectRedisClient ────────────────────────────────────────────────────────
+// The shared helper extracted so createRedisStore (below) and
+// buildRedisAuthStorage (packages/limits/src/auth-storage.ts) don't each
+// re-implement the connect/error-handler/connect() sequence.
+
+describe('connectRedisClient', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockConnect.mockResolvedValue(undefined)
+    mockOn.mockReturnThis()
+  })
+
+  it('creates a redis client with the provided URL', async () => {
+    await connectRedisClient('redis://localhost:6379', 'Limits')
+    expect(createClient).toHaveBeenCalledWith({ url: 'redis://localhost:6379' })
+  })
+
+  it('registers an error handler on the client', async () => {
+    await connectRedisClient('redis://localhost:6379', 'Limits')
+    expect(mockOn).toHaveBeenCalledWith('error', expect.any(Function))
+  })
+
+  it('connects the client before returning', async () => {
+    await connectRedisClient('redis://localhost:6379', 'Limits')
+    expect(mockConnect).toHaveBeenCalledOnce()
+  })
+
+  it('returns the connected client', async () => {
+    const client = await connectRedisClient('redis://localhost:6379', 'Limits')
+    expect(client).toBe(mockClient)
+  })
+
+  it('includes the given label in the error log message', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await connectRedisClient('redis://localhost:6379', 'Auth')
+    const errorHandler = mockOn.mock.calls.find(([event]) => event === 'error')![1] as (
+      err: unknown,
+    ) => void
+    errorHandler(new Error('boom'))
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Hypersonic Auth Redis Client Error:', expect.any(Error))
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('error handler does not throw when invoked', async () => {
+    await connectRedisClient('redis://localhost:6379', 'Limits')
+    const errorHandler = mockOn.mock.calls.find(([event]) => event === 'error')![1] as (
+      err: unknown,
+    ) => void
+    expect(() => errorHandler(new Error('connection refused'))).not.toThrow()
+  })
+})
 
 // ── createRedisStore ──────────────────────────────────────────────────────────
 

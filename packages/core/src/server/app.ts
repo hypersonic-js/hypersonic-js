@@ -11,7 +11,7 @@ import { createLogger } from '../logger/index.js'
 import type { CreateAppOptions, HypersonicApp } from './types.js'
 import type { Env } from '../config/env.js'
 import type { HypersonicConfig } from '../config/types.js'
-import type { AuthRateLimitOptions, BetterAuthSecondaryStorage } from '../auth/types.js'
+import type { AuthRateLimitOptions } from '../auth/types.js'
 
 function resolveProviders(
   config: HypersonicConfig,
@@ -47,7 +47,6 @@ function resolveProviders(
  */
 async function resolveLimitsAuthConfig(options: CreateAppOptions): Promise<{
   rateLimit?: AuthRateLimitOptions
-  secondaryStorage?: BetterAuthSecondaryStorage
   close?: () => Promise<void>
 }> {
   const { config, env, prisma, limitsPlugin } = options
@@ -101,7 +100,7 @@ async function closeLimitsAuthBestEffort(
  * priority over the limits-derived configuration.
  *
  * When the limits plugin opens an external connection (e.g. Redis, for the
- * `redis` backend's Better Auth secondaryStorage), that connection is
+ * `redis` backend's rate-limit `customStorage`), that connection is
  * released automatically when `app.stop()` is called, via the plugin's
  * returned `close`. If a later setup step (createAuth, mountAuth, or
  * createInertiaMiddleware) throws before the lifecycle — and therefore
@@ -148,13 +147,11 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
   // When `enabled: false` is set (test environments), skip limits wiring
   // so the disabled flag is always honoured.
   let rateLimitOptions: AuthRateLimitOptions | undefined = config.auth.rateLimit
-  let secondaryStorage: BetterAuthSecondaryStorage | undefined
   let closeLimitsAuth: (() => Promise<void>) | undefined
 
   if (config.limits !== undefined && rateLimitOptions?.enabled !== false) {
     const limitsAuth = await resolveLimitsAuthConfig(options)
     rateLimitOptions = limitsAuth.rateLimit
-    secondaryStorage = limitsAuth.secondaryStorage
     closeLimitsAuth = limitsAuth.close
   }
 
@@ -169,7 +166,6 @@ export async function createApp(options: CreateAppOptions): Promise<HypersonicAp
       prisma,
       providers: resolveProviders(config, env),
       rateLimit: rateLimitOptions,
-      secondaryStorage,
     })
     mountAuth(app, auth)
 

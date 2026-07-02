@@ -7,7 +7,7 @@ import { createMemoryStore } from './stores/memory-store.js'
 import { createRedisStore, RedisBlockStore } from './stores/redis-store.js'
 import { PrismaStore, PrismaBlockStore } from './stores/prisma-store.js'
 import type { PrismaRateLimitModel } from './stores/prisma-store.js'
-import type { LimitsConfig, LimitOptions } from './types.js'
+import type { LimitsBackend, LimitOptions } from './types.js'
 import { noopClose } from './utils.js'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -30,7 +30,15 @@ export interface Limiter {
 }
 
 export interface CreateLimiterOptions {
-  config: LimitsConfig
+  /**
+   * Only `backend` is read here — intentionally narrower than the full
+   * `LimitsConfig` used for `HypersonicConfig.limits`. That type requires a
+   * `window` for its `redis` variant, but `window` exists solely for Better
+   * Auth's auth-endpoint rate limiting (see `buildRedisAuthStorage` in
+   * `./auth-storage.ts`); this route-level limiter has no use for it, so
+   * it isn't forced to accept a field it would never read.
+   */
+  config: { backend: LimitsBackend }
   env: { REDIS_URL?: string }
   /** Required when config.backend is 'database'. */
   prisma?: { rateLimit: PrismaRateLimitModel }
@@ -121,7 +129,7 @@ function buildCompoundMiddleware(
  * limiters with a bounded lifetime:
  *
  * ```ts
- * const limiter = await createLimiter({ config: config.limits, env, prisma })
+ * const limiter = await createLimiter({ config: { backend: config.limits.backend }, env, prisma })
  *
  * app.express.post(
  *   '/api/auth/login',

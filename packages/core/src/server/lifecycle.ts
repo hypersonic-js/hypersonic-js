@@ -13,8 +13,8 @@ export interface Lifecycle {
  *
  * `onStop`, when provided, is awaited during `stop()` alongside disconnecting
  * Prisma — used by `createApp` to release the Redis connection opened for
- * Better Auth's `secondaryStorage` when `config.limits.backend` is `'redis'`.
- * Not part of core's public API — internal to `createApp`.
+ * Better Auth's rate-limit `customStorage` when `config.limits.backend` is
+ * `'redis'`. Not part of core's public API — internal to `createApp`.
  */
 export function createLifecycle(
   app: Application,

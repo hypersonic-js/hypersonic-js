@@ -31,7 +31,6 @@ export { mountAuth } from './auth/middleware.js'
 export type {
   AuthSetupOptions,
   SocialProviderCredentials,
-  BetterAuthSecondaryStorage,
   BetterAuthCustomStorage,
   AuthRateLimitOptions,
 } from './auth/types.js'

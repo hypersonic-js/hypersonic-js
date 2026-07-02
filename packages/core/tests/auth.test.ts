@@ -168,46 +168,4 @@ describe('createAuth', () => {
     const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
     expect((call['rateLimit'] as { storage: string }).storage).toBe('memory')
   })
-
-  // ── secondaryStorage ───────────────────────────────────────────────────────
-
-  it('does not include secondaryStorage when the option is omitted', () => {
-    createAuth(baseOptions)
-    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
-    expect(call['secondaryStorage']).toBeUndefined()
-  })
-
-  it('forwards secondaryStorage to betterAuth when provided', () => {
-    const secondaryStorage = { get: vi.fn(), set: vi.fn(), delete: vi.fn() }
-    createAuth({ ...baseOptions, secondaryStorage })
-    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
-    expect(call['secondaryStorage']).toBe(secondaryStorage)
-  })
-
-  // Better Auth's real SecondaryStorage.get() returns Awaitable<unknown>, not
-  // Promise<string | null> — the old hand-rolled type only allowed the latter,
-  // which rejected this literal (get returning a plain object) at compile time
-  // even though it's a valid runtime implementation.
-  it('forwards secondaryStorage whose get() returns a non-string value', () => {
-    const secondaryStorage = {
-      get: vi.fn(async () => ({ nested: true }) as unknown),
-      set: vi.fn(),
-      delete: vi.fn(),
-    }
-    createAuth({ ...baseOptions, secondaryStorage })
-    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
-    expect(call['secondaryStorage']).toBe(secondaryStorage)
-  })
-
-  it('can combine secondaryStorage and rateLimit.storage: secondary-storage', () => {
-    const secondaryStorage = { get: vi.fn(), set: vi.fn(), delete: vi.fn() }
-    createAuth({
-      ...baseOptions,
-      rateLimit: { enabled: true, storage: 'secondary-storage' },
-      secondaryStorage,
-    })
-    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
-    expect(call['secondaryStorage']).toBe(secondaryStorage)
-    expect((call['rateLimit'] as { storage: string }).storage).toBe('secondary-storage')
-  })
 })

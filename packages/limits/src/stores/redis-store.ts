@@ -26,20 +26,39 @@ export interface RedisStoreResult {
 }
 
 /**
- * Dynamically imports node-redis, connects a client from the given URL,
- * and returns both the express-rate-limit RedisStore and the raw client
- * (used by RedisBlockStore to track block-duration state separately, and
- * by createLimiter() to close the connection).
+ * Dynamically imports node-redis, connects a client from the given URL, and
+ * registers an error handler labeled for the calling subsystem so a
+ * connection error in the logs is traceable to its origin (e.g. "Limits" for
+ * route-level rate limiting, "Auth" for Better Auth's auth-endpoint rate
+ * limiting).
+ *
+ * Shared by `createRedisStore` (route-level limiting, below) and
+ * `buildRedisAuthStorage` (`../auth-storage.ts`, Better Auth's auth-endpoint
+ * rate limiting) — each opens its own independent Redis connection through
+ * this one helper rather than duplicating the connect/error-handler/connect()
+ * sequence in two places.
  */
-export async function createRedisStore(redisUrl: string): Promise<RedisStoreResult> {
+export async function connectRedisClient(redisUrl: string, label: string): Promise<RedisClientLike> {
   const { createClient } = await import('redis')
   const client = createClient({ url: redisUrl }) as unknown as RedisClientLike
 
   client.on('error', (err: unknown) => {
-    console.error('Hypersonic Limits Redis Client Error:', err)
+    console.error(`Hypersonic ${label} Redis Client Error:`, err)
   })
 
   await client.connect()
+
+  return client
+}
+
+/**
+ * Connects a Redis client (via `connectRedisClient`) and returns both the
+ * express-rate-limit RedisStore and the raw client (used by RedisBlockStore
+ * to track block-duration state separately, and by createLimiter() to close
+ * the connection).
+ */
+export async function createRedisStore(redisUrl: string): Promise<RedisStoreResult> {
+  const client = await connectRedisClient(redisUrl, 'Limits')
 
   const store = new RedisStore({
     sendCommand: (...args: string[]) => client.sendCommand(args),

@@ -4,7 +4,7 @@ import type { HypersonicConfig, LimitsConfig } from '../config/types.js'
 import type { Env } from '../config/env.js'
 import type { PrismaClientLike } from '../database/client.js'
 import type { AuthInstance } from '../auth/setup.js'
-import type { AuthRateLimitOptions, BetterAuthSecondaryStorage } from '../auth/types.js'
+import type { AuthRateLimitOptions } from '../auth/types.js'
 
 export interface CreateAppOptions {
   config: HypersonicConfig
@@ -22,7 +22,6 @@ export interface CreateAppOptions {
     prisma?: unknown,
   ): Promise<{
     rateLimit?: AuthRateLimitOptions
-    secondaryStorage?: BetterAuthSecondaryStorage
     close?: () => Promise<void>
   }>
 }

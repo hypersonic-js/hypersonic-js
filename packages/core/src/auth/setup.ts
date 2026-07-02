@@ -20,8 +20,6 @@ type PrismaAdapterClient = Parameters<typeof prismaAdapter>[0]
  * The rateLimit option is only forwarded when explicitly provided, allowing
  * test environments to pass `{ enabled: false }` to suppress the in-process
  * rate limiter and avoid 429s across shared test suites.
- * The secondaryStorage option is forwarded when provided — the limits package
- * sets this automatically when the Redis backend is configured.
  *
  * Two targeted casts remain:
  *  - `prisma as PrismaAdapterClient`: our public API keeps `prisma: unknown`
@@ -31,11 +29,17 @@ type PrismaAdapterClient = Parameters<typeof prismaAdapter>[0]
  *    satisfies the runtime contract but TypeScript cannot verify it against the
  *    `SocialProviders` mapped type without a cast.
  *
- * `rateLimit` and `secondaryStorage` no longer need casts: `AuthRateLimitOptions`
- * and `BetterAuthSecondaryStorage` (in ./types.js) are now type aliases of
- * Better Auth's own `BetterAuthRateLimitOptions` / `BetterAuthOptions['secondaryStorage']`,
- * so they're structurally identical to what `betterAuth()` expects, not just
+ * `rateLimit` no longer needs a cast: `AuthRateLimitOptions` (in ./types.js)
+ * is a type alias of Better Auth's own `BetterAuthRateLimitOptions`, so it's
+ * structurally identical to what `betterAuth()` expects, not just
  * compatible with it.
+ *
+ * There is deliberately no `secondaryStorage` option here — Better Auth's
+ * `secondaryStorage` is a shared store also used for session data and
+ * verification records, not just rate limiting. The limits package wires
+ * its Redis-backed rate limiting through `rateLimit.customStorage` instead
+ * (see `@hypersonic-js/limits`'s `buildRedisAuthStorage`), which is scoped
+ * to rate-limit records only and never touches session/verification storage.
  */
 export function createAuth(options: AuthSetupOptions): AuthInstance {
   const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {}
@@ -64,10 +68,6 @@ export function createAuth(options: AuthSetupOptions): AuthInstance {
 
   if (options.rateLimit !== undefined) {
     authOptions.rateLimit = options.rateLimit
-  }
-
-  if (options.secondaryStorage !== undefined) {
-    authOptions.secondaryStorage = options.secondaryStorage
   }
 
   return betterAuth(authOptions) as AuthInstance

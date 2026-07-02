@@ -72,6 +72,12 @@ const env: Env = {
  * the old vi.mock('@hypersonic-js/limits', ...) module mock. Returns both
  * the plugin function (pass as CreateAppOptions.limitsPlugin) and the close
  * mock, so tests don't need to reach into plugin.mock.results to assert on it.
+ *
+ * Resolves with a `customStorage` object — not `secondaryStorage`, which no
+ * longer exists anywhere in this pipeline (see auth-storage.ts's doc
+ * comment: secondaryStorage is a shared store also used for session and
+ * verification data, so rate-limit backends are wired through
+ * rateLimit.customStorage instead).
  */
 function makeLimitsPlugin(): {
   plugin: NonNullable<CreateAppOptions['limitsPlugin']>
@@ -79,8 +85,7 @@ function makeLimitsPlugin(): {
 } {
   const close = vi.fn().mockResolvedValue(undefined)
   const plugin = vi.fn().mockResolvedValue({
-    rateLimit: { enabled: true, storage: 'secondary-storage' as const },
-    secondaryStorage: { get: vi.fn(), set: vi.fn(), delete: vi.fn() },
+    rateLimit: { enabled: true, customStorage: { get: vi.fn(), set: vi.fn() } },
     close,
   })
   return { plugin, close }
@@ -235,21 +240,32 @@ describe('createApp', () => {
       const { plugin } = makeLimitsPlugin()
       const configWithLimitsDisabled: HypersonicConfig = {
         ...config,
-        limits: { backend: 'redis' },
+        limits: { backend: 'redis', window: 10 },
         auth: { ...config.auth, rateLimit: { enabled: false } },
       }
       await createApp({ config: configWithLimitsDisabled, env, prisma: mockPrisma, limitsPlugin: plugin })
       expect(plugin).not.toHaveBeenCalled()
     })
 
-    it('wires the secondaryStorage returned by limitsPlugin into betterAuth', async () => {
+    it('wires the customStorage returned by limitsPlugin into betterAuth', async () => {
       const { betterAuth } = await import('better-auth')
       vi.clearAllMocks()
       const { plugin } = makeLimitsPlugin()
-      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis' } }
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis', window: 10 } }
       await createApp({ config: configWithLimits, env, prisma: mockPrisma, limitsPlugin: plugin })
       const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
-      expect(call['secondaryStorage']).toBeDefined()
+      const rl = call['rateLimit'] as { customStorage: unknown }
+      expect(rl.customStorage).toBeDefined()
+    })
+
+    it('never passes a secondaryStorage field to betterAuth, even when limits are wired', async () => {
+      const { betterAuth } = await import('better-auth')
+      vi.clearAllMocks()
+      const { plugin } = makeLimitsPlugin()
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis', window: 10 } }
+      await createApp({ config: configWithLimits, env, prisma: mockPrisma, limitsPlugin: plugin })
+      const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+      expect(call['secondaryStorage']).toBeUndefined()
     })
 
     it('wires the rateLimit config returned by limitsPlugin into betterAuth', async () => {
@@ -272,7 +288,7 @@ describe('createApp', () => {
     it('does not throw when config.limits is set but rateLimit.enabled is false, even without limitsPlugin', async () => {
       const configWithLimitsDisabled: HypersonicConfig = {
         ...config,
-        limits: { backend: 'redis' },
+        limits: { backend: 'redis', window: 10 },
         auth: { ...config.auth, rateLimit: { enabled: false } },
       }
       await expect(
@@ -284,7 +300,7 @@ describe('createApp', () => {
 
     it('stop() calls the close() function returned by limitsPlugin', async () => {
       const { plugin, close } = makeLimitsPlugin()
-      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis' } }
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis', window: 10 } }
       const app = await createApp({ config: configWithLimits, env, prisma: mockPrisma, limitsPlugin: plugin })
       await app.stop()
       expect(close).toHaveBeenCalledOnce()
@@ -306,7 +322,7 @@ describe('createApp', () => {
   describe('resource cleanup on setup failure', () => {
     it('closes the limits auth connection if a later setup step throws', async () => {
       const { plugin, close } = makeLimitsPlugin()
-      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis' } }
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis', window: 10 } }
       vi.mocked(mountAuth).mockImplementationOnce(() => {
         throw new Error('mount failed')
       })
@@ -321,11 +337,10 @@ describe('createApp', () => {
     it('propagates the original setup error even when closeLimitsAuth itself rejects', async () => {
       const close = vi.fn().mockRejectedValue(new Error('close failed'))
       const plugin = vi.fn().mockResolvedValue({
-        rateLimit: { enabled: true, storage: 'secondary-storage' as const },
-        secondaryStorage: { get: vi.fn(), set: vi.fn(), delete: vi.fn() },
+        rateLimit: { enabled: true, customStorage: { get: vi.fn(), set: vi.fn() } },
         close,
       })
-      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis' } }
+      const configWithLimits: HypersonicConfig = { ...config, limits: { backend: 'redis', window: 10 } }
       vi.mocked(mountAuth).mockImplementationOnce(() => {
         throw new Error('mount failed')
       })

@@ -57,6 +57,15 @@ export const BETTER_AUTH_SECRET =
  */
 export const REDIS_URL = process.env['REDIS_URL'] ?? 'redis://localhost:6379/1'
 
+/**
+ * Window (seconds) used for `config.limits.window` when `authRedisLimits`
+ * is true — passed through to `buildRedisAuthStorage` as the TTL on each
+ * Redis-backed rate-limit record. 10s matches Better Auth's own default
+ * `rateLimit.window`, and is short enough that leftover keys from a test
+ * run don't linger meaningfully in the shared Redis instance.
+ */
+const AUTH_REDIS_LIMITS_WINDOW = 10
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type TestApp = HypersonicApp & {
@@ -106,13 +115,16 @@ export interface TestLimitsOptions {
  * The returned TestApp exposes `closeLimiter` to release it during teardown.
  *
  * Optional `authRedisLimits`, when true, sets `config.limits = { backend:
- * 'redis' }`, leaves `auth.rateLimit` unset (rather than the usual
- * `{ enabled: false }`), and passes `buildAuthLimitsConfig` as `createApp`'s
- * `limitsPlugin` — createApp never imports `@hypersonic-js/limits` itself,
- * so this is how Better Auth's own auth-endpoint rate limiting gets wired to
- * a dedicated Redis secondaryStorage connection. This is for
- * auth-limits-lifecycle.test.ts only — Better Auth's real rate limiter is
- * active in this mode, so keep request volume in that test low.
+ * 'redis', window: AUTH_REDIS_LIMITS_WINDOW }`, leaves `auth.rateLimit`
+ * unset (rather than the usual `{ enabled: false }`), and passes
+ * `buildAuthLimitsConfig` as `createApp`'s `limitsPlugin` —
+ * `createApp` never imports `@hypersonic-js/limits` itself, so this is how
+ * Better Auth's own auth-endpoint rate limiting gets wired to a dedicated
+ * Redis connection via `rateLimit.customStorage` (not `secondaryStorage` —
+ * see `buildRedisAuthStorage` in `packages/limits/src/auth-storage.ts` for
+ * why). This is for auth-limits-lifecycle.test.ts only — Better Auth's real
+ * rate limiter is active in this mode, so keep request volume in that test
+ * low.
  *
  * Rate limiting is disabled by default so that multiple test suites running
  * in the same process do not exhaust Better Auth's in-memory per-IP counter
@@ -135,7 +147,9 @@ export async function buildTestApp(
     inertia: { ssr: false },
     database: { provider: 'postgresql' },
     // Same reasoning — omit the key rather than assign undefined.
-    ...(authRedisLimits === true ? { limits: { backend: 'redis' as const } } : {}),
+    ...(authRedisLimits === true
+      ? { limits: { backend: 'redis' as const, window: AUTH_REDIS_LIMITS_WINDOW } }
+      : {}),
   }
 
   const env: Env = { DATABASE_URL, BETTER_AUTH_SECRET, REDIS_URL }

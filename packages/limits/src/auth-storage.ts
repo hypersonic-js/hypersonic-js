@@ -1,19 +1,12 @@
-import type {
-  AuthRateLimitOptions,
-  BetterAuthCustomStorage,
-  BetterAuthSecondaryStorage,
-} from '@hypersonic-js/core'
+import type { AuthRateLimitOptions, BetterAuthCustomStorage } from '@hypersonic-js/core'
 import type { LimitsConfig } from './types.js'
 import type { PrismaAuthRateLimitModel } from './stores/prisma-store.js'
+import { connectRedisClient } from './stores/redis-store.js'
 import { noopClose } from './utils.js'
 
 // Re-exported so consumers who import from @hypersonic-js/limits directly
 // continue to get the canonical types without a breaking change.
-export type {
-  AuthRateLimitOptions,
-  BetterAuthCustomStorage,
-  BetterAuthSecondaryStorage,
-} from '@hypersonic-js/core'
+export type { AuthRateLimitOptions, BetterAuthCustomStorage } from '@hypersonic-js/core'
 
 /**
  * The configuration object that `buildAuthLimitsConfig` returns.
@@ -22,13 +15,18 @@ export type {
  *
  * `rateLimit` is typed as the full `AuthRateLimitOptions` (Better Auth's own
  * rate-limit option type) rather than a hand-duplicated subset — the
- * functions below only ever populate `enabled`/`storage`/`customStorage`,
- * but re-declaring that subset here would be the exact same drift risk
- * that `AuthRateLimitOptions` itself was just fixed for.
+ * functions below only ever populate `enabled`/`customStorage`, but
+ * re-declaring that subset here would be the exact same drift risk that
+ * `AuthRateLimitOptions` itself was fixed for.
+ *
+ * There is deliberately no `secondaryStorage` field: Better Auth's
+ * `secondaryStorage` is a shared store also used for session data and
+ * verification records, not just rate limiting. Every backend below wires
+ * rate limiting through `rateLimit.customStorage` instead, which is scoped
+ * to rate-limit records only.
  */
 export interface BetterAuthLimitsConfig {
   rateLimit?: AuthRateLimitOptions
-  secondaryStorage?: BetterAuthSecondaryStorage
   /**
    * Releases any resources opened for this backend — the Redis connection
    * for the `redis` backend, or a no-op for `memory` and `database`.
@@ -76,50 +74,42 @@ export function buildDatabaseAuthStorage(
 }
 
 /**
- * Redis backend: use Better Auth's `secondaryStorage` backed by a
- * dedicated node-redis client. Better Auth stores rate limit data as
- * JSON strings through secondaryStorage.
+ * Redis backend: use Better Auth's `rateLimit.customStorage` backed by a
+ * dedicated node-redis client — not `secondaryStorage`. `secondaryStorage`
+ * is a shared store Better Auth also uses for session data and verification
+ * records (email verification, magic links, etc); wiring the rate-limit
+ * Redis connection through it would silently move session and verification
+ * persistence off the primary database and into Redis too, just because
+ * `limits.backend` was set to `'redis'`. `customStorage` is scoped to
+ * rate-limit records only, matching what `buildDatabaseAuthStorage` above
+ * already does for the `database` backend.
+ *
+ * Records are JSON-encoded (`{ key, count, lastRequest }`) and written with
+ * `setEx(key, window, ...)`, so expired rate-limit windows are cleaned up by
+ * Redis automatically instead of accumulating indefinitely — `window` comes
+ * from the `redis` variant of `LimitsConfig`, which requires it explicitly
+ * for exactly this reason.
  */
 export async function buildRedisAuthStorage(
   redisUrl: string,
+  window: number,
 ): Promise<BetterAuthLimitsConfig> {
-  const { createClient } = await import('redis')
-  const client = createClient({ url: redisUrl })
+  const client = await connectRedisClient(redisUrl, 'Auth')
 
-  client.on('error', (err: unknown) => {
-    console.error('Hypersonic Auth Redis Client Error:', err)
-  })
-
-  await (client as unknown as { connect(): Promise<void> }).connect()
-
-  const typedClient = client as unknown as {
-    get(key: string): Promise<string | null>
-    set(key: string, value: string): Promise<unknown>
-    setEx(key: string, seconds: number, value: string): Promise<unknown>
-    del(key: string): Promise<number>
-    quit(): Promise<unknown>
-  }
-
-  const secondaryStorage: BetterAuthSecondaryStorage = {
+  const customStorage: BetterAuthCustomStorage = {
     async get(key) {
-      return typedClient.get(key)
+      const value = await client.get(key)
+      if (value === null) return null
+      return JSON.parse(value) as { key: string; count: number; lastRequest: number }
     },
-    async set(key, value, ttl) {
-      if (ttl !== undefined) {
-        await typedClient.setEx(key, ttl, value)
-      } else {
-        await typedClient.set(key, value)
-      }
-    },
-    async delete(key) {
-      await typedClient.del(key)
+    async set(key, value) {
+      await client.setEx(key, window, JSON.stringify(value))
     },
   }
 
   return {
-    rateLimit: { enabled: true, storage: 'secondary-storage' },
-    secondaryStorage,
-    close: () => typedClient.quit().then(() => undefined),
+    rateLimit: { enabled: true, customStorage },
+    close: () => client.quit().then(() => undefined),
   }
 }
 
@@ -159,5 +149,5 @@ export async function buildAuthLimitsConfig(
       'Hypersonic: REDIS_URL must be set in your .env when limits.backend is "redis".',
     )
   }
-  return buildRedisAuthStorage(env.REDIS_URL)
+  return buildRedisAuthStorage(env.REDIS_URL, config.window)
 }

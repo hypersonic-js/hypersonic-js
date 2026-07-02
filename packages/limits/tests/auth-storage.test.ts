@@ -3,18 +3,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // ── Redis mock ────────────────────────────────────────────────────────────────
 
 const mockRedisGet = vi.fn()
-const mockRedisSet = vi.fn()
 const mockRedisSetEx = vi.fn()
-const mockRedisDel = vi.fn()
 const mockRedisConnect = vi.fn().mockResolvedValue(undefined)
 const mockRedisOn = vi.fn().mockReturnThis()
 const mockRedisQuit = vi.fn().mockResolvedValue('OK')
 
 const mockRedisClient = {
   get: mockRedisGet,
-  set: mockRedisSet,
   setEx: mockRedisSetEx,
-  del: mockRedisDel,
   connect: mockRedisConnect,
   on: mockRedisOn,
   quit: mockRedisQuit,
@@ -51,14 +47,14 @@ describe('buildMemoryAuthStorage', () => {
     expect(result.rateLimit?.enabled).toBe(true)
   })
 
-  it('does not include secondaryStorage', () => {
-    const result = buildMemoryAuthStorage()
-    expect(result.secondaryStorage).toBeUndefined()
-  })
-
   it('does not include customStorage', () => {
     const result = buildMemoryAuthStorage()
     expect(result.rateLimit?.customStorage).toBeUndefined()
+  })
+
+  it('does not include a secondaryStorage field on the returned object', () => {
+    const result = buildMemoryAuthStorage()
+    expect('secondaryStorage' in result).toBe(false)
   })
 
   it('resolves close() without throwing', async () => {
@@ -87,9 +83,9 @@ describe('buildDatabaseAuthStorage', () => {
     expect(result.rateLimit?.customStorage).toBeDefined()
   })
 
-  it('does not include secondaryStorage', () => {
+  it('does not include a secondaryStorage field on the returned object', () => {
     const result = buildDatabaseAuthStorage(authRateLimit as unknown as PrismaAuthRateLimitModel)
-    expect(result.secondaryStorage).toBeUndefined()
+    expect('secondaryStorage' in result).toBe(false)
   })
 
   it('resolves close() without throwing', async () => {
@@ -150,8 +146,15 @@ describe('buildDatabaseAuthStorage', () => {
 })
 
 // ── buildRedisAuthStorage ─────────────────────────────────────────────────────
+// Rebuilt around rateLimit.customStorage — buildRedisAuthStorage no longer
+// touches Better Auth's secondaryStorage at all (see the function's doc
+// comment in ../src/auth-storage.ts for why: secondaryStorage is a shared
+// store also used for session/verification data, so wiring rate limiting
+// through it would have silently moved that other data into Redis too).
 
 describe('buildRedisAuthStorage', () => {
+  const WINDOW = 10
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockRedisConnect.mockResolvedValue(undefined)
@@ -159,23 +162,39 @@ describe('buildRedisAuthStorage', () => {
     mockRedisQuit.mockResolvedValue('OK')
   })
 
-  it('returns rateLimit.storage: secondary-storage', async () => {
-    const result = await buildRedisAuthStorage('redis://localhost:6379')
-    expect(result.rateLimit?.storage).toBe('secondary-storage')
-  })
-
   it('returns rateLimit.enabled: true', async () => {
-    const result = await buildRedisAuthStorage('redis://localhost:6379')
+    const result = await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
     expect(result.rateLimit?.enabled).toBe(true)
   })
 
-  it('includes a secondaryStorage object', async () => {
-    const result = await buildRedisAuthStorage('redis://localhost:6379')
-    expect(result.secondaryStorage).toBeDefined()
+  it('includes a customStorage object', async () => {
+    const result = await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
+    expect(result.rateLimit?.customStorage).toBeDefined()
+  })
+
+  it('does not include a secondaryStorage field on the returned object', async () => {
+    const result = await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
+    expect('secondaryStorage' in result).toBe(false)
+  })
+
+  it('does not set rateLimit.storage to "secondary-storage"', async () => {
+    const result = await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
+    expect(result.rateLimit?.storage).toBeUndefined()
+  })
+
+  it('connects a redis client with the provided URL', async () => {
+    const { createClient } = await import('redis')
+    await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
+    expect(createClient).toHaveBeenCalledWith({ url: 'redis://localhost:6379' })
+  })
+
+  it('registers an error handler labeled "Auth"', async () => {
+    await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
+    expect(mockRedisOn).toHaveBeenCalledWith('error', expect.any(Function))
   })
 
   it('error handler does not throw when invoked', async () => {
-    await buildRedisAuthStorage('redis://localhost:6379')
+    await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
     const errorHandler = mockRedisOn.mock.calls.find(
       ([event]: [string]) => event === 'error',
     )![1] as (err: unknown) => void
@@ -184,57 +203,56 @@ describe('buildRedisAuthStorage', () => {
 
   describe('close()', () => {
     it('calls the redis client quit()', async () => {
-      const result = await buildRedisAuthStorage('redis://localhost:6379')
+      const result = await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
       await result.close()
       expect(mockRedisQuit).toHaveBeenCalledOnce()
     })
 
     it('resolves without throwing', async () => {
-      const result = await buildRedisAuthStorage('redis://localhost:6379')
+      const result = await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
       await expect(result.close()).resolves.toBeUndefined()
     })
   })
 
-  describe('secondaryStorage.get', () => {
+  describe('customStorage.get', () => {
     it('calls client.get with the key', async () => {
-      mockRedisGet.mockResolvedValue('stored-value')
-      const { secondaryStorage } = await buildRedisAuthStorage('redis://localhost:6379')
-      const result = await secondaryStorage!.get('my-key')
+      mockRedisGet.mockResolvedValue(JSON.stringify({ key: 'my-key', count: 2, lastRequest: 123 }))
+      const { rateLimit } = await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
+      await rateLimit!.customStorage!.get('my-key')
       expect(mockRedisGet).toHaveBeenCalledWith('my-key')
-      expect(result).toBe('stored-value')
+    })
+
+    it('returns the parsed record when one exists', async () => {
+      mockRedisGet.mockResolvedValue(JSON.stringify({ key: 'my-key', count: 2, lastRequest: 123 }))
+      const { rateLimit } = await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
+      const result = await rateLimit!.customStorage!.get('my-key')
+      expect(result).toEqual({ key: 'my-key', count: 2, lastRequest: 123 })
     })
 
     it('returns null when the key does not exist', async () => {
       mockRedisGet.mockResolvedValue(null)
-      const { secondaryStorage } = await buildRedisAuthStorage('redis://localhost:6379')
-      expect(await secondaryStorage!.get('missing')).toBeNull()
+      const { rateLimit } = await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
+      expect(await rateLimit!.customStorage!.get('missing')).toBeNull()
     })
   })
 
-  describe('secondaryStorage.set', () => {
-    it('calls client.set when no ttl is provided', async () => {
-      mockRedisSet.mockResolvedValue('OK')
-      const { secondaryStorage } = await buildRedisAuthStorage('redis://localhost:6379')
-      await secondaryStorage!.set('my-key', 'value')
-      expect(mockRedisSet).toHaveBeenCalledWith('my-key', 'value')
-      expect(mockRedisSetEx).not.toHaveBeenCalled()
-    })
-
-    it('calls client.setEx when ttl is provided', async () => {
+  describe('customStorage.set', () => {
+    it('JSON-encodes the record before writing', async () => {
       mockRedisSetEx.mockResolvedValue('OK')
-      const { secondaryStorage } = await buildRedisAuthStorage('redis://localhost:6379')
-      await secondaryStorage!.set('my-key', 'value', 300)
-      expect(mockRedisSetEx).toHaveBeenCalledWith('my-key', 300, 'value')
-      expect(mockRedisSet).not.toHaveBeenCalled()
+      const { rateLimit } = await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
+      await rateLimit!.customStorage!.set('my-key', { key: 'my-key', count: 4, lastRequest: 999 })
+      expect(mockRedisSetEx).toHaveBeenCalledWith(
+        'my-key',
+        WINDOW,
+        JSON.stringify({ key: 'my-key', count: 4, lastRequest: 999 }),
+      )
     })
-  })
 
-  describe('secondaryStorage.delete', () => {
-    it('calls client.del with the key', async () => {
-      mockRedisDel.mockResolvedValue(1)
-      const { secondaryStorage } = await buildRedisAuthStorage('redis://localhost:6379')
-      await secondaryStorage!.delete('my-key')
-      expect(mockRedisDel).toHaveBeenCalledWith('my-key')
+    it('always writes with setEx using the configured window as the TTL', async () => {
+      mockRedisSetEx.mockResolvedValue('OK')
+      const { rateLimit } = await buildRedisAuthStorage('redis://localhost:6379', 42)
+      await rateLimit!.customStorage!.set('another-key', { key: 'another-key', count: 1, lastRequest: 1 })
+      expect(mockRedisSetEx).toHaveBeenCalledWith('another-key', 42, expect.any(String))
     })
   })
 })
@@ -254,13 +272,12 @@ describe('buildAuthLimitsConfig', () => {
 
   const memoryConfig: LimitsConfig = { backend: 'memory' }
   const databaseConfig: LimitsConfig = { backend: 'database' }
-  const redisConfig: LimitsConfig = { backend: 'redis' }
+  const redisConfig: LimitsConfig = { backend: 'redis', window: 10 }
 
   describe('memory backend', () => {
     it('returns memory auth storage', async () => {
       const result = await buildAuthLimitsConfig(memoryConfig, {})
       expect(result.rateLimit?.enabled).toBe(true)
-      expect(result.secondaryStorage).toBeUndefined()
     })
 
     it('returns a close function', async () => {
@@ -306,8 +323,17 @@ describe('buildAuthLimitsConfig', () => {
 
     it('returns redis auth storage when REDIS_URL is provided', async () => {
       const result = await buildAuthLimitsConfig(redisConfig, { REDIS_URL: 'redis://localhost:6379' })
-      expect(result.rateLimit?.storage).toBe('secondary-storage')
-      expect(result.secondaryStorage).toBeDefined()
+      expect(result.rateLimit?.customStorage).toBeDefined()
+    })
+
+    it('passes config.window through as the Redis TTL', async () => {
+      mockRedisSetEx.mockResolvedValue('OK')
+      const result = await buildAuthLimitsConfig(
+        { backend: 'redis', window: 77 },
+        { REDIS_URL: 'redis://localhost:6379' },
+      )
+      await result.rateLimit!.customStorage!.set('k', { key: 'k', count: 1, lastRequest: 1 })
+      expect(mockRedisSetEx).toHaveBeenCalledWith('k', 77, expect.any(String))
     })
 
     it('close() calls the redis client quit()', async () => {
