@@ -63,6 +63,8 @@ const next: NextFunction = vi.fn()
 function makePrismaRateLimitModel(): { [K in keyof PrismaRateLimitModel]: ReturnType<typeof vi.fn> } {
   return {
     findUnique: vi.fn().mockResolvedValue(null),
+    create: vi.fn().mockResolvedValue({ key: 'k', points: 1, expireAt: null, blockUntil: null }),
+    updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     upsert: vi.fn().mockResolvedValue({ key: 'k', points: 1, expireAt: null, blockUntil: null }),
     update: vi.fn(),
     delete: vi.fn(),
@@ -237,6 +239,28 @@ describe('createLimiter — with blockDuration', () => {
     expect(res.status).toHaveBeenCalledWith(429)
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.any(String) }))
     expect(mockRateLimiterMiddleware).not.toHaveBeenCalled()
+  })
+
+  it('fails open and still reaches the rate limiter when blockStore.isBlocked() rejects', async () => {
+    // Uses the database backend so the pre-check goes through
+    // PrismaBlockStore.isBlocked() -> prisma.findUnique(), which we force
+    // to reject — mirroring a transient Redis/DB outage on the read path.
+    mockRateLimiterMiddleware.mockImplementation((_req: unknown, _res: unknown, n: NextFunction) => n())
+    const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
+    prisma.rateLimit.findUnique = vi.fn().mockRejectedValue(new Error('DB unavailable'))
+    const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
+    const handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000 })
+    const req = makeReq()
+    const res = makeRes()
+    const nextFn = vi.fn()
+
+    await handler(req as Request, res as unknown as Response, nextFn)
+
+    // The pre-check failed open — it never issued its own 429, and the
+    // request still reached the normal hit-counting rate limiter below.
+    expect(res.status).not.toHaveBeenCalled()
+    expect(mockRateLimiterMiddleware).toHaveBeenCalledOnce()
+    expect(nextFn).toHaveBeenCalledOnce()
   })
 
   it('uses "unknown" as the key when req.ip is undefined', async () => {

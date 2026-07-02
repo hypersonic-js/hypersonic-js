@@ -89,7 +89,19 @@ function buildCompoundMiddleware(
   // With blockDuration — wrap with a pre-check that rejects already-blocked clients
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const key = req.ip ?? 'unknown'
-    const blocked = await blockStore.isBlocked(key)
+
+    // Fail open on a block-store lookup error rather than rejecting the
+    // request outright — a transient backend outage (Redis down, DB
+    // unreachable) should degrade to "skip the block shortcut", not turn
+    // every guarded route into a 500. The hit-count-based limit below
+    // still applies normally either way.
+    let blocked = false
+    try {
+      blocked = await blockStore.isBlocked(key)
+    } catch {
+      // Best-effort — see comment above.
+    }
+
     if (blocked) {
       res.status(429).json({ message })
       return
