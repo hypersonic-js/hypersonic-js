@@ -108,6 +108,42 @@ describe('buildEnvSchema', () => {
     expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(false)
   })
 
+  it('requires REDIS_URL when limits.backend is redis and auth.rateLimit.enabled is true', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, rateLimit: { enabled: true } },
+      limits: { backend: 'redis' },
+    }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(false)
+  })
+
+  it('does not require REDIS_URL when limits.backend is redis but auth.rateLimit.enabled is false', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, rateLimit: { enabled: false } },
+      limits: { backend: 'redis' },
+    }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(true)
+  })
+
+  it('does not add REDIS_URL to the schema shape when auth.rateLimit.enabled is false', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, rateLimit: { enabled: false } },
+      limits: { backend: 'redis' },
+    }
+    expect(buildEnvSchema(config).shape['REDIS_URL']).toBeUndefined()
+  })
+
+  it('validateEnv succeeds without REDIS_URL when auth.rateLimit.enabled is false', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, rateLimit: { enabled: false } },
+      limits: { backend: 'redis' },
+    }
+    expect(() => validateEnv(config, baseEnv)).not.toThrow()
+  })
+
   it('accepts a valid REDIS_URL when limits.backend is redis', () => {
     const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'redis' } }
     expect(

@@ -136,6 +136,39 @@ describe('createAuth', () => {
     expect(rl.customStorage).toBe(customStorage)
   })
 
+  // The following four tests use upstream Better Auth rateLimit fields
+  // (window, max, customRules, storage: "memory"/"database") that the old
+  // hand-rolled AuthRateLimitOptions type didn't declare. Written as inline
+  // object literals (not variables), these previously failed to typecheck
+  // via TypeScript's excess-property check even though createAuth already
+  // passed them through to betterAuth() correctly at runtime — this is the
+  // literal bug the type-widening fix addresses.
+
+  it('forwards rateLimit with window and max (Better Auth upstream fields)', () => {
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, window: 60, max: 100 } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['rateLimit']).toEqual({ enabled: true, window: 60, max: 100 })
+  })
+
+  it('forwards rateLimit with customRules (Better Auth upstream field)', () => {
+    const customRules = { '/sign-in/email': { window: 10, max: 3 } }
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, customRules } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect((call['rateLimit'] as { customRules: unknown }).customRules).toBe(customRules)
+  })
+
+  it('accepts rateLimit storage: "database" (previously restricted to only "secondary-storage")', () => {
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, storage: 'database' } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect((call['rateLimit'] as { storage: string }).storage).toBe('database')
+  })
+
+  it('accepts rateLimit storage: "memory" (previously restricted to only "secondary-storage")', () => {
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, storage: 'memory' } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect((call['rateLimit'] as { storage: string }).storage).toBe('memory')
+  })
+
   // ── secondaryStorage ───────────────────────────────────────────────────────
 
   it('does not include secondaryStorage when the option is omitted', () => {
@@ -146,6 +179,21 @@ describe('createAuth', () => {
 
   it('forwards secondaryStorage to betterAuth when provided', () => {
     const secondaryStorage = { get: vi.fn(), set: vi.fn(), delete: vi.fn() }
+    createAuth({ ...baseOptions, secondaryStorage })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['secondaryStorage']).toBe(secondaryStorage)
+  })
+
+  // Better Auth's real SecondaryStorage.get() returns Awaitable<unknown>, not
+  // Promise<string | null> — the old hand-rolled type only allowed the latter,
+  // which rejected this literal (get returning a plain object) at compile time
+  // even though it's a valid runtime implementation.
+  it('forwards secondaryStorage whose get() returns a non-string value', () => {
+    const secondaryStorage = {
+      get: vi.fn(async () => ({ nested: true }) as unknown),
+      set: vi.fn(),
+      delete: vi.fn(),
+    }
     createAuth({ ...baseOptions, secondaryStorage })
     const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
     expect(call['secondaryStorage']).toBe(secondaryStorage)

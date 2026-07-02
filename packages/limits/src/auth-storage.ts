@@ -1,23 +1,33 @@
-import type { BetterAuthCustomStorage, BetterAuthSecondaryStorage } from '@hypersonic-js/core'
+import type {
+  AuthRateLimitOptions,
+  BetterAuthCustomStorage,
+  BetterAuthSecondaryStorage,
+} from '@hypersonic-js/core'
 import type { LimitsConfig } from './types.js'
 import type { PrismaAuthRateLimitModel } from './stores/prisma-store.js'
 import { noopClose } from './utils.js'
 
 // Re-exported so consumers who import from @hypersonic-js/limits directly
 // continue to get the canonical types without a breaking change.
-export type { BetterAuthCustomStorage, BetterAuthSecondaryStorage } from '@hypersonic-js/core'
+export type {
+  AuthRateLimitOptions,
+  BetterAuthCustomStorage,
+  BetterAuthSecondaryStorage,
+} from '@hypersonic-js/core'
 
 /**
  * The configuration object that `buildAuthLimitsConfig` returns.
  * Callers spread this into the `createAuth` options so Better Auth
  * uses the same storage backend as `createLimiter`.
+ *
+ * `rateLimit` is typed as the full `AuthRateLimitOptions` (Better Auth's own
+ * rate-limit option type) rather than a hand-duplicated subset — the
+ * functions below only ever populate `enabled`/`storage`/`customStorage`,
+ * but re-declaring that subset here would be the exact same drift risk
+ * that `AuthRateLimitOptions` itself was just fixed for.
  */
 export interface BetterAuthLimitsConfig {
-  rateLimit?: {
-    enabled?: boolean
-    storage?: 'secondary-storage'
-    customStorage?: BetterAuthCustomStorage
-  }
+  rateLimit?: AuthRateLimitOptions
   secondaryStorage?: BetterAuthSecondaryStorage
   /**
    * Releases any resources opened for this backend — the Redis connection
@@ -39,7 +49,10 @@ export function buildMemoryAuthStorage(): BetterAuthLimitsConfig {
 /**
  * Database backend: use Better Auth's `customStorage` backed by the
  * Prisma `authRateLimit` model. Converts between Better Auth's numeric
- * timestamps and the schema's BigInt column.
+ * timestamps and the schema's BigInt column. Returns `key` alongside
+ * `count`/`lastRequest` — Better Auth's real `BetterAuthRateLimitStorage.get()`
+ * contract requires the full `RateLimit` record shape, not just the two
+ * counter fields.
  */
 export function buildDatabaseAuthStorage(
   authRateLimit: PrismaAuthRateLimitModel,
@@ -48,7 +61,7 @@ export function buildDatabaseAuthStorage(
     async get(key) {
       const record = await authRateLimit.findUnique({ where: { key } })
       if (record === null) return null
-      return { count: record.count, lastRequest: Number(record.lastRequest) }
+      return { key: record.key, count: record.count, lastRequest: Number(record.lastRequest) }
     },
     async set(key, value) {
       await authRateLimit.upsert({

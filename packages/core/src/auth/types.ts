@@ -1,3 +1,4 @@
+import type { BetterAuthOptions, BetterAuthRateLimitOptions, BetterAuthRateLimitStorage } from 'better-auth'
 import type { DatabaseProvider } from '../config/types.js'
 
 export interface SocialProviderCredentials {
@@ -6,37 +7,45 @@ export interface SocialProviderCredentials {
 }
 
 /**
- * Better Auth `secondaryStorage` shape.
+ * Better Auth's `secondaryStorage` option type.
+ * Sourced directly from Better Auth's own `BetterAuthOptions` — Better Auth
+ * does not export its internal `SecondaryStorage` interface by name, so this
+ * is reached via indexed access rather than a hand-copied field list. Doing
+ * it this way means this type can never drift from what `betterAuth()`
+ * actually accepts (confirmed against the real `.d.mts` output of
+ * better-auth@1.6.19 — it also includes optional `getAndDelete` and
+ * `increment` methods beyond `get`/`set`/`delete`).
+ * Re-exported under our own name so consumers of `@hypersonic-js/core` can
+ * type their `secondaryStorage` implementation without importing
+ * `better-auth` themselves.
  * Wired automatically by `createApp` when `limits.backend` is `'redis'`
  * so Better Auth's auth-endpoint rate limiting uses the same Redis instance.
  */
-export interface BetterAuthSecondaryStorage {
-  get(key: string): Promise<string | null>
-  set(key: string, value: string, ttl?: number): Promise<void>
-  delete(key: string): Promise<void>
-}
+export type BetterAuthSecondaryStorage = NonNullable<BetterAuthOptions['secondaryStorage']>
 
 /**
- * Better Auth `rateLimit.customStorage` shape.
+ * Better Auth's `rateLimit.customStorage` option type.
+ * Better Auth exports this by name as `BetterAuthRateLimitStorage`; aliased
+ * here under our own name for the same reason as `BetterAuthSecondaryStorage`
+ * above.
  * Wired automatically by `createApp` when `limits.backend` is `'database'`
  * so Better Auth's auth-endpoint rate limiting uses the Prisma `authRateLimit` model.
  */
-export interface BetterAuthCustomStorage {
-  get(key: string): Promise<{ count: number; lastRequest: number } | null>
-  set(key: string, value: { count: number; lastRequest: number }): Promise<void>
-}
+export type BetterAuthCustomStorage = BetterAuthRateLimitStorage
 
 /**
- * Better Auth rate-limit options forwarded to `betterAuth()`.
+ * Better Auth's `rateLimit` option type, aliased directly from Better Auth's
+ * own exported `BetterAuthRateLimitOptions` rather than hand-copied. This
+ * fixes a real bug: the previous hand-rolled subset only had
+ * `enabled`/`storage`/`customStorage` and rejected valid literal configs
+ * using `window`, `max`, `customRules`, or `modelName`, or `storage: "memory"`
+ * / `"database"` — all of which Better Auth genuinely supports and which
+ * `createAuth` already passed through at runtime.
  * `enabled` is the public-facing option in `HypersonicConfig.auth.rateLimit`.
  * `storage` and `customStorage` are populated automatically by the limits
  * package integration in `createApp`.
  */
-export interface AuthRateLimitOptions {
-  enabled?: boolean
-  storage?: 'secondary-storage'
-  customStorage?: BetterAuthCustomStorage
-}
+export type AuthRateLimitOptions = BetterAuthRateLimitOptions
 
 export interface AuthSetupOptions {
   secret: string
@@ -63,5 +72,5 @@ export interface AuthSetupOptions {
   secondaryStorage?: BetterAuthSecondaryStorage
 }
 
-// Re-exported so consumers can type the auth instance without importing better-auth directly
+// Re-exported so consumers can type the auth instance without importing better-auth directly.
 export type { betterAuth as BetterAuth } from 'better-auth'

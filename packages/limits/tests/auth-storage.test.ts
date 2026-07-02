@@ -105,7 +105,7 @@ describe('buildDatabaseAuthStorage', () => {
       expect(result).toBeNull()
     })
 
-    it('returns count and lastRequest as a number when record exists', async () => {
+    it('returns key, count, and lastRequest as a number when record exists', async () => {
       authRateLimit.findUnique.mockResolvedValue({
         key: 'some-key',
         count: 5,
@@ -113,7 +113,7 @@ describe('buildDatabaseAuthStorage', () => {
       })
       const { rateLimit } = buildDatabaseAuthStorage(authRateLimit as unknown as PrismaAuthRateLimitModel)
       const result = await rateLimit!.customStorage!.get('some-key')
-      expect(result).toEqual({ count: 5, lastRequest: 1_700_000_000_000 })
+      expect(result).toEqual({ key: 'some-key', count: 5, lastRequest: 1_700_000_000_000 })
     })
 
     it('queries with the correct key', async () => {
@@ -132,7 +132,11 @@ describe('buildDatabaseAuthStorage', () => {
         lastRequest: BigInt(1_700_000_000_000),
       })
       const { rateLimit } = buildDatabaseAuthStorage(authRateLimit as unknown as PrismaAuthRateLimitModel)
-      await rateLimit!.customStorage!.set('some-key', { count: 3, lastRequest: 1_700_000_000_000 })
+      await rateLimit!.customStorage!.set('some-key', {
+        key: 'some-key',
+        count: 3,
+        lastRequest: 1_700_000_000_000,
+      })
 
       expect(authRateLimit.upsert).toHaveBeenCalledWith(
         expect.objectContaining({

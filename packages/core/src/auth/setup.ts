@@ -23,17 +23,19 @@ type PrismaAdapterClient = Parameters<typeof prismaAdapter>[0]
  * The secondaryStorage option is forwarded when provided — the limits package
  * sets this automatically when the Redis backend is configured.
  *
- * Four targeted casts remain:
+ * Two targeted casts remain:
  *  - `prisma as PrismaAdapterClient`: our public API keeps `prisma: unknown`
  *    to stay agnostic of the generated PrismaClient types; the adapter's own
  *    PrismaClient is an empty interface so the cast is safe at runtime.
  *  - `socialProviders as BetterAuthOptions['socialProviders']`: our plain record
  *    satisfies the runtime contract but TypeScript cannot verify it against the
  *    `SocialProviders` mapped type without a cast.
- *  - `rateLimit as BetterAuthOptions['rateLimit']`: our extended subset is a
- *    valid runtime value for Better Auth's rateLimit field.
- *  - `secondaryStorage as BetterAuthOptions['secondaryStorage']`: our interface
- *    structurally satisfies Better Auth's SecondaryStorage type.
+ *
+ * `rateLimit` and `secondaryStorage` no longer need casts: `AuthRateLimitOptions`
+ * and `BetterAuthSecondaryStorage` (in ./types.js) are now type aliases of
+ * Better Auth's own `BetterAuthRateLimitOptions` / `BetterAuthOptions['secondaryStorage']`,
+ * so they're structurally identical to what `betterAuth()` expects, not just
+ * compatible with it.
  */
 export function createAuth(options: AuthSetupOptions): AuthInstance {
   const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {}
@@ -61,12 +63,11 @@ export function createAuth(options: AuthSetupOptions): AuthInstance {
   }
 
   if (options.rateLimit !== undefined) {
-    authOptions.rateLimit = options.rateLimit as BetterAuthOptions['rateLimit']
+    authOptions.rateLimit = options.rateLimit
   }
 
   if (options.secondaryStorage !== undefined) {
-    authOptions.secondaryStorage =
-      options.secondaryStorage as BetterAuthOptions['secondaryStorage']
+    authOptions.secondaryStorage = options.secondaryStorage
   }
 
   return betterAuth(authOptions) as AuthInstance
