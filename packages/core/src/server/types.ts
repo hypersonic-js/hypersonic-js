@@ -15,6 +15,11 @@ export interface CreateAppOptions {
    * Required only when `config.limits` is set (and not disabled via
    * `config.auth.rateLimit.enabled: false`) — pass `buildAuthLimitsConfig`
    * from `@hypersonic-js/limits`:
+   *
+   * ```ts
+   * import { buildAuthLimitsConfig } from '@hypersonic-js/limits'
+   * createApp({ config, env, prisma, limitsPlugin: buildAuthLimitsConfig })
+   * ```
    */
   limitsPlugin?(
     config: LimitsConfig,

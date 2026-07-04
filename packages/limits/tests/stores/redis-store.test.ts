@@ -87,11 +87,13 @@ describe('connectRedisClient', () => {
   })
 
   it('error handler does not throw when invoked', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     await connectRedisClient('redis://localhost:6379', 'Limits')
     const errorHandler = mockOn.mock.calls.find(([event]) => event === 'error')![1] as (
       err: unknown,
     ) => void
     expect(() => errorHandler(new Error('connection refused'))).not.toThrow()
+    consoleErrorSpy.mockRestore()
   })
 })
 
@@ -147,11 +149,13 @@ describe('createRedisStore', () => {
   })
 
   it('error handler does not throw when called', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     await createRedisStore('redis://localhost:6379')
     const errorHandler = mockOn.mock.calls.find(
       ([event]) => event === 'error',
     )![1] as (err: unknown) => void
     expect(() => errorHandler(new Error('connection refused'))).not.toThrow()
+    consoleErrorSpy.mockRestore()
   })
 })
 

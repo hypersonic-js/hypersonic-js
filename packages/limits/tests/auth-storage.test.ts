@@ -194,11 +194,13 @@ describe('buildRedisAuthStorage', () => {
   })
 
   it('error handler does not throw when invoked', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     await buildRedisAuthStorage('redis://localhost:6379', WINDOW)
     const errorHandler = mockRedisOn.mock.calls.find(
       ([event]: [string]) => event === 'error',
     )![1] as (err: unknown) => void
     expect(() => errorHandler(new Error('conn failed'))).not.toThrow()
+    consoleErrorSpy.mockRestore()
   })
 
   describe('close()', () => {
