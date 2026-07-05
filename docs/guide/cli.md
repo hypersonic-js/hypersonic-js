@@ -1,10 +1,21 @@
 # CLI
 
-Hypersonic ships a CLI for scaffolding projects and managing the admin dashboard.
+Hypersonic ships a CLI for scaffolding projects and managing the admin dashboard. A scaffolded project also gets two `npm run db:*` scripts that wrap the Prisma CLI — they're included below since you'll reach for them just as often.
 
 ```bash
 npm install -g @hypersonic-js/cli
 ```
+
+## Quick reference
+
+| Command | Description |
+|---------|--------------|
+| [`hypersonic new`](#hypersonic-new) | Scaffolds a new project interactively |
+| [`hypersonic admin scaffold`](#hypersonic-admin-scaffold) | Copies the four admin page components into your project |
+| [`hypersonic admin generate-meta`](#hypersonic-admin-generate-meta) | Generates `prisma/admin-meta.json` from your Prisma schema |
+| [`hypersonic admin create-admin`](#hypersonic-admin-create-admin) | Creates a user with `role: admin` in your database |
+| [`npm run db:migrate`](#npm-run-db-migrate) | Applies pending Prisma migrations (`prisma migrate dev`) |
+| [`npm run db:generate`](#npm-run-db-generate) | Regenerates the Prisma client after schema changes (`prisma generate`) |
 
 ## hypersonic new
 
@@ -72,3 +83,27 @@ Password:
 ```
 
 `DATABASE_URL` and `BETTER_AUTH_SECRET` must be set in your `.env` before running this command.
+
+## Database commands
+
+These come from the `db:migrate` and `db:generate` scripts in your scaffolded `package.json` — thin wrappers around the Prisma CLI, not part of the `hypersonic` binary itself.
+
+### npm run db:migrate
+
+Runs `prisma migrate dev`, applying any pending migrations and creating a new one if your schema has changed since the last run.
+
+```bash
+npm run db:migrate
+```
+
+`hypersonic new` runs this once automatically (as `prisma migrate dev --name init`) while scaffolding your project.
+
+### npm run db:generate
+
+Runs `prisma generate`, regenerating the Prisma client from your current schema.
+
+```bash
+npm run db:generate
+```
+
+**Re-run this every time you change your Prisma schema** — anywhere you import `@prisma/client` will otherwise be working against a stale client. `hypersonic new` runs this once automatically during setup.

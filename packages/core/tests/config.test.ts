@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, expectTypeOf } from 'vitest'
 import { defineConfig } from '../src/config/define-config.js'
 import { buildEnvSchema, validateEnv } from '../src/config/env.js'
 import { loadConfig } from '../src/config/loader.js'
-import type { HypersonicConfig } from '../src/config/types.js'
+import type { HypersonicConfig, LimitsConfig } from '../src/config/types.js'
 
 const baseConfig: HypersonicConfig = {
   server: { port: 3000, host: 'localhost' },
@@ -86,6 +86,82 @@ describe('buildEnvSchema', () => {
       buildEnvSchema(baseConfig).safeParse({ ...baseEnv, DATABASE_URL: '' }).success,
     ).toBe(false)
   })
+
+  // ── limits backend — REDIS_URL ───────────────────────────────────────────
+
+  it('does not require REDIS_URL when limits is not configured', () => {
+    expect(buildEnvSchema(baseConfig).safeParse(baseEnv).success).toBe(true)
+  })
+
+  it('does not require REDIS_URL when limits.backend is memory', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'memory' } }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(true)
+  })
+
+  it('does not require REDIS_URL when limits.backend is database', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'database' } }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(true)
+  })
+
+  it('requires REDIS_URL when limits.backend is redis', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'redis', window: 10 } }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(false)
+  })
+
+  it('requires REDIS_URL when limits.backend is redis and auth.rateLimit.enabled is true', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, rateLimit: { enabled: true } },
+      limits: { backend: 'redis', window: 10 },
+    }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(false)
+  })
+
+  it('does not require REDIS_URL when limits.backend is redis but auth.rateLimit.enabled is false', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, rateLimit: { enabled: false } },
+      limits: { backend: 'redis', window: 10 },
+    }
+    expect(buildEnvSchema(config).safeParse(baseEnv).success).toBe(true)
+  })
+
+  it('does not add REDIS_URL to the schema shape when auth.rateLimit.enabled is false', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, rateLimit: { enabled: false } },
+      limits: { backend: 'redis', window: 10 },
+    }
+    expect(buildEnvSchema(config).shape['REDIS_URL']).toBeUndefined()
+  })
+
+  it('validateEnv succeeds without REDIS_URL when auth.rateLimit.enabled is false', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      auth: { ...baseConfig.auth, rateLimit: { enabled: false } },
+      limits: { backend: 'redis', window: 10 },
+    }
+    expect(() => validateEnv(config, baseEnv)).not.toThrow()
+  })
+
+  it('accepts a valid REDIS_URL when limits.backend is redis', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'redis', window: 10 } }
+    expect(
+      buildEnvSchema(config).safeParse({ ...baseEnv, REDIS_URL: 'redis://localhost:6379' }).success,
+    ).toBe(true)
+  })
+
+  it('rejects an empty REDIS_URL when limits.backend is redis', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'redis', window: 10 } }
+    expect(
+      buildEnvSchema(config).safeParse({ ...baseEnv, REDIS_URL: '' }).success,
+    ).toBe(false)
+  })
+
+  it('the error message mentions REDIS_URL when it is missing', () => {
+    const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'redis', window: 10 } }
+    expect(() => validateEnv(config, baseEnv)).toThrowError(/REDIS_URL/)
+  })
 })
 
 describe('validateEnv', () => {
@@ -167,5 +243,33 @@ describe('HypersonicConfig logging field', () => {
   it('defineConfig round-trips the logging field unchanged', () => {
     const config: HypersonicConfig = { ...baseConfig, logging: { level: 'warn' } }
     expect(defineConfig(config).logging?.level).toBe('warn')
+  })
+})
+
+// ── LimitsConfig discriminated union ────────────────────────────────────────
+// Compile-time-only assertions (expectTypeOf performs no runtime check) —
+// a regression here surfaces as a TypeScript error on this file, not a
+// failing it(). Guards that the redis variant keeps requiring `window` and
+// the other two variants keep NOT accepting it, so a future edit can't
+// silently widen or narrow the union.
+
+describe('LimitsConfig discriminated union stays exact', () => {
+  it('the redis variant has a required window: number', () => {
+    expectTypeOf<Extract<LimitsConfig, { backend: 'redis' }>>().toHaveProperty('window')
+    expectTypeOf<Extract<LimitsConfig, { backend: 'redis' }>['window']>().toEqualTypeOf<number>()
+  })
+
+  it('the memory variant does not have a window property', () => {
+    expectTypeOf<Extract<LimitsConfig, { backend: 'memory' }>>().not.toHaveProperty('window')
+  })
+
+  it('the database variant does not have a window property', () => {
+    expectTypeOf<Extract<LimitsConfig, { backend: 'database' }>>().not.toHaveProperty('window')
+  })
+
+  it('a redis config literal without window is rejected at compile time', () => {
+    // @ts-expect-error — window is required when backend is 'redis'
+    const _missingWindow: LimitsConfig = { backend: 'redis' }
+    void _missingWindow
   })
 })

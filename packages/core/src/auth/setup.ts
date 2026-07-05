@@ -21,15 +21,25 @@ type PrismaAdapterClient = Parameters<typeof prismaAdapter>[0]
  * test environments to pass `{ enabled: false }` to suppress the in-process
  * rate limiter and avoid 429s across shared test suites.
  *
- * Three targeted casts remain:
+ * Two targeted casts remain:
  *  - `prisma as PrismaAdapterClient`: our public API keeps `prisma: unknown`
  *    to stay agnostic of the generated PrismaClient types; the adapter's own
  *    PrismaClient is an empty interface so the cast is safe at runtime.
  *  - `socialProviders as BetterAuthOptions['socialProviders']`: our plain record
  *    satisfies the runtime contract but TypeScript cannot verify it against the
  *    `SocialProviders` mapped type without a cast.
- *  - `rateLimit as BetterAuthOptions['rateLimit']`: our `{ enabled?: boolean }`
- *    subset is a valid runtime value for Better Auth's rateLimit field.
+ *
+ * `rateLimit` no longer needs a cast: `AuthRateLimitOptions` (in ./types.js)
+ * is a type alias of Better Auth's own `BetterAuthRateLimitOptions`, so it's
+ * structurally identical to what `betterAuth()` expects, not just
+ * compatible with it.
+ *
+ * There is deliberately no `secondaryStorage` option here — Better Auth's
+ * `secondaryStorage` is a shared store also used for session data and
+ * verification records, not just rate limiting. The limits package wires
+ * its Redis-backed rate limiting through `rateLimit.customStorage` instead
+ * (see `@hypersonic-js/limits`'s `buildRedisAuthStorage`), which is scoped
+ * to rate-limit records only and never touches session/verification storage.
  */
 export function createAuth(options: AuthSetupOptions): AuthInstance {
   const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {}
@@ -57,7 +67,7 @@ export function createAuth(options: AuthSetupOptions): AuthInstance {
   }
 
   if (options.rateLimit !== undefined) {
-    authOptions.rateLimit = options.rateLimit as BetterAuthOptions['rateLimit']
+    authOptions.rateLimit = options.rateLimit
   }
 
   return betterAuth(authOptions) as AuthInstance

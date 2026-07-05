@@ -121,4 +121,51 @@ describe('createAuth', () => {
     const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
     expect(call['rateLimit']).toEqual({ enabled: true })
   })
+
+  it('forwards rateLimit with storage: secondary-storage when provided', () => {
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, storage: 'secondary-storage' } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['rateLimit']).toEqual({ enabled: true, storage: 'secondary-storage' })
+  })
+
+  it('forwards rateLimit with customStorage when provided', () => {
+    const customStorage = { get: vi.fn(), set: vi.fn() }
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, customStorage } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    const rl = call['rateLimit'] as { customStorage: unknown }
+    expect(rl.customStorage).toBe(customStorage)
+  })
+
+  // The following four tests use upstream Better Auth rateLimit fields
+  // (window, max, customRules, storage: "memory"/"database") that the old
+  // hand-rolled AuthRateLimitOptions type didn't declare. Written as inline
+  // object literals (not variables), these previously failed to typecheck
+  // via TypeScript's excess-property check even though createAuth already
+  // passed them through to betterAuth() correctly at runtime — this is the
+  // literal bug the type-widening fix addresses.
+
+  it('forwards rateLimit with window and max (Better Auth upstream fields)', () => {
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, window: 60, max: 100 } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect(call['rateLimit']).toEqual({ enabled: true, window: 60, max: 100 })
+  })
+
+  it('forwards rateLimit with customRules (Better Auth upstream field)', () => {
+    const customRules = { '/sign-in/email': { window: 10, max: 3 } }
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, customRules } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect((call['rateLimit'] as { customRules: unknown }).customRules).toBe(customRules)
+  })
+
+  it('accepts rateLimit storage: "database" (previously restricted to only "secondary-storage")', () => {
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, storage: 'database' } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect((call['rateLimit'] as { storage: string }).storage).toBe('database')
+  })
+
+  it('accepts rateLimit storage: "memory" (previously restricted to only "secondary-storage")', () => {
+    createAuth({ ...baseOptions, rateLimit: { enabled: true, storage: 'memory' } })
+    const call = vi.mocked(betterAuth).mock.calls[0]?.[0] as Record<string, unknown>
+    expect((call['rateLimit'] as { storage: string }).storage).toBe('memory')
+  })
 })

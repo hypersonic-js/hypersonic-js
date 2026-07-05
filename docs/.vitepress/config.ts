@@ -49,6 +49,7 @@ export default defineConfig({
             { text: 'Routing & Controllers', link: '/guide/routing' },
             { text: 'Frontend (Inertia + React)', link: '/guide/frontend' },
             { text: 'Authentication', link: '/guide/authentication' },
+            { text: 'Rate Limiting', link: '/guide/rate-limiting' },
             { text: 'Security', link: '/guide/security' },
             { text: 'CLI', link: '/guide/cli' },
           ],

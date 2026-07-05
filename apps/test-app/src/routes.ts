@@ -1,4 +1,4 @@
-import type { Application, Request, Response, NextFunction } from 'express'
+import type { Application, Request, Response, NextFunction, RequestHandler } from 'express'
 import { HttpError, NotFoundError, UnauthorizedError, createInertiaErrorHandler } from '@hypersonic-js/core'
 import { createAuthGuard } from './middleware.ts'
 import type { AuthLike, AuthRequest, PrismaRouteClient } from './types.ts'
@@ -9,6 +9,19 @@ export function parseId(raw: string | string[] | undefined): number {
   return parseInt(str, 10)
 }
 
+/** Default middleware used when no rate limiter is supplied — passes through unconditionally. */
+const noopMiddleware: RequestHandler = (_req, _res, next) => next()
+
+/** Optional middleware injected onto specific routes by registerRoutes. */
+export interface RegisterRoutesOptions {
+  /**
+   * Rate-limiting middleware applied to `POST /posts` only, ahead of the auth
+   * guard so unauthenticated abuse is also throttled. Defaults to a no-op so
+   * existing callers (and existing tests) are unaffected when omitted.
+   */
+  postsLimiter?: RequestHandler
+}
+
 /**
  * Registers all application routes and the error handler onto an Express app.
  * Accepts injected prisma and auth instances so tests can substitute mocks.
@@ -17,8 +30,10 @@ export function registerRoutes(
   app: Application,
   prisma: PrismaRouteClient,
   auth: AuthLike,
+  options: RegisterRoutesOptions = {},
 ): void {
   const requireAuth = createAuthGuard(auth)
+  const postsLimiter = options.postsLimiter ?? noopMiddleware
 
   // ─── Public ────────────────────────────────────────────────────────────────
   app.get('/', (_req: Request, res: Response) => {
@@ -72,22 +87,27 @@ export function registerRoutes(
     },
   )
 
-  app.post('/posts', requireAuth, async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const { title, body } = req.body as { title?: string; body?: string }
+  app.post(
+    '/posts',
+    postsLimiter,
+    requireAuth,
+    async (req: AuthRequest, res: Response, next: NextFunction) => {
+      try {
+        const { title, body } = req.body as { title?: string; body?: string }
 
-      await prisma.post.create({
-        data: {
-          title: title ?? '',
-          body: body ?? '',
-          userId: req.sessionUser!.id,
-        },
-      })
-      res.redirect('/posts')
-    } catch (err) {
-      next(err)
-    }
-  })
+        await prisma.post.create({
+          data: {
+            title: title ?? '',
+            body: body ?? '',
+            userId: req.sessionUser!.id,
+          },
+        })
+        res.redirect('/posts')
+      } catch (err) {
+        next(err)
+      }
+    },
+  )
 
   app.delete(
     '/posts/:id',
