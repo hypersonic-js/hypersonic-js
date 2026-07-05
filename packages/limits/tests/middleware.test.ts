@@ -227,16 +227,25 @@ describe('createLimiter — with blockDuration', () => {
     // First: manually block the client via the handler callback
     const options = mockRateLimit.mock.calls[0]![0] as { handler: (req: Request, res: Response) => void }
     await (options.handler as unknown as (req: Partial<Request>, res: ReturnType<typeof makeRes>) => Promise<void>)(req, res)
-    // Wait for async block write
-    await new Promise((r) => setTimeout(r, 10))
 
     vi.clearAllMocks()
     mockRateLimit.mockReturnValue(mockRateLimiterMiddleware)
     const handler2 = limit({ requests: 1, windowMs: 60_000, blockDuration: 300_000 })
 
-    await handler2(req as Request, res as unknown as Response, nextFn)
+    // blockStore.block() above is fire-and-forget, so its write may not have
+    // landed yet. Retry the real check instead of guessing a fixed delay,
+    // clearing call records at the start of each attempt — an attempt that
+    // runs before the write lands falls through to the rate limiter, and
+    // that stray call must not survive to fail the assertions below.
+    await vi.waitFor(async () => {
+      res.status.mockClear()
+      res.json.mockClear()
+      mockRateLimiterMiddleware.mockClear()
+      nextFn.mockClear()
+      await handler2(req as Request, res as unknown as Response, nextFn)
+      expect(res.status).toHaveBeenCalledWith(429)
+    })
 
-    expect(res.status).toHaveBeenCalledWith(429)
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: expect.any(String) }))
     expect(mockRateLimiterMiddleware).not.toHaveBeenCalled()
   })
@@ -307,8 +316,7 @@ describe('createLimiter — handler blocks client', () => {
     const req = makeReq()
     const res = makeRes()
     await options.handler(req, res)
-    await new Promise((r) => setTimeout(r, 10))
-    expect(res.status).toHaveBeenCalledWith(429)
+    await vi.waitFor(() => expect(res.status).toHaveBeenCalledWith(429))
   })
 
   it('handler still returns 429 even if blockStore.block rejects', async () => {
@@ -323,8 +331,7 @@ describe('createLimiter — handler blocks client', () => {
     const req = makeReq()
     const res = makeRes()
     await options.handler(req, res)
-    await new Promise((r) => setTimeout(r, 10))
-    expect(res.status).toHaveBeenCalledWith(429)
+    await vi.waitFor(() => expect(res.status).toHaveBeenCalledWith(429))
   })
 
   it('handler does not attempt to block when blockDuration is undefined', async () => {
@@ -337,7 +344,9 @@ describe('createLimiter — handler blocks client', () => {
     const req = makeReq()
     const res = makeRes()
     await options.handler(req, res)
-    await new Promise((r) => setTimeout(r, 10))
+    // No blockDuration means the handler's async IIFE has no `await` before
+    // res.status(429) — it resolves in the same tick as options.handler(),
+    // so there's no async gap here to wait for.
     // blockUntil upsert should NOT have been called since no blockDuration
     expect(prisma.rateLimit.upsert).not.toHaveBeenCalled()
     expect(res.status).toHaveBeenCalledWith(429)
