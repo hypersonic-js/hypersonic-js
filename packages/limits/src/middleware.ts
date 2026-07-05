@@ -4,7 +4,7 @@ import type { Request, Response, NextFunction, RequestHandler } from 'express'
 import { MemoryBlockStore } from './block-store.js'
 import type { BlockStore } from './block-store.js'
 import { createMemoryStore } from './stores/memory-store.js'
-import { createRedisStore, RedisBlockStore } from './stores/redis-store.js'
+import { connectRedisClient, wrapRedisStore, RedisBlockStore } from './stores/redis-store.js'
 import { PrismaStore, PrismaBlockStore } from './stores/prisma-store.js'
 import type { PrismaRateLimitModel } from './stores/prisma-store.js'
 import type { LimitsBackend, LimitOptions } from './types.js'
@@ -42,6 +42,26 @@ export interface CreateLimiterOptions {
   env: { REDIS_URL?: string }
   /** Required when config.backend is 'database'. */
   prisma?: { rateLimit: PrismaRateLimitModel }
+}
+
+// ── Name uniqueness ───────────────────────────────────────────────────────────
+
+/**
+ * Throws if `name` has already been used by an earlier `.limit()` call on
+ * this same `Limiter`. Each route's counter is namespaced by its `name`
+ * (see `PrismaStore`/`wrapRedisStore`'s use of it) — a duplicate name would
+ * silently make two routes share a counter and window configuration again,
+ * exactly what the namespacing exists to prevent, so this fails fast at
+ * setup time instead of allowing a silent collision at request time.
+ */
+function assertUniqueLimiterName(usedNames: Set<string>, name: string): void {
+  if (usedNames.has(name)) {
+    throw new Error(
+      `Hypersonic: limit() was called with a duplicate name "${name}". ` +
+        'Each route registered on the same limiter must use a unique name.',
+    )
+  }
+  usedNames.add(name)
 }
 
 // ── Compound middleware builder ────────────────────────────────────────────────
@@ -133,7 +153,7 @@ function buildCompoundMiddleware(
  *
  * app.express.post(
  *   '/api/auth/login',
- *   limiter.limit({ requests: 5, windowMs: 60_000, blockDuration: 300_000 }),
+ *   limiter.limit({ name: 'login', requests: 5, windowMs: 60_000, blockDuration: 300_000 }),
  *   loginHandler,
  * )
  *
@@ -141,20 +161,33 @@ function buildCompoundMiddleware(
  * await limiter.close()
  * ```
  *
- * For the `database` backend the Prisma store is constructed per `limit()`
- * call so each route gets an independent counter store (windowMs is baked
- * into the store at construction time). The BlockStore is shared across
- * calls since blocking is keyed by client IP, not by route.
+ * Every route's counter is namespaced by its `name` — required on every
+ * `.limit()` call and unique across every call made on the same `Limiter`
+ * (a duplicate throws). This applies uniformly across all three backends:
+ * the `memory` and `redis` backends construct a fresh, independent counter
+ * store per `.limit()` call (a new `MemoryStore` for memory; a new,
+ * distinctly-prefixed `RedisStore` sharing one Redis connection for redis),
+ * and the `database` backend threads `name` into `PrismaStore` to prefix
+ * every key it sends to Prisma. Without this, two routes sharing a
+ * `Limiter` would silently share a counter and window configuration for
+ * the same client. The BlockStore, in contrast, is shared across calls on
+ * purpose — blocking is keyed by client IP, not by route.
  */
 export async function createLimiter(options: CreateLimiterOptions): Promise<Limiter> {
   const { config, env, prisma } = options
+  const usedNames = new Set<string>()
 
   if (config.backend === 'memory') {
-    const store = createMemoryStore()
     const blockStore = new MemoryBlockStore()
     return {
-      limit: (limitOptions: LimitOptions): RequestHandler =>
-        buildCompoundMiddleware(store, blockStore, limitOptions),
+      limit: (limitOptions: LimitOptions): RequestHandler => {
+        assertUniqueLimiterName(usedNames, limitOptions.name)
+        // A fresh MemoryStore per route — per its own doc comment, separate
+        // instances never share state, so this alone isolates routes from
+        // each other (no prefix needed, unlike the redis/database backends).
+        const store = createMemoryStore()
+        return buildCompoundMiddleware(store, blockStore, limitOptions)
+      },
       close: noopClose,
     }
   }
@@ -165,11 +198,17 @@ export async function createLimiter(options: CreateLimiterOptions): Promise<Limi
         'Hypersonic: REDIS_URL must be set in your .env when limits.backend is "redis".',
       )
     }
-    const { store, redisClient } = await createRedisStore(env.REDIS_URL)
+    // One shared connection for every route on this limiter — opening a
+    // fresh connection per .limit() call would be wasteful. Each route
+    // still gets its own key namespace via a distinct prefix below.
+    const redisClient = await connectRedisClient(env.REDIS_URL, 'Limits')
     const blockStore = new RedisBlockStore(redisClient)
     return {
-      limit: (limitOptions: LimitOptions): RequestHandler =>
-        buildCompoundMiddleware(store, blockStore, limitOptions),
+      limit: (limitOptions: LimitOptions): RequestHandler => {
+        assertUniqueLimiterName(usedNames, limitOptions.name)
+        const store = wrapRedisStore(redisClient, `rl:${limitOptions.name}:`)
+        return buildCompoundMiddleware(store, blockStore, limitOptions)
+      },
       close: () => redisClient.quit().then(() => undefined),
     }
   }
@@ -183,9 +222,11 @@ export async function createLimiter(options: CreateLimiterOptions): Promise<Limi
     const blockStore = new PrismaBlockStore(prisma.rateLimit)
     return {
       limit: (limitOptions: LimitOptions): RequestHandler => {
+        assertUniqueLimiterName(usedNames, limitOptions.name)
         // PrismaStore is constructed per-call so each route has its own
-        // window counter while the block store is shared (keyed by client IP).
-        const store = new PrismaStore(prisma.rateLimit, limitOptions.windowMs)
+        // window counter, and its keys are namespaced by `name` so routes
+        // sharing this Prisma client never share a row for the same client.
+        const store = new PrismaStore(prisma.rateLimit, limitOptions.windowMs, limitOptions.name)
         return buildCompoundMiddleware(store, blockStore, limitOptions)
       },
       close: noopClose,

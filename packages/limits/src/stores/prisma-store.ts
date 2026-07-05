@@ -133,12 +133,29 @@ const MAX_INCREMENT_ATTEMPTS = 3
  * For very high-throughput or multi-region deployments, the Redis backend
  * remains the better choice — it avoids the database round-trips this
  * backend makes on every request.
+ *
+ * Every key this store sends to Prisma is prefixed with `name` (see
+ * `namespacedKey()`) so that two `PrismaStore` instances for different
+ * routes — even ones sharing the same underlying Prisma client — never
+ * read or write the same row for the same client.
  */
 export class PrismaStore implements Store {
   constructor(
     private readonly prisma: PrismaRateLimitModel,
     private readonly windowMs: number,
+    private readonly name: string,
   ) {}
+
+  /**
+   * Prefixes a client key with this store's route name, so that two
+   * `PrismaStore` instances for different routes (e.g. `login` and
+   * `signup`) never read or write the same `rateLimit` row for the same
+   * client — without this, both routes' counters and window
+   * configurations would collide on the raw client key alone.
+   */
+  private namespacedKey(key: string): string {
+    return `${this.name}:${key}`
+  }
 
   /**
    * Atomically increments the hit count for `key`, starting a fresh window
@@ -174,16 +191,18 @@ export class PrismaStore implements Store {
    * converges within a couple of attempts even under heavy concurrency.
    */
   async increment(key: string): Promise<ClientRateLimitInfo> {
+    const namespacedKey = this.namespacedKey(key)
+
     for (let attempt = 0; attempt < MAX_INCREMENT_ATTEMPTS; attempt++) {
       const now = new Date()
 
       const activeIncrement = await this.prisma.updateMany({
-        where: { key, expireAt: { gte: now } },
+        where: { key: namespacedKey, expireAt: { gte: now } },
         data: { points: { increment: 1 } },
       })
 
       if (activeIncrement.count > 0) {
-        const record = await this.prisma.findUnique({ where: { key } })
+        const record = await this.prisma.findUnique({ where: { key: namespacedKey } })
         if (record !== null) {
           return {
             totalHits: record.points,
@@ -197,7 +216,7 @@ export class PrismaStore implements Store {
 
       const resetTime = new Date(now.getTime() + this.windowMs)
       const claimedExpired = await this.prisma.updateMany({
-        where: { key, OR: [{ expireAt: null }, { expireAt: { lt: now } }] },
+        where: { key: namespacedKey, OR: [{ expireAt: null }, { expireAt: { lt: now } }] },
         data: { points: 1, expireAt: resetTime },
       })
 
@@ -207,7 +226,7 @@ export class PrismaStore implements Store {
 
       try {
         const record = await this.prisma.create({
-          data: { key, points: 1, expireAt: resetTime, blockUntil: null },
+          data: { key: namespacedKey, points: 1, expireAt: resetTime, blockUntil: null },
         })
         return { totalHits: record.points, resetTime: record.expireAt ?? resetTime }
       } catch (err) {
@@ -219,7 +238,7 @@ export class PrismaStore implements Store {
     }
 
     throw new Error(
-      `Hypersonic: increment() could not converge for key "${key}" after ` +
+      `Hypersonic: increment() could not converge for key "${namespacedKey}" after ` +
         `${MAX_INCREMENT_ATTEMPTS} attempts. This should not happen under normal ` +
         'concurrency — if it does, it likely indicates a persistent write failure.',
     )
@@ -227,15 +246,22 @@ export class PrismaStore implements Store {
 
   async decrement(key: string): Promise<void> {
     await this.prisma.update({
-      where: { key },
+      where: { key: this.namespacedKey(key) },
       data: { points: { decrement: 1 } },
     })
   }
 
   async resetKey(key: string): Promise<void> {
-    await this.prisma.delete({ where: { key } })
+    await this.prisma.delete({ where: { key: this.namespacedKey(key) } })
   }
 
+  /**
+   * Clears every row in the table, across all routes — this is not
+   * namespaced by `name`, matching express-rate-limit's own contract for
+   * `resetAll()` ("reset everyone's hit counter"). It is also never called
+   * by express-rate-limit itself; the library documents it as optional and
+   * unused internally.
+   */
   async resetAll(): Promise<void> {
     await this.prisma.deleteMany()
   }

@@ -43,6 +43,12 @@ function makePrisma(): { [K in keyof PrismaRateLimitModel]: ReturnType<typeof vi
 describe('PrismaStore', () => {
   let prisma: ReturnType<typeof makePrisma>
   const WINDOW_MS = 60_000
+  const NAME = 'test-route'
+
+  /** Builds a PrismaStore against the shared mock, defaulting windowMs/name so individual tests only override what they care about. */
+  function makeStore(windowMs = WINDOW_MS, name = NAME): PrismaStore {
+    return new PrismaStore(prisma as unknown as PrismaRateLimitModel, windowMs, name)
+  }
 
   beforeEach(() => {
     prisma = makePrisma()
@@ -54,12 +60,12 @@ describe('PrismaStore', () => {
         .mockResolvedValueOnce({ count: 0 }) // active-check: no row exists yet
         .mockResolvedValueOnce({ count: 0 }) // reset-check: nothing to reset either
       prisma.create.mockResolvedValue(makeRecord({ points: 1 }))
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       const result = await store.increment('test-key')
 
       expect(prisma.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ key: 'test-key', points: 1, blockUntil: null }) }),
+        expect.objectContaining({ data: expect.objectContaining({ key: 'test-route:test-key', points: 1, blockUntil: null }) }),
       )
       expect(result.totalHits).toBe(1)
     })
@@ -68,7 +74,7 @@ describe('PrismaStore', () => {
       prisma.updateMany.mockResolvedValue({ count: 0 })
       const before = Date.now()
       prisma.create.mockResolvedValue(makeRecord({ points: 1 }))
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       const result = await store.increment('test-key')
 
@@ -83,7 +89,7 @@ describe('PrismaStore', () => {
       prisma.updateMany
         .mockResolvedValueOnce({ count: 0 }) // active-check: window has expired
         .mockResolvedValueOnce({ count: 1 }) // reset-check: atomically claims the row
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       const result = await store.increment('test-key')
 
@@ -95,7 +101,7 @@ describe('PrismaStore', () => {
     it('does not read the row back for the resolved reset write — resetTime is computed locally', async () => {
       prisma.updateMany.mockResolvedValueOnce({ count: 0 }).mockResolvedValueOnce({ count: 1 })
       const before = Date.now()
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       const result = await store.increment('test-key')
 
@@ -115,7 +121,7 @@ describe('PrismaStore', () => {
       prisma.updateMany
         .mockResolvedValueOnce({ count: 0 }) // active-check misses — block-time expireAt is in the past
         .mockResolvedValueOnce({ count: 1 }) // reset-check hits — atomically claims the row
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       const result = await store.increment('test-key')
 
@@ -129,7 +135,7 @@ describe('PrismaStore', () => {
       const expireAt = new Date(Date.now() + 30_000)
       prisma.updateMany.mockResolvedValueOnce({ count: 1 }) // active-check hits
       prisma.findUnique.mockResolvedValue(makeRecord({ points: 4, expireAt }))
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       const result = await store.increment('test-key')
 
@@ -144,7 +150,7 @@ describe('PrismaStore', () => {
       prisma.updateMany.mockResolvedValueOnce({ count: 1 })
       const before = Date.now()
       prisma.findUnique.mockResolvedValue(makeRecord({ points: 2, expireAt: null }))
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       const result = await store.increment('test-key')
 
@@ -160,7 +166,7 @@ describe('PrismaStore', () => {
         .mockResolvedValueOnce({ count: 1 }) // attempt 2: active-check now hits the winner's row
       prisma.create.mockRejectedValueOnce(makeUniqueConstraintError()) // attempt 1: lost the race
       prisma.findUnique.mockResolvedValue(makeRecord({ points: 2, expireAt: new Date(Date.now() + 30_000) }))
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       const result = await store.increment('test-key')
 
@@ -176,7 +182,7 @@ describe('PrismaStore', () => {
         .mockResolvedValueOnce({ count: 0 }) // attempt 2: reset-check misses too
       prisma.findUnique.mockResolvedValueOnce(null) // ...but a concurrent resetKey() deleted it first
       prisma.create.mockResolvedValue(makeRecord({ points: 1 }))
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       const result = await store.increment('test-key')
 
@@ -188,7 +194,7 @@ describe('PrismaStore', () => {
     it('propagates a non-unique-constraint error from create() rather than retrying', async () => {
       prisma.updateMany.mockResolvedValue({ count: 0 })
       prisma.create.mockRejectedValue(new Error('connection refused'))
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       await expect(store.increment('test-key')).rejects.toThrow('connection refused')
     })
@@ -196,21 +202,77 @@ describe('PrismaStore', () => {
     it('throws a descriptive error if it cannot converge within the attempt limit', async () => {
       prisma.updateMany.mockResolvedValue({ count: 0 })
       prisma.create.mockRejectedValue(makeUniqueConstraintError())
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       await expect(store.increment('test-key')).rejects.toThrow(/could not converge/)
+    })
+  })
+
+  describe('increment — key namespacing', () => {
+    it('prefixes the key sent to Prisma with the store\'s name', async () => {
+      prisma.updateMany.mockResolvedValue({ count: 0 })
+      prisma.create.mockResolvedValue(makeRecord({ points: 1 }))
+      const store = makeStore(WINDOW_MS, 'login')
+
+      await store.increment('1.2.3.4')
+
+      expect(prisma.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ key: 'login:1.2.3.4' }) }),
+      )
+      expect(prisma.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ key: 'login:1.2.3.4' }) }),
+      )
+    })
+
+    it('namespaces the key in the active-window read-back path too', async () => {
+      prisma.updateMany.mockResolvedValueOnce({ count: 1 })
+      prisma.findUnique.mockResolvedValue(
+        makeRecord({ points: 2, expireAt: new Date(Date.now() + 30_000) }),
+      )
+      const store = makeStore(WINDOW_MS, 'login')
+
+      await store.increment('1.2.3.4')
+
+      expect(prisma.findUnique).toHaveBeenCalledWith({ where: { key: 'login:1.2.3.4' } })
+    })
+
+    it('includes the namespaced key in the convergence-failure error message', async () => {
+      prisma.updateMany.mockResolvedValue({ count: 0 })
+      prisma.create.mockRejectedValue(makeUniqueConstraintError())
+      const store = makeStore(WINDOW_MS, 'login')
+
+      await expect(store.increment('1.2.3.4')).rejects.toThrow('login:1.2.3.4')
+    })
+
+    it('two stores with different names never collide on the same raw client key', async () => {
+      // Regression guard: without namespacing, two routes sharing a Prisma
+      // client would read/write the exact same row for the same client,
+      // silently combining their counters — see PrismaStore's class doc
+      // comment and the "key namespacing" section of its constructor.
+      prisma.updateMany.mockResolvedValue({ count: 0 })
+      prisma.create.mockResolvedValue(makeRecord({ points: 1 }))
+      const loginStore = makeStore(WINDOW_MS, 'login')
+      const signupStore = makeStore(WINDOW_MS, 'signup')
+
+      await loginStore.increment('1.2.3.4')
+      await signupStore.increment('1.2.3.4')
+
+      const keysSentToCreate = prisma.create.mock.calls.map(
+        (call) => (call[0] as { data: { key: string } }).data.key,
+      )
+      expect(keysSentToCreate).toEqual(['login:1.2.3.4', 'signup:1.2.3.4'])
     })
   })
 
   describe('decrement', () => {
     it('calls prisma.update with a decrement of 1', async () => {
       prisma.update.mockResolvedValue(makeRecord({ points: 2 }))
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       await store.decrement('test-key')
 
       expect(prisma.update).toHaveBeenCalledWith({
-        where: { key: 'test-key' },
+        where: { key: 'test-route:test-key' },
         data: { points: { decrement: 1 } },
       })
     })
@@ -219,18 +281,18 @@ describe('PrismaStore', () => {
   describe('resetKey', () => {
     it('calls prisma.delete with the correct key', async () => {
       prisma.delete.mockResolvedValue(makeRecord())
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       await store.resetKey('test-key')
 
-      expect(prisma.delete).toHaveBeenCalledWith({ where: { key: 'test-key' } })
+      expect(prisma.delete).toHaveBeenCalledWith({ where: { key: 'test-route:test-key' } })
     })
   })
 
   describe('resetAll', () => {
     it('calls prisma.deleteMany with no arguments', async () => {
       prisma.deleteMany.mockResolvedValue({ count: 5 })
-      const store = new PrismaStore(prisma as unknown as PrismaRateLimitModel, WINDOW_MS)
+      const store = makeStore()
 
       await store.resetAll()
 

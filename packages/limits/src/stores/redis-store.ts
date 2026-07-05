@@ -52,17 +52,36 @@ export async function connectRedisClient(redisUrl: string, label: string): Promi
 }
 
 /**
+ * Wraps an already-connected Redis client in an express-rate-limit Store,
+ * namespaced with `prefix`. This is the only place a `RedisStore` gets
+ * constructed — both `createRedisStore` (below) and `createLimiter()`'s
+ * redis backend (`../middleware.js`) go through this helper rather than
+ * duplicating the construction call.
+ *
+ * `createLimiter()` uses this directly (rather than `createRedisStore`) so
+ * that every route registered on the same limiter can share one Redis
+ * connection while still getting its own key namespace via a distinct
+ * `prefix` per route — `createRedisStore` opens a brand-new connection per
+ * call, which isn't what's wanted when multiple routes share a limiter.
+ */
+export function wrapRedisStore(client: RedisClientLike, prefix: string): Store {
+  return new RedisStore({
+    prefix,
+    sendCommand: (...args: string[]) => client.sendCommand(args),
+  })
+}
+
+/**
  * Connects a Redis client (via `connectRedisClient`) and returns both the
  * express-rate-limit RedisStore and the raw client (used by RedisBlockStore
  * to track block-duration state separately, and by createLimiter() to close
  * the connection).
+ *
+ * `prefix` namespaces the store's keys — see `wrapRedisStore`'s doc comment.
  */
-export async function createRedisStore(redisUrl: string): Promise<RedisStoreResult> {
+export async function createRedisStore(redisUrl: string, prefix: string): Promise<RedisStoreResult> {
   const client = await connectRedisClient(redisUrl, 'Limits')
-
-  const store = new RedisStore({
-    sendCommand: (...args: string[]) => client.sendCommand(args),
-  })
+  const store = wrapRedisStore(client, prefix)
 
   return { store, redisClient: client }
 }

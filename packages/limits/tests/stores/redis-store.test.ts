@@ -40,7 +40,7 @@ vi.mock('rate-limit-redis', () => ({
   RedisStore: MockRedisStoreConstructor,
 }))
 
-import { createRedisStore, RedisBlockStore, connectRedisClient } from '../../src/stores/redis-store.js'
+import { createRedisStore, wrapRedisStore, RedisBlockStore, connectRedisClient } from '../../src/stores/redis-store.js'
 import { createClient } from 'redis'
 
 // ── connectRedisClient ────────────────────────────────────────────────────────
@@ -97,6 +97,57 @@ describe('connectRedisClient', () => {
   })
 })
 
+// ── wrapRedisStore ────────────────────────────────────────────────────────────
+// The only place a RedisStore actually gets constructed — both
+// createRedisStore (below) and createLimiter()'s redis backend
+// (../middleware.js) go through this rather than duplicating the
+// construction call.
+
+describe('wrapRedisStore', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('constructs a RedisStore with the given prefix', () => {
+    wrapRedisStore(mockClient, 'rl:login:')
+    expect(MockRedisStoreConstructor).toHaveBeenCalledWith({
+      prefix: 'rl:login:',
+      sendCommand: expect.any(Function),
+    })
+  })
+
+  it('returns the constructed RedisStore', () => {
+    const store = wrapRedisStore(mockClient, 'rl:login:')
+    expect(store).toBe(mockRedisStore)
+  })
+
+  it('the sendCommand function delegates to the given client\'s sendCommand', async () => {
+    wrapRedisStore(mockClient, 'rl:login:')
+    const { sendCommand } = MockRedisStoreConstructor.mock.calls[0]![0] as {
+      sendCommand: (...args: string[]) => unknown
+    }
+    mockSendCommand.mockResolvedValue('OK')
+    await sendCommand('GET', 'key')
+    expect(mockSendCommand).toHaveBeenCalledWith(['GET', 'key'])
+  })
+
+  it('different calls with different prefixes produce independently-configured stores', () => {
+    // Regression guard: two routes sharing one Redis connection must get
+    // distinctly-prefixed stores, or they'd collide on the same keys —
+    // see createLimiter()'s redis backend in ../middleware.js.
+    wrapRedisStore(mockClient, 'rl:login:')
+    wrapRedisStore(mockClient, 'rl:signup:')
+    expect(MockRedisStoreConstructor).toHaveBeenNthCalledWith(1, {
+      prefix: 'rl:login:',
+      sendCommand: expect.any(Function),
+    })
+    expect(MockRedisStoreConstructor).toHaveBeenNthCalledWith(2, {
+      prefix: 'rl:signup:',
+      sendCommand: expect.any(Function),
+    })
+  })
+})
+
 // ── createRedisStore ──────────────────────────────────────────────────────────
 
 describe('createRedisStore', () => {
@@ -107,29 +158,30 @@ describe('createRedisStore', () => {
   })
 
   it('creates a redis client with the provided URL', async () => {
-    await createRedisStore('redis://localhost:6379')
+    await createRedisStore('redis://localhost:6379', 'rl:')
     expect(createClient).toHaveBeenCalledWith({ url: 'redis://localhost:6379' })
   })
 
   it('registers an error handler on the client', async () => {
-    await createRedisStore('redis://localhost:6379')
+    await createRedisStore('redis://localhost:6379', 'rl:')
     expect(mockOn).toHaveBeenCalledWith('error', expect.any(Function))
   })
 
   it('connects the client before returning', async () => {
-    await createRedisStore('redis://localhost:6379')
+    await createRedisStore('redis://localhost:6379', 'rl:')
     expect(mockConnect).toHaveBeenCalledOnce()
   })
 
-  it('returns a RedisStore constructed with a sendCommand function', async () => {
-    await createRedisStore('redis://localhost:6379')
+  it('returns a RedisStore constructed with a sendCommand function and the given prefix', async () => {
+    await createRedisStore('redis://localhost:6379', 'rl:')
     expect(MockRedisStoreConstructor).toHaveBeenCalledWith({
+      prefix: 'rl:',
       sendCommand: expect.any(Function),
     })
   })
 
   it('the sendCommand function delegates to client.sendCommand', async () => {
-    await createRedisStore('redis://localhost:6379')
+    await createRedisStore('redis://localhost:6379', 'rl:')
     const { sendCommand } = MockRedisStoreConstructor.mock.calls[0]![0] as {
       sendCommand: (...args: string[]) => unknown
     }
@@ -139,18 +191,18 @@ describe('createRedisStore', () => {
   })
 
   it('returns the constructed RedisStore as store', async () => {
-    const { store } = await createRedisStore('redis://localhost:6379')
+    const { store } = await createRedisStore('redis://localhost:6379', 'rl:')
     expect(store).toBe(mockRedisStore)
   })
 
   it('returns the redis client as redisClient', async () => {
-    const { redisClient } = await createRedisStore('redis://localhost:6379')
+    const { redisClient } = await createRedisStore('redis://localhost:6379', 'rl:')
     expect(redisClient).toBe(mockClient)
   })
 
   it('error handler does not throw when called', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
-    await createRedisStore('redis://localhost:6379')
+    await createRedisStore('redis://localhost:6379', 'rl:')
     const errorHandler = mockOn.mock.calls.find(
       ([event]) => event === 'error',
     )![1] as (err: unknown) => void

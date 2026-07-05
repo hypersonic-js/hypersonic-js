@@ -48,7 +48,7 @@ import type { TestApp, Credentials } from './helpers/setup.js'
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
-const LIMIT_OPTIONS: LimitOptions = { requests: 2, windowMs: 60_000, blockDuration: 300_000 }
+const LIMIT_OPTIONS: LimitOptions = { name: 'posts', requests: 2, windowMs: 60_000, blockDuration: 300_000 }
 
 /**
  * Intentionally short window + block so a test can wait out the block in
@@ -57,7 +57,7 @@ const LIMIT_OPTIONS: LimitOptions = { requests: 2, windowMs: 60_000, blockDurati
  * otherwise the next request would still be over its window limit and get
  * re-blocked immediately, even though the explicit block already lifted.
  */
-const SHORT_LIMIT_OPTIONS: LimitOptions = { requests: 1, windowMs: 150, blockDuration: 200 }
+const SHORT_LIMIT_OPTIONS: LimitOptions = { name: 'posts', requests: 1, windowMs: 150, blockDuration: 200 }
 
 /** Real (non-mocked) wait — long enough for SHORT_LIMIT_OPTIONS to fully expire. */
 function waitForShortBlockToExpire(): Promise<void> {

@@ -7,20 +7,30 @@ import type { Request, Response, NextFunction } from 'express'
 // configurable behaviour so we can test the compound middleware logic.
 // vi.mock() is hoisted above all const declarations, so variables directly read
 // inside a factory must be declared with vi.hoisted() to avoid the TDZ.
-const { mockRateLimiterMiddleware, mockRateLimit } = vi.hoisted(() => {
-  const mockRateLimiterMiddleware = vi.fn()
-  const mockRateLimit = vi.fn(() => mockRateLimiterMiddleware)
-  return { mockRateLimiterMiddleware, mockRateLimit }
-})
+const { mockRateLimiterMiddleware, mockRateLimit, MockMemoryStoreConstructor, MockRedisStoreConstructor } =
+  vi.hoisted(() => {
+    const mockRateLimiterMiddleware = vi.fn()
+    const mockRateLimit = vi.fn(() => mockRateLimiterMiddleware)
+    // Each call returns a fresh object literal, so two calls are always
+    // distinguishable by reference — used to verify createLimiter() builds
+    // an independent store per route rather than sharing one.
+    const MockMemoryStoreConstructor = vi.fn(function () {
+      return { increment: vi.fn(), decrement: vi.fn(), resetKey: vi.fn() }
+    })
+    const MockRedisStoreConstructor = vi.fn(function () {
+      return { __type: 'RedisStore' }
+    })
+    return { mockRateLimiterMiddleware, mockRateLimit, MockMemoryStoreConstructor, MockRedisStoreConstructor }
+  })
 
 vi.mock('express-rate-limit', () => ({
   rateLimit: mockRateLimit,
-  MemoryStore: vi.fn(function () { return { increment: vi.fn(), decrement: vi.fn(), resetKey: vi.fn() } }),
+  MemoryStore: MockMemoryStoreConstructor,
 }))
 
 // rate-limit-redis mock
 vi.mock('rate-limit-redis', () => ({
-   RedisStore: vi.fn(function () { return { __type: 'RedisStore' } }),
+  RedisStore: MockRedisStoreConstructor,
 }))
 
 // Redis mock
@@ -45,6 +55,7 @@ vi.mock('redis', () => ({
 import { createLimiter } from '../src/middleware.js'
 import type { LimitsConfig } from '../src/types.js'
 import type { PrismaRateLimitModel } from '../src/stores/prisma-store.js'
+import { createClient } from 'redis'
 
 // ── Request / Response helpers ────────────────────────────────────────────────
 
@@ -89,7 +100,7 @@ describe('createLimiter — backend selection', () => {
 
   it('the memory factory returns a RequestHandler', async () => {
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    const handler = limit({ requests: 10, windowMs: 60_000 })
+    const handler = limit({ name: 'test-route', requests: 10, windowMs: 60_000 })
     expect(typeof handler).toBe('function')
   })
 
@@ -126,6 +137,61 @@ describe('createLimiter — backend selection', () => {
   })
 })
 
+// ── name uniqueness ─────────────────────────────────────────────────────────────
+
+describe('createLimiter — duplicate name validation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRedisConnect.mockResolvedValue(undefined)
+    mockRedisOn.mockReturnThis()
+    mockRateLimit.mockReturnValue(mockRateLimiterMiddleware)
+  })
+
+  it('throws when the same name is used twice on the memory backend', async () => {
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    limit({ name: 'login', requests: 10, windowMs: 60_000 })
+    expect(() => limit({ name: 'login', requests: 5, windowMs: 30_000 })).toThrow(
+      /duplicate name "login"/,
+    )
+  })
+
+  it('throws when the same name is used twice on the redis backend', async () => {
+    const { limit } = await createLimiter({
+      config: { backend: 'redis' },
+      env: { REDIS_URL: 'redis://localhost:6379' },
+    })
+    limit({ name: 'login', requests: 10, windowMs: 60_000 })
+    expect(() => limit({ name: 'login', requests: 5, windowMs: 30_000 })).toThrow(
+      /duplicate name "login"/,
+    )
+  })
+
+  it('throws when the same name is used twice on the database backend', async () => {
+    const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
+    const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
+    limit({ name: 'login', requests: 10, windowMs: 60_000 })
+    expect(() => limit({ name: 'login', requests: 5, windowMs: 30_000 })).toThrow(
+      /duplicate name "login"/,
+    )
+  })
+
+  it('does not throw when different names are used on the same limiter', async () => {
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    limit({ name: 'login', requests: 10, windowMs: 60_000 })
+    expect(() => limit({ name: 'signup', requests: 5, windowMs: 30_000 })).not.toThrow()
+  })
+
+  it('allows the same name again on a separate createLimiter() instance', async () => {
+    // Uniqueness is scoped per Limiter, not global — a fresh createLimiter()
+    // call starts with a clean slate.
+    const first = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    first.limit({ name: 'login', requests: 10, windowMs: 60_000 })
+
+    const second = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    expect(() => second.limit({ name: 'login', requests: 10, windowMs: 60_000 })).not.toThrow()
+  })
+})
+
 // ── rateLimit options forwarding ──────────────────────────────────────────────
 
 describe('createLimiter — rateLimit options', () => {
@@ -136,7 +202,7 @@ describe('createLimiter — rateLimit options', () => {
 
   it('passes windowMs and limit to rateLimit()', async () => {
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    limit({ requests: 5, windowMs: 30_000 })
+    limit({ name: 'test-route', requests: 5, windowMs: 30_000 })
     expect(mockRateLimit).toHaveBeenCalledWith(
       expect.objectContaining({ windowMs: 30_000, limit: 5 }),
     )
@@ -144,7 +210,7 @@ describe('createLimiter — rateLimit options', () => {
 
   it('uses draft-8 standard headers', async () => {
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    limit({ requests: 10, windowMs: 60_000 })
+    limit({ name: 'test-route', requests: 10, windowMs: 60_000 })
     expect(mockRateLimit).toHaveBeenCalledWith(
       expect.objectContaining({ standardHeaders: 'draft-8', legacyHeaders: false }),
     )
@@ -152,7 +218,7 @@ describe('createLimiter — rateLimit options', () => {
 
   it('includes a handler in the rateLimit options', async () => {
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    limit({ requests: 10, windowMs: 60_000 })
+    limit({ name: 'test-route', requests: 10, windowMs: 60_000 })
     const options = mockRateLimit.mock.calls[0]![0] as Record<string, unknown>
     expect(typeof options['handler']).toBe('function')
   })
@@ -168,7 +234,7 @@ describe('createLimiter — no blockDuration', () => {
 
   it('returns the raw rateLimit middleware when blockDuration is undefined', async () => {
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    const handler = limit({ requests: 10, windowMs: 60_000 })
+    const handler = limit({ name: 'test-route', requests: 10, windowMs: 60_000 })
     // Without blockDuration the compound wrapper is skipped —
     // the returned handler IS the mockRateLimiterMiddleware
     expect(handler).toBe(mockRateLimiterMiddleware)
@@ -177,7 +243,7 @@ describe('createLimiter — no blockDuration', () => {
   it('calls next when rateLimit middleware calls next', async () => {
     mockRateLimiterMiddleware.mockImplementation((_req: unknown, _res: unknown, n: NextFunction) => n())
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    const handler = limit({ requests: 10, windowMs: 60_000 })
+    const handler = limit({ name: 'test-route', requests: 10, windowMs: 60_000 })
     const req = makeReq()
     const res = makeRes()
     handler(req as Request, res as unknown as Response, next)
@@ -197,7 +263,7 @@ describe('createLimiter — with blockDuration', () => {
 
   it('returns a wrapper function (not the raw limiter) when blockDuration is set', async () => {
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    const handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000 })
+    const handler = limit({ name: 'test-route', requests: 10, windowMs: 60_000, blockDuration: 300_000 })
     // The wrapper is a different function (an async arrow fn)
     expect(handler).not.toBe(mockRateLimiterMiddleware)
   })
@@ -205,7 +271,7 @@ describe('createLimiter — with blockDuration', () => {
   it('passes the request through to the rate limiter when client is not blocked', async () => {
     mockRateLimiterMiddleware.mockImplementation((_req: unknown, _res: unknown, n: NextFunction) => n())
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    const handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000 })
+    const handler = limit({ name: 'test-route', requests: 10, windowMs: 60_000, blockDuration: 300_000 })
     const req = makeReq()
     const res = makeRes()
     const nextFn = vi.fn()
@@ -219,7 +285,7 @@ describe('createLimiter — with blockDuration', () => {
   it('returns 429 immediately when client is already blocked', async () => {
     // Simulate a blocked client by pre-blocking via the memory store
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    const _handler = limit({ requests: 1, windowMs: 60_000, blockDuration: 300_000 })
+    const _handler = limit({ name: 'route-a', requests: 1, windowMs: 60_000, blockDuration: 300_000 })
     const req = makeReq('blocked-ip')
     const res = makeRes()
     const nextFn = vi.fn()
@@ -230,7 +296,7 @@ describe('createLimiter — with blockDuration', () => {
 
     vi.clearAllMocks()
     mockRateLimit.mockReturnValue(mockRateLimiterMiddleware)
-    const handler2 = limit({ requests: 1, windowMs: 60_000, blockDuration: 300_000 })
+    const handler2 = limit({ name: 'route-b', requests: 1, windowMs: 60_000, blockDuration: 300_000 })
 
     // blockStore.block() above is fire-and-forget, so its write may not have
     // landed yet. Retry the real check instead of guessing a fixed delay,
@@ -258,7 +324,7 @@ describe('createLimiter — with blockDuration', () => {
     const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
     prisma.rateLimit.findUnique = vi.fn().mockRejectedValue(new Error('DB unavailable'))
     const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
-    const handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000 })
+    const handler = limit({ name: 'test-route', requests: 10, windowMs: 60_000, blockDuration: 300_000 })
     const req = makeReq()
     const res = makeRes()
     const nextFn = vi.fn()
@@ -275,7 +341,7 @@ describe('createLimiter — with blockDuration', () => {
   it('uses "unknown" as the key when req.ip is undefined', async () => {
     mockRateLimiterMiddleware.mockImplementation((_req: unknown, _res: unknown, n: NextFunction) => n())
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    const handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000 })
+    const handler = limit({ name: 'test-route', requests: 10, windowMs: 60_000, blockDuration: 300_000 })
     const req = makeReq(undefined as unknown as string)
     ;(req as { ip: undefined }).ip = undefined
     const res = makeRes()
@@ -290,7 +356,7 @@ describe('createLimiter — with blockDuration', () => {
   it('uses the custom message in 429 responses', async () => {
     mockRateLimiterMiddleware.mockImplementation((_req: unknown, _res: unknown, n: NextFunction) => n())
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    const _handler = limit({ requests: 10, windowMs: 60_000, blockDuration: 300_000, message: 'Slow down!' })
+    const _handler = limit({ name: 'test-route', requests: 10, windowMs: 60_000, blockDuration: 300_000, message: 'Slow down!' })
     const options = mockRateLimit.mock.calls[0]![0] as {
       handler: (req: Partial<Request>, res: ReturnType<typeof makeRes>) => void
       message: { message: string }
@@ -309,7 +375,7 @@ describe('createLimiter — handler blocks client', () => {
 
   it('handler responds with 429', async () => {
     const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
-    limit({ requests: 5, windowMs: 60_000, blockDuration: 300_000 })
+    limit({ name: 'test-route', requests: 5, windowMs: 60_000, blockDuration: 300_000 })
     const options = mockRateLimit.mock.calls[0]![0] as {
       handler: (req: Partial<Request>, res: ReturnType<typeof makeRes>) => Promise<void>
     }
@@ -324,7 +390,7 @@ describe('createLimiter — handler blocks client', () => {
     const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
     prisma.rateLimit.upsert = vi.fn().mockRejectedValue(new Error('DB error'))
     const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
-    limit({ requests: 5, windowMs: 60_000, blockDuration: 300_000 })
+    limit({ name: 'test-route', requests: 5, windowMs: 60_000, blockDuration: 300_000 })
     const options = mockRateLimit.mock.calls[0]![0] as {
       handler: (req: Partial<Request>, res: ReturnType<typeof makeRes>) => Promise<void>
     }
@@ -337,7 +403,7 @@ describe('createLimiter — handler blocks client', () => {
   it('handler does not attempt to block when blockDuration is undefined', async () => {
     const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
     const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
-    limit({ requests: 5, windowMs: 60_000 })
+    limit({ name: 'test-route', requests: 5, windowMs: 60_000 })
     const options = mockRateLimit.mock.calls[0]![0] as {
       handler: (req: Partial<Request>, res: ReturnType<typeof makeRes>) => Promise<void>
     }
@@ -363,8 +429,8 @@ describe('createLimiter — database backend PrismaStore per call', () => {
 
     const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
 
-    limit({ requests: 10, windowMs: 60_000 })
-    limit({ requests: 5, windowMs: 30_000 })
+    limit({ name: 'route-a', requests: 10, windowMs: 60_000 })
+    limit({ name: 'route-b', requests: 5, windowMs: 30_000 })
 
     // rateLimit was called twice with different stores
     expect(mockRateLimit).toHaveBeenCalledTimes(2)
@@ -374,6 +440,94 @@ describe('createLimiter — database backend PrismaStore per call', () => {
     ]
     expect(firstOptions[0].windowMs).toBe(60_000)
     expect(secondOptions[0].windowMs).toBe(30_000)
+  })
+
+  it('namespaces each route\'s PrismaStore by name, so they never collide on the same client key', async () => {
+    const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
+    vi.clearAllMocks()
+    mockRateLimit.mockReturnValue(mockRateLimiterMiddleware)
+
+    const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
+    limit({ name: 'route-a', requests: 10, windowMs: 60_000 })
+    limit({ name: 'route-b', requests: 10, windowMs: 60_000 })
+
+    const [firstOptions, secondOptions] = mockRateLimit.mock.calls as [
+      [{ store: { increment: (key: string) => Promise<unknown> } }],
+      [{ store: { increment: (key: string) => Promise<unknown> } }],
+    ]
+
+    await firstOptions[0].store.increment('1.2.3.4')
+    await secondOptions[0].store.increment('1.2.3.4')
+
+    const keysSentToCreate = (prisma.rateLimit.create as ReturnType<typeof vi.fn>).mock.calls.map(
+      (call) => (call[0] as { data: { key: string } }).data.key,
+    )
+    expect(keysSentToCreate).toEqual(['route-a:1.2.3.4', 'route-b:1.2.3.4'])
+  })
+})
+
+// ── memory backend — independent stores per call ──────────────────────────────
+
+describe('createLimiter — memory backend independent stores per call', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRateLimit.mockReturnValue(mockRateLimiterMiddleware)
+  })
+
+  it('constructs a fresh MemoryStore for each route', async () => {
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    limit({ name: 'login', requests: 10, windowMs: 60_000 })
+    limit({ name: 'signup', requests: 5, windowMs: 30_000 })
+    expect(MockMemoryStoreConstructor).toHaveBeenCalledTimes(2)
+  })
+
+  it('gives each route a distinct store instance rather than sharing one', async () => {
+    const { limit } = await createLimiter({ config: { backend: 'memory' }, env: {} })
+    limit({ name: 'login', requests: 10, windowMs: 60_000 })
+    limit({ name: 'signup', requests: 5, windowMs: 30_000 })
+    const [firstOptions, secondOptions] = mockRateLimit.mock.calls as [
+      [{ store: unknown }],
+      [{ store: unknown }],
+    ]
+    expect(firstOptions[0].store).not.toBe(secondOptions[0].store)
+  })
+})
+
+// ── redis backend — shared connection, independent stores per call ───────────
+
+describe('createLimiter — redis backend shared connection, independent stores per call', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockRedisConnect.mockResolvedValue(undefined)
+    mockRedisOn.mockReturnThis()
+    mockRateLimit.mockReturnValue(mockRateLimiterMiddleware)
+  })
+
+  it('opens only one redis connection across multiple routes', async () => {
+    const { limit } = await createLimiter({
+      config: { backend: 'redis' },
+      env: { REDIS_URL: 'redis://localhost:6379' },
+    })
+    limit({ name: 'login', requests: 10, windowMs: 60_000 })
+    limit({ name: 'signup', requests: 5, windowMs: 30_000 })
+    expect(createClient).toHaveBeenCalledOnce()
+    expect(mockRedisConnect).toHaveBeenCalledOnce()
+  })
+
+  it('constructs a distinctly-prefixed RedisStore for each route', async () => {
+    const { limit } = await createLimiter({
+      config: { backend: 'redis' },
+      env: { REDIS_URL: 'redis://localhost:6379' },
+    })
+    limit({ name: 'login', requests: 10, windowMs: 60_000 })
+    limit({ name: 'signup', requests: 5, windowMs: 30_000 })
+    expect(MockRedisStoreConstructor).toHaveBeenCalledTimes(2)
+    const [firstCall, secondCall] = MockRedisStoreConstructor.mock.calls as [
+      [{ prefix: string }],
+      [{ prefix: string }],
+    ]
+    expect(firstCall[0].prefix).toBe('rl:login:')
+    expect(secondCall[0].prefix).toBe('rl:signup:')
   })
 })
 
