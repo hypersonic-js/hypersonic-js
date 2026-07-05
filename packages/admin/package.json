@@ -39,8 +39,8 @@
     "express": "5.2.1"
   },
   "peerDependencies": {
-    "@prisma/client": "7.8.0",
-    "better-auth": "1.6.12"
+    "@prisma/client": "^7.8.0",
+    "better-auth": "^1.6.12"
   },
   "peerDependenciesMeta": {
     "@prisma/client": {

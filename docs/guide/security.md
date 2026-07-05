@@ -17,6 +17,12 @@
 
 CSRF protection is also handled automatically. The Inertia middleware issues an `XSRF-TOKEN` cookie on every response and validates the matching `X-XSRF-TOKEN` header on all mutating requests (`POST`, `PUT`, `PATCH`, `DELETE`). Inertia's `useForm` reads and sends this token without any extra setup on your part.
 
+## Rate limiting
+
+Unlike the protections above, rate limiting is **not** automatic — it's opt-in via a separate package. Install [`@hypersonic-js/limits`](https://npmjs.com/package/@hypersonic-js/limits) and add a `limits` block to `hypersonic.config.ts` to protect Better Auth's auth endpoints and any routes of your own.
+
+See the [Rate Limiting guide](/guide/rate-limiting) for setup, backend options, and usage.
+
 ## Content Security Policy
 
 CSP is the most impactful header you can add. Install Helmet as a direct dependency so you can use its standalone `contentSecurityPolicy` middleware:

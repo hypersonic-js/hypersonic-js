@@ -40,9 +40,9 @@
   },
   "peerDependencies": {
     "@hypersonic-js/core": "workspace:*",
-    "@prisma/client": "7.8.0",
-    "express": "5.2.1",
-    "redis": "6.0.1"
+    "@prisma/client": "^7.8.0",
+    "express": "^5.2.1",
+    "redis": "^6.0.1"
   },
   "peerDependenciesMeta": {
     "redis": {
