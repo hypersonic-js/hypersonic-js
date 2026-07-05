@@ -51,6 +51,22 @@ export interface PrismaRateLimitModel {
       | { key: string; OR: [{ expireAt: null }, { expireAt: { lt: Date } }] }
     data: { points: number | { increment: number }; expireAt?: Date; blockUntil?: null }
   }): Promise<{ count: number }>
+  /**
+   * Used by `PrismaStore.increment()`'s active-window branch to atomically
+   * increment an already-active window and read back the exact row that
+   * increment produced, in a single round trip. Requires Prisma >= 6.2.0
+   * and is supported on PostgreSQL and SQLite (not MySQL) — both are fine
+   * here, since those are the only two providers `DatabaseProvider`
+   * (`@hypersonic-js/core`) ever offers.
+   *
+   * Only ever called with the active-window `where` shape below — the
+   * claim-expired path still uses plain `updateMany()`, since it never
+   * needs the updated row back, only the affected count.
+   */
+  updateManyAndReturn(args: {
+    where: { key: string; expireAt: { gte: Date } }
+    data: { points: { increment: number } }
+  }): Promise<RateLimitRecord[]>
   upsert(args: {
     where: { key: string }
     create: { key: string; points: number; expireAt: Date | null; blockUntil: Date | null }
@@ -126,9 +142,10 @@ const MAX_INCREMENT_ATTEMPTS = 3
  * concurrency: see `increment()`'s doc comment for how the database (not
  * application code) arbitrates concurrent writers to the same key, using
  * conditional atomic writes instead of a read-then-write. This relies only
- * on a unique constraint on `key` and standard read-committed-or-stronger
- * isolation — both available on every Prisma-supported database, no
- * transactions or raw SQL required.
+ * on a unique constraint on `key`, standard read-committed-or-stronger
+ * isolation, and `updateManyAndReturn` (Prisma >= 6.2.0, PostgreSQL/SQLite
+ * — see `PrismaRateLimitModel.updateManyAndReturn`'s doc comment) — no
+ * manual transactions or raw SQL required.
  *
  * For very high-throughput or multi-region deployments, the Redis backend
  * remains the better choice — it avoids the database round-trips this
@@ -170,8 +187,15 @@ export class PrismaStore implements Store {
    * not application code — arbitrates concurrent writers to the same row:
    *
    *  1. Try to atomically increment an *already-active* window via
-   *     `updateMany({ where: { key, expireAt: { gte: now } }, ... })`. If
-   *     this matches a row, read it back for the current count and return.
+   *     `updateManyAndReturn({ where: { key, expireAt: { gte: now } }, ... })`.
+   *     This applies the conditional increment and reads back the exact
+   *     row it produced in one round trip — unlike a plain `updateMany()`
+   *     followed by a separate `findUnique()`, there is no gap in which a
+   *     *different* concurrent request's increment could be the one
+   *     observed instead of this request's own. An empty result means the
+   *     `WHERE` matched no row (absent or expired), so this falls through
+   *     to step 2 — there's no "row vanished between write and read" case
+   *     to handle here, since the write and read are the same statement.
    *  2. Otherwise, try to atomically claim an absent-or-expired row via
    *     `updateMany({ where: { key, OR: [expireAt: null, expireAt: { lt:
    *     now }] }, data: { points: 1, expireAt: resetTime } })`. Because
@@ -196,22 +220,16 @@ export class PrismaStore implements Store {
     for (let attempt = 0; attempt < MAX_INCREMENT_ATTEMPTS; attempt++) {
       const now = new Date()
 
-      const activeIncrement = await this.prisma.updateMany({
+      const [activeRecord] = await this.prisma.updateManyAndReturn({
         where: { key: namespacedKey, expireAt: { gte: now } },
         data: { points: { increment: 1 } },
       })
 
-      if (activeIncrement.count > 0) {
-        const record = await this.prisma.findUnique({ where: { key: namespacedKey } })
-        if (record !== null) {
-          return {
-            totalHits: record.points,
-            resetTime: record.expireAt ?? new Date(now.getTime() + this.windowMs),
-          }
+      if (activeRecord !== undefined) {
+        return {
+          totalHits: activeRecord.points,
+          resetTime: activeRecord.expireAt ?? new Date(now.getTime() + this.windowMs),
         }
-        // The row vanished between our write and this read (e.g. a
-        // concurrent resetKey()) — retry from a clean slate.
-        continue
       }
 
       const resetTime = new Date(now.getTime() + this.windowMs)

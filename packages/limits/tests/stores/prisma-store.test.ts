@@ -31,6 +31,7 @@ function makePrisma(): { [K in keyof PrismaRateLimitModel]: ReturnType<typeof vi
     findUnique: vi.fn(),
     create: vi.fn(),
     updateMany: vi.fn(),
+    updateManyAndReturn: vi.fn(),
     upsert: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -52,13 +53,12 @@ describe('PrismaStore', () => {
 
   beforeEach(() => {
     prisma = makePrisma()
+    prisma.updateManyAndReturn.mockResolvedValue([])
   })
 
   describe('increment — brand new key', () => {
     it('creates a new record when neither the active nor the reset write matches any row', async () => {
-      prisma.updateMany
-        .mockResolvedValueOnce({ count: 0 }) // active-check: no row exists yet
-        .mockResolvedValueOnce({ count: 0 }) // reset-check: nothing to reset either
+      prisma.updateMany.mockResolvedValueOnce({ count: 0 }) // reset-check: nothing to reset either
       prisma.create.mockResolvedValue(makeRecord({ points: 1 }))
       const store = makeStore()
 
@@ -86,20 +86,18 @@ describe('PrismaStore', () => {
 
   describe('increment — expired record', () => {
     it('resets to 1 via the atomic reset write, without ever calling create()', async () => {
-      prisma.updateMany
-        .mockResolvedValueOnce({ count: 0 }) // active-check: window has expired
-        .mockResolvedValueOnce({ count: 1 }) // reset-check: atomically claims the row
+      prisma.updateMany.mockResolvedValueOnce({ count: 1 }) // reset-check: atomically claims the row
       const store = makeStore()
 
       const result = await store.increment('test-key')
 
       expect(prisma.create).not.toHaveBeenCalled()
-      expect(prisma.updateMany).toHaveBeenCalledTimes(2)
+      expect(prisma.updateMany).toHaveBeenCalledTimes(1)
       expect(result.totalHits).toBe(1)
     })
 
     it('does not read the row back for the resolved reset write — resetTime is computed locally', async () => {
-      prisma.updateMany.mockResolvedValueOnce({ count: 0 }).mockResolvedValueOnce({ count: 1 })
+      prisma.updateMany.mockResolvedValueOnce({ count: 1 })
       const before = Date.now()
       const store = makeStore()
 
@@ -118,9 +116,7 @@ describe('PrismaStore', () => {
       // so this converges in a single atomic write. Regression guard for
       // the bug where a null expireAt (the old behaviour) made increment()
       // treat the row as an active, never-expiring window forever.
-      prisma.updateMany
-        .mockResolvedValueOnce({ count: 0 }) // active-check misses — block-time expireAt is in the past
-        .mockResolvedValueOnce({ count: 1 }) // reset-check hits — atomically claims the row
+      prisma.updateMany.mockResolvedValueOnce({ count: 1 }) // reset-check hits — atomically claims the row
       const store = makeStore()
 
       const result = await store.increment('test-key')
@@ -131,25 +127,26 @@ describe('PrismaStore', () => {
   })
 
   describe('increment — active record', () => {
-    it('atomically increments an active window and reads back the current count', async () => {
+    it('atomically increments an active window and returns the count from the same write', async () => {
       const expireAt = new Date(Date.now() + 30_000)
-      prisma.updateMany.mockResolvedValueOnce({ count: 1 }) // active-check hits
-      prisma.findUnique.mockResolvedValue(makeRecord({ points: 4, expireAt }))
+      prisma.updateManyAndReturn.mockResolvedValueOnce([makeRecord({ points: 4, expireAt })])
       const store = makeStore()
 
       const result = await store.increment('test-key')
 
-      expect(prisma.updateMany).toHaveBeenCalledWith(
+      expect(prisma.updateManyAndReturn).toHaveBeenCalledWith(
         expect.objectContaining({ data: { points: { increment: 1 } } }),
       )
+      // No separate read-back call — the count comes from updateManyAndReturn's
+      // own result, which is exactly what closes the race this replaced.
+      expect(prisma.findUnique).not.toHaveBeenCalled()
       expect(result.totalHits).toBe(4)
       expect(result.resetTime).toEqual(expireAt)
     })
 
-    it('falls back to a new resetTime when the post-increment record has a null expireAt', async () => {
-      prisma.updateMany.mockResolvedValueOnce({ count: 1 })
+    it('falls back to a new resetTime when the returned record has a null expireAt', async () => {
+      prisma.updateManyAndReturn.mockResolvedValueOnce([makeRecord({ points: 2, expireAt: null })])
       const before = Date.now()
-      prisma.findUnique.mockResolvedValue(makeRecord({ points: 2, expireAt: null }))
       const store = makeStore()
 
       const result = await store.increment('test-key')
@@ -160,35 +157,19 @@ describe('PrismaStore', () => {
 
   describe('increment — concurrency retries', () => {
     it('retries and increments into a concurrent winner\'s window after a unique-constraint race on create()', async () => {
-      prisma.updateMany
-        .mockResolvedValueOnce({ count: 0 }) // attempt 1: active-check misses
-        .mockResolvedValueOnce({ count: 0 }) // attempt 1: reset-check misses too
-        .mockResolvedValueOnce({ count: 1 }) // attempt 2: active-check now hits the winner's row
+      prisma.updateManyAndReturn
+        .mockResolvedValueOnce([]) // attempt 1: active-check misses
+        .mockResolvedValueOnce([makeRecord({ points: 2, expireAt: new Date(Date.now() + 30_000) })]) // attempt 2: active-check now hits the winner's row
+      prisma.updateMany.mockResolvedValueOnce({ count: 0 }) // attempt 1: reset-check misses too
       prisma.create.mockRejectedValueOnce(makeUniqueConstraintError()) // attempt 1: lost the race
-      prisma.findUnique.mockResolvedValue(makeRecord({ points: 2, expireAt: new Date(Date.now() + 30_000) }))
       const store = makeStore()
 
       const result = await store.increment('test-key')
 
       expect(prisma.create).toHaveBeenCalledOnce()
-      expect(prisma.updateMany).toHaveBeenCalledTimes(3)
+      expect(prisma.updateManyAndReturn).toHaveBeenCalledTimes(2)
+      expect(prisma.updateMany).toHaveBeenCalledTimes(1)
       expect(result.totalHits).toBe(2)
-    })
-
-    it('retries if the active row vanishes between the atomic increment and the follow-up read', async () => {
-      prisma.updateMany
-        .mockResolvedValueOnce({ count: 1 }) // attempt 1: active-check hits...
-        .mockResolvedValueOnce({ count: 0 }) // attempt 2: active-check misses (row is gone)
-        .mockResolvedValueOnce({ count: 0 }) // attempt 2: reset-check misses too
-      prisma.findUnique.mockResolvedValueOnce(null) // ...but a concurrent resetKey() deleted it first
-      prisma.create.mockResolvedValue(makeRecord({ points: 1 }))
-      const store = makeStore()
-
-      const result = await store.increment('test-key')
-
-      expect(prisma.create).toHaveBeenCalledOnce()
-      expect(prisma.updateMany).toHaveBeenCalledTimes(3)
-      expect(result.totalHits).toBe(1)
     })
 
     it('propagates a non-unique-constraint error from create() rather than retrying', async () => {
@@ -216,6 +197,9 @@ describe('PrismaStore', () => {
 
       await store.increment('1.2.3.4')
 
+      expect(prisma.updateManyAndReturn).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ key: 'login:1.2.3.4' }) }),
+      )
       expect(prisma.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ key: 'login:1.2.3.4' }) }),
       )
@@ -224,16 +208,17 @@ describe('PrismaStore', () => {
       )
     })
 
-    it('namespaces the key in the active-window read-back path too', async () => {
-      prisma.updateMany.mockResolvedValueOnce({ count: 1 })
-      prisma.findUnique.mockResolvedValue(
+    it('namespaces the key in the active-window path too', async () => {
+      prisma.updateManyAndReturn.mockResolvedValueOnce([
         makeRecord({ points: 2, expireAt: new Date(Date.now() + 30_000) }),
-      )
+      ])
       const store = makeStore(WINDOW_MS, 'login')
 
       await store.increment('1.2.3.4')
 
-      expect(prisma.findUnique).toHaveBeenCalledWith({ where: { key: 'login:1.2.3.4' } })
+      expect(prisma.updateManyAndReturn).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ key: 'login:1.2.3.4' }) }),
+      )
     })
 
     it('includes the namespaced key in the convergence-failure error message', async () => {

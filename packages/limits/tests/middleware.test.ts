@@ -76,6 +76,7 @@ function makePrismaRateLimitModel(): { [K in keyof PrismaRateLimitModel]: Return
     findUnique: vi.fn().mockResolvedValue(null),
     create: vi.fn().mockResolvedValue({ key: 'k', points: 1, expireAt: null, blockUntil: null }),
     updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    updateManyAndReturn: vi.fn().mockResolvedValue([]),
     upsert: vi.fn().mockResolvedValue({ key: 'k', points: 1, expireAt: null, blockUntil: null }),
     update: vi.fn(),
     delete: vi.fn(),
