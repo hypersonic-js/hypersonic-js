@@ -1,0 +1,34 @@
+name: Renovate
+
+on:
+  schedule:
+    # Runs hourly. This only controls how often the job checks in — actual
+    # branch/PR creation still respects the "schedule" set in renovate.json.
+    - cron: '0 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Generate GitHub App token
+        id: generate_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Self-hosted Renovate
+        uses: renovatebot/github-action@v46.1.15
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
