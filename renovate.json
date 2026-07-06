@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["before 6am on monday"],
+  "timezone": "UTC",
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "groupName": "all-dependencies"
+    },
+    {
+      "matchFileNames": ["packages/cli/templates/new/**"],
+      "groupName": "cli-template-dependencies"
+    },
+    {
+      "matchPackageNames": [
+        "@turbo/darwin-64",
+        "@turbo/darwin-arm64",
+        "@turbo/linux-64",
+        "@turbo/linux-arm64",
+        "@turbo/windows-64",
+        "@turbo/windows-arm64"
+      ],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    }
+  ]
+}
