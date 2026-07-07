@@ -8,6 +8,7 @@
   ],
   "timezone": "UTC",
   "rangeStrategy": "bump",
+  "prHourlyLimit": 0,
   "prBodyDefinitions": {
     "File": "{{{packageFile}}}"
   },
