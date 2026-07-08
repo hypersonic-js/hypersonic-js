@@ -10,7 +10,7 @@
     "db:generate": "prisma generate"
   },
   "dependencies": {
-    "@hypersonic-js/complete": "0.2.5",
+    "@hypersonic-js/complete": "latest",
     "@prisma/adapter-better-sqlite3": "7.8.0",
     "better-sqlite3": "12.11.1",
     "dotenv": "17.4.2",
@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
-    "@hypersonic-js/cli": "0.2.5",
+    "@hypersonic-js/cli": "latest",
     "@inertiajs/react": "3.6.0",
     "@tailwindcss/vite": "4.3.2",
     "@types/better-sqlite3": "7.6.13",

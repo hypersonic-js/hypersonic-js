@@ -1,6 +1,6 @@
 {
   "name": "@hypersonic-js/core",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "The core of Hypersonic.js — a modern Django-inspired full-stack TypeScript framework",
   "type": "module",
   "main": "./dist/index.js",
@@ -25,7 +25,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.18.0"
   },
   "scripts": {
     "build": "tsc",
@@ -35,19 +35,19 @@
     "clean": "rm -rf dist coverage"
   },
   "dependencies": {
-    "@inertiajs/core": "3.4.0",
-    "@inertiajs/react": "3.4.0",
-    "@tailwindcss/vite": "4.3.1",
-    "@vitejs/plugin-react": "6.0.2",
-    "better-auth": "1.6.19",
+    "@inertiajs/core": "3.6.1",
+    "@inertiajs/react": "3.6.1",
+    "@tailwindcss/vite": "4.3.2",
+    "@vitejs/plugin-react": "6.0.3",
+    "better-auth": "1.6.23",
     "express": "5.2.1",
     "helmet": "8.2.0",
     "pino": "10.3.1",
     "pino-http": "11.0.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
-    "tailwindcss": "4.3.1",
-    "vite": "8.0.16",
+    "tailwindcss": "4.3.2",
+    "vite": "8.1.3",
     "zod": "4.4.3"
   },
   "peerDependencies": {
@@ -67,14 +67,14 @@
   "devDependencies": {
     "@prisma/client": "7.8.0",
     "@types/express": "5.0.6",
-    "@types/node": "25.9.3",
+    "@types/node": "26.1.0",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@types/supertest": "7.2.0",
-    "@vitest/coverage-v8": "4.1.9",
+    "@vitest/coverage-v8": "4.1.10",
     "prisma": "7.8.0",
     "supertest": "7.2.2",
     "typescript": "6.0.3",
-    "vitest": "4.1.9"
+    "vitest": "4.1.10"
   }
 }

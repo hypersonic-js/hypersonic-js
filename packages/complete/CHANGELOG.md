@@ -1,5 +1,15 @@
 # @hypersonic-js/complete
 
+## 0.2.6
+
+### Patch Changes
+
+- add limits package, update the APIs and types of other packages to work with limits, bump deps across packages, migrate from dependabot to renovate, update docs
+- Updated dependencies
+  - @hypersonic-js/admin@0.2.6
+  - @hypersonic-js/core@0.2.6
+  - @hypersonic-js/limits@0.2.6
+
 ## 0.2.5
 
 ### Patch Changes

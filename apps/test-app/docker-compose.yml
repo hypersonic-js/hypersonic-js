@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     container_name: hypersonic_test_db
     environment:
       POSTGRES_USER: hypersonic
@@ -14,10 +14,10 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - hypersonic_test_pgdata:/var/lib/postgresql/data
+      - hypersonic_test_pgdata_pg18:/var/lib/postgresql
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: hypersonic_test_redis
     ports:
       - "6379:6379"
@@ -28,4 +28,4 @@ services:
       retries: 5
 
 volumes:
-  hypersonic_test_pgdata:
+  hypersonic_test_pgdata_pg18:

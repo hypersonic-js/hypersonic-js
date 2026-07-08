@@ -1,18 +1,45 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
-  "schedule": ["before 6am on monday"],
+  "extends": [
+    "config:recommended"
+  ],
+  "schedule": [
+    "before 6am on monday"
+  ],
   "timezone": "UTC",
+  "rangeStrategy": "bump",
+  "prHourlyLimit": 0,
+  "prBodyDefinitions": {
+    "File": "{{{packageFile}}}"
+  },
+  "prBodyColumns": [
+    "Package",
+    "Type",
+    "Update",
+    "Change",
+    "Pending",
+    "File"
+  ],
   "vulnerabilityAlerts": {
     "enabled": true
   },
   "packageRules": [
     {
-      "matchPackageNames": ["*"],
+      "matchPackageNames": [
+        "*"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
       "groupName": "all-dependencies"
     },
     {
-      "matchFileNames": ["packages/cli/templates/new/**"],
+      "matchFileNames": [
+        "packages/cli/templates/new/**"
+      ],
       "groupName": "cli-template-dependencies"
     },
     {
@@ -27,7 +54,9 @@
       "enabled": false
     },
     {
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "groupName": "github-actions"
     }
   ]

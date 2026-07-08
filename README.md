@@ -15,12 +15,13 @@ Your app is now scaffolded and ready to be developed!
 
 ## Packages
 
-| Package | Description |
-|---|---|
-| [`@hypersonic-js/complete`](https://npmjs.com/package/@hypersonic-js/complete) | Everything in one install |
-| [`@hypersonic-js/core`](https://npmjs.com/package/@hypersonic-js/core) | Server, Inertia, config, and auth |
-| [`@hypersonic-js/admin`](https://npmjs.com/package/@hypersonic-js/admin) | Auto-generated Prisma admin dashboard |
-| [`@hypersonic-js/cli`](https://npmjs.com/package/@hypersonic-js/cli) | Developer CLI tooling |
+| Package                                                                        | Description                                           |
+|--------------------------------------------------------------------------------|-------------------------------------------------------|
+| [`@hypersonic-js/complete`](https://npmjs.com/package/@hypersonic-js/complete) | Everything in one install                             |
+| [`@hypersonic-js/core`](https://npmjs.com/package/@hypersonic-js/core)         | Server, Inertia, config, and auth                     |
+| [`@hypersonic-js/admin`](https://npmjs.com/package/@hypersonic-js/admin)       | Auto-generated Prisma admin dashboard                 |
+| [`@hypersonic-js/cli`](https://npmjs.com/package/@hypersonic-js/cli)           | Developer CLI tooling                                 |
+| [`@hypersonic-js/limits`](https://npmjs.com/package/@hypersonic-js/limits)     | Configurable DB, Redis or memory backed rate limiting |
 
 ## Documentation
 
