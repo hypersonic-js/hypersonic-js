@@ -8,7 +8,7 @@ A TypeScript framework for building full-stack monoliths fast. Hypersonic.js bun
 npm install -g @hypersonic-js/cli
 ```
 ```bash
-npm hypersonic new
+hypersonic new
 ```
 Your app is now scaffolded and ready to be developed!
 
