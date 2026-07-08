@@ -6,7 +6,7 @@ packages:
 
 overrides:
   "form-data": "4.0.6"
-  "js-yaml@4": "4.2.0"
+  "js-yaml@4": "4.3.0"
 
 allowBuilds:
   '@prisma/engines': false
@@ -31,6 +31,8 @@ minimumReleaseAgeExclude:
   - '@better-auth/telemetry@1.6.19'
   - '@inertiajs/core@3.4.0'
   - '@inertiajs/react@3.4.0'
+  - '@inertiajs/core@3.6.1'
+  - '@inertiajs/react@3.6.1'
   - '@typescript-eslint/eslint-plugin'
   - '@typescript-eslint/parser'
   - '@typescript-eslint/project-service'
