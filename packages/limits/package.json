@@ -1,6 +1,6 @@
 {
   "name": "@hypersonic-js/limits",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Rate limiting for Hypersonic.js — memory, database, and Redis backed",
   "type": "module",
   "main": "./dist/index.js",
