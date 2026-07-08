@@ -1,5 +1,11 @@
 # @hypersonic-js/admin
 
+## 0.2.7
+
+### Patch Changes
+
+- Bump cli templated app deps, and add readme to limits
+
 ## 0.2.6
 
 ### Patch Changes
