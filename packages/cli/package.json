@@ -20,7 +20,7 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.18.0"
   },
   "scripts": {
     "build": "tsc && node --input-type=module --eval \"import{cpSync}from'node:fs';cpSync('templates','dist/templates',{recursive:true})\"",
@@ -41,9 +41,9 @@
     "@prisma/adapter-pg": "7.8.0",
     "@prisma/client": "7.8.0",
     "@types/node": "26.1.0",
-    "@vitest/coverage-v8": "4.1.9",
-    "better-auth": "1.6.19",
+    "@vitest/coverage-v8": "4.1.10",
+    "better-auth": "1.6.23",
     "typescript": "6.0.3",
-    "vitest": "4.1.9"
+    "vitest": "4.1.10"
   }
 }
