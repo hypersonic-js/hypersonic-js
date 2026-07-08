@@ -14,7 +14,7 @@ services:
       timeout: 5s
       retries: 5
     volumes:
-      - hypersonic_test_pgdata:/var/lib/postgresql/data
+      - hypersonic_test_pgdata_pg18:/var/lib/postgresql
 
   redis:
     image: redis:8-alpine
