@@ -1,8 +1,12 @@
 import { describe, it, expect, expectTypeOf } from 'vitest'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { resolve, dirname } from 'node:path'
 import { defineConfig } from '../src/config/define-config.js'
 import { buildEnvSchema, validateEnv } from '../src/config/env.js'
-import { loadConfig } from '../src/config/loader.js'
+import { loadConfig, importConfigFile } from '../src/config/loader.js'
 import type { HypersonicConfig, LimitsConfig } from '../src/config/types.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const baseConfig: HypersonicConfig = {
   server: { port: 3000, host: 'localhost' },
@@ -214,6 +218,26 @@ describe('loadConfig', () => {
     await expect(loadConfig('/fake', {}, importer)).rejects.toThrowError(
       /Environment validation failed/,
     )
+  })
+
+  it('throws when the default export is explicitly null', async () => {
+    const importer = async () => ({ default: null as unknown as HypersonicConfig })
+    await expect(loadConfig('/fake', baseEnv, importer)).rejects.toThrowError(
+      /must export a config via defineConfig/,
+    )
+  })
+
+  it('includes a String(err) fallback message when the importer throws a non-Error value', async () => {
+    const importer = async () => { throw 'boom' }
+    await expect(loadConfig('/fake', baseEnv, importer)).rejects.toThrowError(/Detail: boom/)
+  })
+})
+
+describe('importConfigFile', () => {
+  it('dynamically imports the config module and returns its default export', async () => {
+    const fixtureUrl = pathToFileURL(resolve(__dirname, 'fixtures/sample-config.mjs')).href
+    const mod = await importConfigFile(fixtureUrl)
+    expect(mod.default).toEqual(baseConfig)
   })
 })
 

@@ -1,9 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { runSetup, type RunSetupDeps } from '../../../src/commands/new/run-setup.js'
 
 vi.mock('../../../src/utils/logger.js', () => ({
   logger: { info: vi.fn(), success: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}))
+
+const mockExecSync = vi.fn()
+vi.mock('node:child_process', () => ({
+  execSync: (...args: unknown[]) => mockExecSync(...args),
+}))
+
+const mockReadFileSync = vi.fn()
+const mockWriteFileSync = vi.fn()
+vi.mock('node:fs', () => ({
+  readFileSync: (...args: unknown[]) => mockReadFileSync(...args),
+  writeFileSync: (...args: unknown[]) => mockWriteFileSync(...args),
+}))
+
+const mockGetDMMF = vi.fn()
+vi.mock('@prisma/get-dmmf', () => ({
+  getDMMF: (...args: unknown[]) => mockGetDMMF(...args),
+}))
+
+const mockScaffoldAdmin = vi.fn()
+vi.mock('@hypersonic-js/admin', () => ({
+  scaffoldAdmin: (...args: unknown[]) => mockScaffoldAdmin(...args),
+}))
+
+vi.mock('../../../src/dmmf/parser.js', () => ({
+  parseDmmf: vi.fn().mockReturnValue([{ name: 'Post', urlSlug: 'post' }]),
 }))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -288,5 +314,54 @@ describe('error handling', () => {
       .mockImplementationOnce(() => undefined) // prisma generate
       .mockImplementationOnce(() => { throw new Error('create-admin failed') })
     await expect(runSetup(BASE_OPTS, deps)).rejects.toThrow('create-admin failed')
+  })
+})
+
+// ── default deps (real loadDeps) ────────────────────────────────────────────
+
+describe('runSetup — default deps', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockExecSync.mockReturnValue(undefined)
+    mockGetDMMF.mockResolvedValue({ datamodel: { models: [], enums: [] } })
+    mockReadFileSync.mockReturnValue('schema content')
+    mockScaffoldAdmin.mockResolvedValue({ written: [], skipped: [] })
+  })
+
+  it('resolves exec, scaffoldAdmin, and generateAdminMeta from real modules when deps is omitted', async () => {
+    await runSetup(BASE_OPTS)
+
+    // Step 1-3: real execSync used for npm install / prisma migrate / prisma generate
+    expect(mockExecSync).toHaveBeenCalledWith('npm install', { cwd: PROJECT_DIR, stdio: 'inherit' })
+    expect(mockExecSync).toHaveBeenCalledWith(
+      'npx prisma migrate dev --name init',
+      { cwd: PROJECT_DIR, stdio: 'inherit' },
+    )
+    expect(mockExecSync).toHaveBeenCalledWith('npx prisma generate', { cwd: PROJECT_DIR, stdio: 'inherit' })
+
+    // Step 4: real scaffoldAdmin from @hypersonic-js/admin
+    expect(mockScaffoldAdmin).toHaveBeenCalledWith({
+      targetDir: join(PROJECT_DIR, 'resources/js/Pages'),
+      force: false,
+    })
+
+    // Step 5: real getDMMF + readFileSync/writeFileSync wired through generateAdminMeta
+    expect(mockGetDMMF).toHaveBeenCalledWith({ datamodel: 'schema content' })
+    // runGenerateMeta (called internally by the real generateAdminMeta wrapper)
+    // applies resolve() to opts.output before writing — match that here rather
+    // than asserting the raw joined path, which is only equivalent to the
+    // resolved path on POSIX (on Windows, join() of a leading-slash path with
+    // no drive letter produces a drive-relative path that resolve() then
+    // anchors to the current drive).
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
+      resolve(join(PROJECT_DIR, 'prisma/admin-meta.json')),
+      JSON.stringify([{ name: 'Post', urlSlug: 'post' }], null, 2),
+    )
+
+    // Step 6: real execSync used for the create-admin subprocess
+    expect(mockExecSync).toHaveBeenCalledWith(
+      'npx hypersonic admin create-admin',
+      { cwd: PROJECT_DIR, stdio: 'inherit' },
+    )
   })
 })

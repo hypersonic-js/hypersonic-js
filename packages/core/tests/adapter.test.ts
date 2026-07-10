@@ -130,4 +130,17 @@ describe('createDatabaseAdapter', () => {
       ).resolves.toMatchObject({ _adapter: 'better-sqlite3' })
     })
   })
+
+  // ── unsupported provider ────────────────────────────────────────────────────
+
+  describe('unsupported provider', () => {
+    it('throws a descriptive error for a provider outside postgresql/sqlite', async () => {
+      const { createDatabaseAdapter } = await import('../src/database/adapter.js')
+      await expect(
+        createDatabaseAdapter('mysql' as unknown as 'postgresql', 'mysql://localhost/db'),
+      ).rejects.toThrowError(
+        /unsupported database provider "mysql"\. Supported providers are: postgresql, sqlite\./,
+      )
+    })
+  })
 })

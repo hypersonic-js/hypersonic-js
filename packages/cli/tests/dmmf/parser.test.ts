@@ -253,6 +253,71 @@ describe('parseDmmf', () => {
     expect(fkField.relatedModelSlug).not.toBe('userProfile')
   })
 
+  it('does not throw and produces no FK mapping when relationFromFields is undefined', () => {
+    const dmmf: DmmfDocument = {
+      datamodel: {
+        models: [
+          {
+            name: 'Post',
+            dbName: null,
+            fields: [
+              { name: 'id', type: 'Int', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+              {
+                name: 'author', type: 'User', kind: 'object',
+                isRequired: true, isUnique: false, isId: false, isList: false,
+                hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false,
+                relationName: 'PostToUser',
+                // relationFromFields intentionally omitted (undefined)
+              } as DmmfField,
+            ],
+          },
+          {
+            name: 'User',
+            dbName: null,
+            fields: [
+              { name: 'id', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false },
+            ],
+          },
+        ],
+        enums: [],
+      },
+    }
+    expect(() => parseDmmf(dmmf)).not.toThrow()
+    const [model] = parseDmmf(dmmf)
+    // No scalar FK field carries relatedModelName/relatedModelSlug since
+    // relationFromFields (the only source of FK scalar names) was undefined.
+    expect(model!.fields.every((f) => f.relatedModelName === undefined)).toBe(true)
+  })
+
+  it('falls back to type.toLowerCase() for relatedModelSlug when the related model is absent from datamodel.models', () => {
+    const dmmf: DmmfDocument = {
+      datamodel: {
+        models: [
+          {
+            name: 'Post',
+            dbName: null,
+            fields: [
+              { name: 'id', type: 'Int', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+              { name: 'authorId', type: 'String', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: true, isUpdatedAt: false },
+              {
+                name: 'author', type: 'User', kind: 'object',
+                isRequired: true, isUnique: false, isId: false, isList: false,
+                hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false,
+                relationName: 'PostToUser', relationFromFields: ['authorId'], relationToFields: ['id'],
+              } as DmmfField,
+              // Note: 'User' is NOT included as a model below — simulates a
+              // relation to a model filtered out of the DMMF document.
+            ],
+          },
+        ],
+        enums: [],
+      },
+    }
+    const [model] = parseDmmf(dmmf)
+    const authorId = model!.fields.find((f) => f.name === 'authorId')!
+    expect(authorId.relatedModelSlug).toBe('user')
+  })
+
   it('non-FK scalars have no relatedModelSlug', () => {
     const [model] = parseDmmf(POST_WITH_USER_FK)
     const title = model!.fields.find((f) => f.name === 'title')

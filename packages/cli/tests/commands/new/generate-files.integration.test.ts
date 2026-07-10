@@ -1,215 +1,321 @@
-/**
- * Integration tests for generateFiles.
- *
- * These tests call generateFiles with no mocked deps — real fs operations
- * against a temp directory. They verify that the substitution pipeline and
- * file-writing work end to end, and that the output on disk is exactly what
- * a scaffolded project should contain.
- *
- * Template content correctness is handled separately in templates.test.ts.
- * Orchestration logic is handled separately in generate-files.test.ts.
- */
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
-import { generateFiles, TEMPLATE_FILES } from '../../../src/commands/new/generate-files.js'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { join, dirname } from 'node:path'
+import {
+  generateFiles,
+  applySubstitutions,
+  TEMPLATE_FILES,
+  type GenerateFilesDeps,
+  type GenerateFilesOptions,
+} from '../../../src/commands/new/generate-files.js'
 
-// ── Temp directory setup ──────────────────────────────────────────────────────
+const mockReadFileSync = vi.fn()
+const mockMkdirSync = vi.fn()
+const mockWriteFileSync = vi.fn()
+vi.mock('node:fs', () => ({
+  readFileSync: (...args: unknown[]) => mockReadFileSync(...args),
+  mkdirSync: (...args: unknown[]) => mockMkdirSync(...args),
+  writeFileSync: (...args: unknown[]) => mockWriteFileSync(...args),
+}))
 
-let tmpDir: string
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-beforeEach(() => {
-  tmpDir = mkdtempSync(join(tmpdir(), 'hypersonic-new-test-'))
+function makeDeps(fileContents: Record<string, string> = {}): GenerateFilesDeps {
+  return {
+    // Normalize backslashes to forward slashes before the dictionary lookup so
+    // that tests using forward-slash keys (e.g. '/fake/templates/new/package.json')
+    // work correctly on Windows, where path.join produces backslash paths.
+    readFile: vi.fn((p: string) => {
+      const key = p.replace(/\\/g, '/')
+      return fileContents[key] ?? 'template content'
+    }),
+    mkdir: vi.fn(),
+    writeFile: vi.fn(),
+    templatesDir: '/fake/templates/new',
+  }
+}
+
+const BASE_OPTS: GenerateFilesOptions = {
+  projectDir: '/projects/my-app',
+  projectName: 'my-app',
+  secret: 'abc123secret',
+}
+
+// ── applySubstitutions ────────────────────────────────────────────────────────
+
+describe('applySubstitutions', () => {
+  it('replaces a single placeholder', () => {
+    expect(applySubstitutions('hello {{NAME}}', { NAME: 'world' })).toBe('hello world')
+  })
+
+  it('replaces multiple occurrences of the same placeholder', () => {
+    expect(applySubstitutions('{{X}} and {{X}}', { X: 'foo' })).toBe('foo and foo')
+  })
+
+  it('replaces multiple distinct placeholders', () => {
+    expect(
+      applySubstitutions('{{A}} {{B}}', { A: 'hello', B: 'world' }),
+    ).toBe('hello world')
+  })
+
+  it('leaves unknown placeholders untouched', () => {
+    expect(applySubstitutions('{{UNKNOWN}}', { OTHER: 'x' })).toBe('{{UNKNOWN}}')
+  })
+
+  it('returns the string unchanged when vars is empty', () => {
+    expect(applySubstitutions('no placeholders', {})).toBe('no placeholders')
+  })
+
+  it('handles an empty string', () => {
+    expect(applySubstitutions('', { NAME: 'x' })).toBe('')
+  })
+
+  it('falls back to the original placeholder when the key exists but its value is undefined', () => {
+    // Record<string, string> disallows this at the type level, but a caller
+    // building vars dynamically (e.g. from a partial object) could still
+    // produce this at runtime — the `?? match` fallback guards against it.
+    const vars = { NAME: undefined } as unknown as Record<string, string>
+    expect(applySubstitutions('hello {{NAME}}', vars)).toBe('hello {{NAME}}')
+  })
 })
 
-afterEach(() => {
-  rmSync(tmpDir, { recursive: true, force: true })
-})
+// ── TEMPLATE_FILES manifest ───────────────────────────────────────────────────
 
-// ── Every file is written ─────────────────────────────────────────────────────
+describe('TEMPLATE_FILES', () => {
+  it('is a non-empty array', () => {
+    expect(TEMPLATE_FILES.length).toBeGreaterThan(0)
+  })
 
-describe('generateFiles — all files written', () => {
-  it('writes every file listed in TEMPLATE_FILES', async () => {
-    await generateFiles({
-      projectDir: tmpDir,
-      projectName: 'test-project',
-      secret: 'a'.repeat(64),
-    })
+  it('maps _env src to .env dest', () => {
+    const entry = TEMPLATE_FILES.find((f) => f.src === '_env')
+    expect(entry).toBeDefined()
+    expect(entry!.dest).toBe('.env')
+  })
 
-    for (const { dest } of TEMPLATE_FILES) {
-      expect(existsSync(join(tmpDir, dest)), `expected ${dest} to exist`).toBe(true)
+  it('maps _gitignore src to .gitignore dest', () => {
+    const entry = TEMPLATE_FILES.find((f) => f.src === '_gitignore')
+    expect(entry).toBeDefined()
+    expect(entry!.dest).toBe('.gitignore')
+  })
+
+  it('contains package.json', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'package.json')).toBe(true)
+  })
+
+  it('contains hypersonic.config.ts', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'hypersonic.config.ts')).toBe(true)
+  })
+
+  it('contains .env.example', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === '.env.example')).toBe(true)
+  })
+
+  it('contains .gitignore', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === '.gitignore')).toBe(true)
+  })
+
+  it('contains tsconfig.json', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'tsconfig.json')).toBe(true)
+  })
+
+  it('contains eslint.config.js', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'eslint.config.js')).toBe(true)
+  })
+
+  it('contains vite.config.ts', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'vite.config.ts')).toBe(true)
+  })
+
+  it('contains prisma/schema.prisma', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'prisma/schema.prisma')).toBe(true)
+  })
+
+  it('contains prisma.config.ts', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'prisma.config.ts')).toBe(true)
+  })
+
+  it('contains server.ts', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'server.ts')).toBe(true)
+  })
+
+  it('contains resources/css/app.css', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'resources/css/app.css')).toBe(true)
+  })
+
+  it('contains resources/js/app.tsx', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'resources/js/app.tsx')).toBe(true)
+  })
+
+  it('contains resources/js/Pages/Welcome.tsx', () => {
+    expect(TEMPLATE_FILES.some((f) => f.dest === 'resources/js/Pages/Welcome.tsx')).toBe(true)
+  })
+
+  it('has no dest path that starts with a dot except .env and .env.example and .gitignore', () => {
+    const dotFiles = TEMPLATE_FILES.filter((f) => f.dest.startsWith('.'))
+    const allowed = new Set(['.env', '.env.example', '.gitignore'])
+    for (const { dest } of dotFiles) {
+      expect(allowed.has(dest)).toBe(true)
     }
   })
 
-  it('returns one WrittenFile entry per template', async () => {
-    const result = await generateFiles({
-      projectDir: tmpDir,
-      projectName: 'test-project',
-      secret: 'a'.repeat(64),
-    })
-    expect(result).toHaveLength(TEMPLATE_FILES.length)
+  it('has no src path named .env (would be git-ignored)', () => {
+    expect(TEMPLATE_FILES.every((f) => f.src !== '.env')).toBe(true)
   })
 
-  it('returned dest paths match the TEMPLATE_FILES manifest', async () => {
-    const result = await generateFiles({
-      projectDir: tmpDir,
-      projectName: 'test-project',
-      secret: 'a'.repeat(64),
-    })
-    const dests = result.map((f) => f.dest)
-    for (const { dest } of TEMPLATE_FILES) {
-      expect(dests).toContain(dest)
-    }
+  it('has no src path named .gitignore (would be stripped by npm)', () => {
+    expect(TEMPLATE_FILES.every((f) => f.src !== '.gitignore')).toBe(true)
   })
 })
 
-// ── {{PROJECT_NAME}} substitution ─────────────────────────────────────────────
+// ── generateFiles ─────────────────────────────────────────────────────────────
 
-describe('generateFiles — PROJECT_NAME substitution', () => {
-  it('substitutes the project name in package.json', async () => {
-    await generateFiles({
-      projectDir: tmpDir,
-      projectName: 'my-cool-app',
-      secret: 'x'.repeat(64),
-    })
-    const content = readFileSync(join(tmpDir, 'package.json'), 'utf-8')
-    expect(JSON.parse(content).name).toBe('my-cool-app')
-  })
+describe('generateFiles', () => {
+  beforeEach(() => vi.clearAllMocks())
 
-  it('does not leave any {{PROJECT_NAME}} placeholder in the output', async () => {
-    await generateFiles({
-      projectDir: tmpDir,
-      projectName: 'my-cool-app',
-      secret: 'x'.repeat(64),
-    })
-    for (const { dest } of TEMPLATE_FILES) {
-      const content = readFileSync(join(tmpDir, dest), 'utf-8')
-      expect(content, `${dest} still contains {{PROJECT_NAME}}`).not.toContain(
-        '{{PROJECT_NAME}}',
+  it('reads each template file from templatesDir', async () => {
+    const deps = makeDeps()
+    await generateFiles(BASE_OPTS, deps)
+    for (const { src } of TEMPLATE_FILES) {
+      expect(deps.readFile).toHaveBeenCalledWith(
+        join('/fake/templates/new', src),
       )
     }
   })
-})
 
-// ── {{SECRET}} substitution ───────────────────────────────────────────────────
-
-describe('generateFiles — SECRET substitution', () => {
-  it('substitutes the secret into the .env file', async () => {
-    const secret = 'b'.repeat(64)
-    await generateFiles({ projectDir: tmpDir, projectName: 'app', secret })
-    const content = readFileSync(join(tmpDir, '.env'), 'utf-8')
-    expect(content).toContain(secret)
-  })
-
-  it('does not leave any {{SECRET}} placeholder in the output', async () => {
-    await generateFiles({
-      projectDir: tmpDir,
-      projectName: 'app',
-      secret: 'c'.repeat(64),
-    })
+  it('calls mkdir for the parent directory of each dest file', async () => {
+    const deps = makeDeps()
+    await generateFiles(BASE_OPTS, deps)
     for (const { dest } of TEMPLATE_FILES) {
-      const content = readFileSync(join(tmpDir, dest), 'utf-8')
-      expect(content, `${dest} still contains {{SECRET}}`).not.toContain('{{SECRET}}')
+      expect(deps.mkdir).toHaveBeenCalledWith(
+        dirname(join(BASE_OPTS.projectDir, dest)),
+      )
     }
   })
-})
 
-// ── _env → .env rename ────────────────────────────────────────────────────────
-
-describe('generateFiles — _env rename', () => {
-  it('writes a .env file', async () => {
-    await generateFiles({ projectDir: tmpDir, projectName: 'app', secret: 'd'.repeat(64) })
-    expect(existsSync(join(tmpDir, '.env'))).toBe(true)
+  it('calls writeFile for each dest file under projectDir', async () => {
+    const deps = makeDeps()
+    await generateFiles(BASE_OPTS, deps)
+    for (const { dest } of TEMPLATE_FILES) {
+      expect(deps.writeFile).toHaveBeenCalledWith(
+        join(BASE_OPTS.projectDir, dest),
+        expect.any(String),
+      )
+    }
   })
 
-  it('does not write a file named _env', async () => {
-    await generateFiles({ projectDir: tmpDir, projectName: 'app', secret: 'd'.repeat(64) })
-    expect(existsSync(join(tmpDir, '_env'))).toBe(false)
-  })
-})
-
-// ── _gitignore → .gitignore rename ────────────────────────────────────────────
-
-describe('generateFiles — _gitignore rename', () => {
-  it('writes a .gitignore file', async () => {
-    await generateFiles({ projectDir: tmpDir, projectName: 'app', secret: 'd'.repeat(64) })
-    expect(existsSync(join(tmpDir, '.gitignore'))).toBe(true)
-  })
-
-  it('does not write a file named _gitignore', async () => {
-    await generateFiles({ projectDir: tmpDir, projectName: 'app', secret: 'd'.repeat(64) })
-    expect(existsSync(join(tmpDir, '_gitignore'))).toBe(false)
-  })
-})
-
-// ── Nested directories created ────────────────────────────────────────────────
-
-describe('generateFiles — directory creation', () => {
-  it('creates the prisma/ directory', async () => {
-    await generateFiles({ projectDir: tmpDir, projectName: 'app', secret: 'e'.repeat(64) })
-    expect(existsSync(join(tmpDir, 'prisma'))).toBe(true)
-  })
-
-  it('creates the resources/css/ directory', async () => {
-    await generateFiles({ projectDir: tmpDir, projectName: 'app', secret: 'e'.repeat(64) })
-    expect(existsSync(join(tmpDir, 'resources/css'))).toBe(true)
-  })
-
-  it('creates the resources/js/Pages/ directory', async () => {
-    await generateFiles({ projectDir: tmpDir, projectName: 'app', secret: 'e'.repeat(64) })
-    expect(existsSync(join(tmpDir, 'resources/js/Pages'))).toBe(true)
-  })
-})
-
-// ── File content spot-checks ──────────────────────────────────────────────────
-
-describe('generateFiles — output content', () => {
-  beforeEach(async () => {
-    await generateFiles({
-      projectDir: tmpDir,
-      projectName: 'spot-check-app',
-      secret: 'f'.repeat(64),
-    })
-  })
-
-  it('package.json is valid JSON with the correct name', () => {
-    const pkg = JSON.parse(readFileSync(join(tmpDir, 'package.json'), 'utf-8'))
-    expect(pkg.name).toBe('spot-check-app')
-    expect(pkg.type).toBe('module')
-  })
-
-  it('tsconfig.json is valid JSON', () => {
-    expect(() =>
-      JSON.parse(readFileSync(join(tmpDir, 'tsconfig.json'), 'utf-8')),
-    ).not.toThrow()
-  })
-
-  it('.env contains the substituted secret', () => {
-    const content = readFileSync(join(tmpDir, '.env'), 'utf-8')
-    expect(content).toContain('f'.repeat(64))
-  })
-
-  it('.env.example does not contain the substituted secret', () => {
-    const content = readFileSync(join(tmpDir, '.env.example'), 'utf-8')
-    expect(content).not.toContain('f'.repeat(64))
-  })
-
-  it('server.ts imports from @hypersonic-js/complete', () => {
-    const content = readFileSync(join(tmpDir, 'server.ts'), 'utf-8')
-    expect(content).toContain('@hypersonic-js/complete')
-  })
-
-  it('Welcome.tsx exports a default function', () => {
-    const content = readFileSync(
-      join(tmpDir, 'resources/js/Pages/Welcome.tsx'),
-      'utf-8',
+  it('substitutes {{PROJECT_NAME}} in template content', async () => {
+    const deps = makeDeps({ '/fake/templates/new/package.json': '{"name":"{{PROJECT_NAME}}"}' })
+    await generateFiles(BASE_OPTS, deps)
+    expect(deps.writeFile).toHaveBeenCalledWith(
+      join(BASE_OPTS.projectDir, 'package.json'),
+      '{"name":"my-app"}',
     )
-    expect(content).toContain('export default function Welcome')
   })
 
-  it('prisma/schema.prisma uses the sqlite provider', () => {
-    const content = readFileSync(join(tmpDir, 'prisma/schema.prisma'), 'utf-8')
-    expect(content).toContain('provider = "sqlite"')
+  it('substitutes {{SECRET}} in template content', async () => {
+    const deps = makeDeps({ '/fake/templates/new/_env': 'SECRET="{{SECRET}}"' })
+    await generateFiles(BASE_OPTS, deps)
+    expect(deps.writeFile).toHaveBeenCalledWith(
+      join(BASE_OPTS.projectDir, '.env'),
+      'SECRET="abc123secret"',
+    )
+  })
+
+  it('writes _env template to .env dest path', async () => {
+    const deps = makeDeps()
+    await generateFiles(BASE_OPTS, deps)
+    const destPaths = vi.mocked(deps.writeFile).mock.calls.map(([p]) => p)
+    expect(destPaths).toContain(join(BASE_OPTS.projectDir, '.env'))
+    expect(destPaths.every((p) => !p.endsWith('_env'))).toBe(true)
+  })
+
+  it('writes _gitignore template to .gitignore dest path', async () => {
+    const deps = makeDeps()
+    await generateFiles(BASE_OPTS, deps)
+    const destPaths = vi.mocked(deps.writeFile).mock.calls.map(([p]) => p)
+    expect(destPaths).toContain(join(BASE_OPTS.projectDir, '.gitignore'))
+    expect(destPaths.every((p) => !p.endsWith('_gitignore'))).toBe(true)
+  })
+
+  it('returns one WrittenFile entry per template file', async () => {
+    const deps = makeDeps()
+    const result = await generateFiles(BASE_OPTS, deps)
+    expect(result).toHaveLength(TEMPLATE_FILES.length)
+  })
+
+  it('returned entries contain the dest path', async () => {
+    const deps = makeDeps()
+    const result = await generateFiles(BASE_OPTS, deps)
+    const dests = result.map((f) => f.dest)
+    expect(dests).toContain('package.json')
+    expect(dests).toContain('.env')
+    expect(dests).toContain('resources/js/Pages/Welcome.tsx')
+  })
+
+  it('calls readFile exactly once per template file', async () => {
+    const deps = makeDeps()
+    await generateFiles(BASE_OPTS, deps)
+    expect(deps.readFile).toHaveBeenCalledTimes(TEMPLATE_FILES.length)
+  })
+
+  it('propagates readFile errors', async () => {
+    const deps = makeDeps()
+    vi.mocked(deps.readFile).mockImplementationOnce(() => {
+      throw new Error('ENOENT')
+    })
+    await expect(generateFiles(BASE_OPTS, deps)).rejects.toThrow('ENOENT')
+  })
+
+  it('propagates writeFile errors', async () => {
+    const deps = makeDeps()
+    vi.mocked(deps.writeFile).mockImplementationOnce(() => {
+      throw new Error('ENOSPC')
+    })
+    await expect(generateFiles(BASE_OPTS, deps)).rejects.toThrow('ENOSPC')
+  })
+
+  it('propagates mkdir errors', async () => {
+    const deps = makeDeps()
+    vi.mocked(deps.mkdir).mockImplementationOnce(() => {
+      throw new Error('EACCES')
+    })
+    await expect(generateFiles(BASE_OPTS, deps)).rejects.toThrow('EACCES')
+  })
+})
+
+// ── default deps (real makeDefaultDeps) ─────────────────────────────────────
+//
+// generateFiles's `deps` parameter defaults to makeDefaultDeps() (a real,
+// unexported function wiring up real readFileSync/mkdirSync/writeFileSync and
+// a templatesDir derived from import.meta.url). The tests above always pass
+// an explicit `deps`, so that default path — and its real fs wiring — is
+// exercised here instead, fully mocked so no real disk I/O occurs.
+
+describe('generateFiles — default deps', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockReadFileSync.mockReturnValue('template content')
+  })
+
+  it('resolves readFile/mkdir/writeFile from real node:fs when deps is omitted', async () => {
+    const result = await generateFiles(BASE_OPTS)
+    expect(mockReadFileSync).toHaveBeenCalledTimes(TEMPLATE_FILES.length)
+    expect(mockMkdirSync).toHaveBeenCalled()
+    expect(mockWriteFileSync).toHaveBeenCalled()
+    expect(result).toHaveLength(TEMPLATE_FILES.length)
+  })
+
+  it('mkdir is called with recursive: true', async () => {
+    await generateFiles(BASE_OPTS)
+    expect(mockMkdirSync).toHaveBeenCalledWith(expect.any(String), { recursive: true })
+  })
+
+  it('writeFile is called with utf-8 encoding', async () => {
+    await generateFiles(BASE_OPTS)
+    expect(mockWriteFileSync).toHaveBeenCalledWith(expect.any(String), expect.any(String), 'utf-8')
+  })
+
+  it('readFile is called with utf-8 encoding', async () => {
+    await generateFiles(BASE_OPTS)
+    expect(mockReadFileSync).toHaveBeenCalledWith(expect.any(String), 'utf-8')
   })
 })

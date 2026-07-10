@@ -11,6 +11,18 @@ vi.mock('../../../src/utils/logger.js', () => ({
   logger: { info: vi.fn(), success: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
+const mockGetDMMF = vi.fn()
+vi.mock('@prisma/get-dmmf', () => ({
+  getDMMF: (...args: unknown[]) => mockGetDMMF(...args),
+}))
+
+const mockReadFileSync = vi.fn()
+const mockWriteFileSync = vi.fn()
+vi.mock('node:fs', () => ({
+  readFileSync: (...args: unknown[]) => mockReadFileSync(...args),
+  writeFileSync: (...args: unknown[]) => mockWriteFileSync(...args),
+}))
+
 import { parseDmmf } from '../../../src/dmmf/parser.js'
 import { logger } from '../../../src/utils/logger.js'
 const mockParseDmmf = vi.mocked(parseDmmf)
@@ -77,6 +89,26 @@ describe('runGenerateMeta', () => {
     const deps = makeDeps()
     vi.mocked(deps.readFile).mockImplementation(() => { throw new Error('file not found') })
     await expect(runGenerateMeta({ schema: 'missing.prisma', output: 'out.json' }, deps)).rejects.toThrow('file not found')
+  })
+})
+
+// ── default deps (real loadDeps) ────────────────────────────────────────────
+
+describe('runGenerateMeta — default deps', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetDMMF.mockResolvedValue(FAKE_DMMF)
+    mockReadFileSync.mockReturnValue('schema content')
+  })
+
+  it('resolves getDMMF, readFile, and writeFile from real modules when deps is omitted', async () => {
+    await runGenerateMeta({ schema: 'prisma/schema.prisma', output: 'prisma/admin-meta.json' })
+    expect(mockReadFileSync).toHaveBeenCalledWith(resolve('prisma/schema.prisma'), 'utf-8')
+    expect(mockGetDMMF).toHaveBeenCalledWith({ datamodel: 'schema content' })
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
+      resolve('prisma/admin-meta.json'),
+      JSON.stringify([{ name: 'Post', urlSlug: 'post' }], null, 2),
+    )
   })
 })
 
