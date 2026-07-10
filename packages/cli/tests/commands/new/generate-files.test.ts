@@ -59,6 +59,14 @@ describe('applySubstitutions', () => {
   it('handles an empty string', () => {
     expect(applySubstitutions('', { NAME: 'x' })).toBe('')
   })
+
+  it('falls back to the original placeholder when the key exists but its value is undefined', () => {
+    // Record<string, string> disallows this at the type level, but a caller
+    // building vars dynamically (e.g. from a partial object) could still
+    // produce this at runtime — the `?? match` fallback guards against it.
+    const vars = { NAME: undefined } as unknown as Record<string, string>
+    expect(applySubstitutions('hello {{NAME}}', vars)).toBe('hello {{NAME}}')
+  })
 })
 
 // ── TEMPLATE_FILES manifest ───────────────────────────────────────────────────
