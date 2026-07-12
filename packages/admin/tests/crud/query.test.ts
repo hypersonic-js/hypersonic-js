@@ -181,6 +181,14 @@ describe('fetchRelatedOptions', () => {
     const model = makeModel({ name: 'User', urlSlug: 'user', idField: 'id', displayField: 'name' })
     expect(await fetchRelatedOptions(prisma, model)).toEqual([])
   })
+
+  it('falls back to an empty string when both displayField and idField are missing from the record', async () => {
+    const { prisma, delegate } = makePrisma('user')
+    delegate.findMany.mockResolvedValue([{ other: 'value' }])
+    const model = makeModel({ name: 'User', urlSlug: 'user', idField: 'id', displayField: 'name' })
+    const result = await fetchRelatedOptions(prisma, model)
+    expect(result[0]!.label).toBe('')
+  })
 })
 
 // ── findMany ──────────────────────────────────────────────────────────────────

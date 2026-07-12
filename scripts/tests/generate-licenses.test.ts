@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { fileURLToPath } from 'node:url'
 
 // ── Mock setup (hoisted by vitest before any imports) ─────────────────────────
 
@@ -247,6 +248,40 @@ describe('buildGroups', () => {
     const groups = buildGroups(makePnpmOutput())
     expect(groups[0]!.licenseText).toBeNull()
   })
+
+  it('falls back to paths[0] when a version has no corresponding path entry', () => {
+    const output: PnpmLicensesOutput = {
+      MIT: [
+        makeEntry({
+          name: 'multi-pkg',
+          versions: ['1.0.0', '2.0.0'],
+          // Only one path for two versions — the 2nd version's lookup must
+          // fall back to paths[0] rather than reading paths[1] (undefined).
+          paths: ['/node_modules/multi-pkg-v1'],
+        }),
+      ],
+    }
+    buildGroups(output)
+    expect(mockExistsSync).toHaveBeenCalledWith('/node_modules/multi-pkg-v1')
+    expect(mockExistsSync).not.toHaveBeenCalledWith(undefined)
+  })
+
+  it('falls back to an empty path when entry.paths is empty', () => {
+    const output: PnpmLicensesOutput = {
+      MIT: [
+        makeEntry({
+          name: 'no-path-pkg',
+          versions: ['1.0.0'],
+          paths: [],
+        }),
+      ],
+    }
+    mockExistsSync.mockReturnValue(false)
+    const groups = buildGroups(output)
+    expect(mockExistsSync).toHaveBeenCalledWith('')
+    expect(groups[0]!.packages[0]!.copyright).toBe('Unknown')
+    expect(groups[0]!.licenseText).toBeNull()
+  })
 })
 
 // ── buildMarkdown ─────────────────────────────────────────────────────────────
@@ -350,5 +385,40 @@ describe('generateLicenses', () => {
     generateLicenses('/repo')
     expect(spy).toHaveBeenCalledWith(expect.stringContaining('THIRD_PARTY_LICENSES.md written'))
     spy.mockRestore()
+  })
+})
+
+// ── Entry point guard ─────────────────────────────────────────────────────────
+// `if (process.argv[1] === fileURLToPath(import.meta.url))` at the bottom of
+// generate-licenses.ts runs generateLicenses() automatically when the file is
+// executed directly (`node --experimental-strip-types scripts/generate-licenses.ts`)
+// but not when imported as a module (as every other test above does). Exercised
+// here by resetting the module registry and re-importing with process.argv[1]
+// forced to the module's own file path, matching the true branch of the guard.
+
+describe('entry point', () => {
+  it('calls generateLicenses automatically when process.argv[1] matches the module URL', async () => {
+    vi.resetModules()
+    vi.clearAllMocks()
+    mockExecSync.mockReturnValue(JSON.stringify(makePnpmOutput()))
+    mockExistsSync.mockReturnValue(true)
+    mockReaddirSync.mockReturnValue(['LICENSE'])
+    mockReadFileSync.mockReturnValue(MIT_TEXT)
+
+    const moduleUrl = new URL('../generate-licenses.ts', import.meta.url)
+    const originalArgv1 = process.argv[1]
+    process.argv[1] = fileURLToPath(moduleUrl)
+
+    try {
+      await import('../generate-licenses.js')
+    } finally {
+      process.argv[1] = originalArgv1
+    }
+
+    expect(mockWriteFileSync).toHaveBeenCalledWith(
+      expect.stringContaining('THIRD_PARTY_LICENSES.md'),
+      expect.any(String),
+      'utf-8',
+    )
   })
 })

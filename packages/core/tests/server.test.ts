@@ -109,6 +109,17 @@ describe('createApp', () => {
     expect(typeof app.express).toBe('function')
   })
 
+  it('throws a descriptive error when config.database is missing', async () => {
+    const { database: _database, ...configWithoutDatabase } = config
+    await expect(
+      createApp({
+        config: configWithoutDatabase as HypersonicConfig,
+        env,
+        prisma: mockPrisma,
+      }),
+    ).rejects.toThrowError(/config\.database is required/)
+  })
+
   it('returns the auth instance created internally', async () => {
     const { betterAuth } = await import('better-auth')
     const app = await createApp({ config, env, prisma: mockPrisma })

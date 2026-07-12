@@ -50,6 +50,25 @@ function extractCsrfToken(res: request.Response): string {
   return entry?.split(';')[0]?.split('=')[1] ?? ''
 }
 
+/**
+ * App with a pre-CSRF middleware that forces the X-XSRF-TOKEN header into a
+ * string[] before the validator sees it. Node's http parser always joins
+ * duplicate custom headers into a single comma-separated string, so this is
+ * the only way to exercise the Array.isArray(rawHeaderToken) branch that
+ * IncomingHttpHeaders' typing allows for — e.g. a proxy that forwards raw
+ * duplicate headers instead of the default Node behaviour.
+ */
+async function buildCsrfTestAppWithArrayHeader(headerValues: string[]) {
+  const app = express()
+  app.use((req, _res, next) => {
+    ;(req.headers as Record<string, string | string[]>)['x-xsrf-token'] = headerValues
+    next()
+  })
+  await createInertiaMiddleware(app, { ssr: false })
+  app.post('/mutate', (_req, res) => res.status(200).json({ ok: true }))
+  return app
+}
+
 // ── createInertiaMiddleware ───────────────────────────────────────────────────
 
 describe('createInertiaMiddleware', () => {
@@ -364,6 +383,30 @@ describe('createInertiaMiddleware', () => {
         .post('/mutate')
         .set('Cookie', 'XSRF-TOKEN=%ZZ')
         .set('X-XSRF-TOKEN', 'different')
+      expect(res.status).toBe(419)
+    })
+
+    it('ignores a cookie segment with no "=" sign and still parses the rest', async () => {
+      const app = await buildCsrfTestApp()
+      const res = await request(app)
+        .post('/mutate')
+        // "novalue" has no '=' and must be skipped without breaking XSRF-TOKEN parsing
+        .set('Cookie', 'novalue; XSRF-TOKEN=abc123')
+        .set('X-XSRF-TOKEN', 'abc123')
+      expect(res.status).toBe(200)
+    })
+  })
+
+  describe('CSRF — array-valued header token', () => {
+    it('matches against the first element when the header arrives as string[]', async () => {
+      const app = await buildCsrfTestAppWithArrayHeader(['abc123', 'other'])
+      const res = await request(app).post('/mutate').set('Cookie', 'XSRF-TOKEN=abc123')
+      expect(res.status).toBe(200)
+    })
+
+    it('rejects with 419 when the first array element does not match the cookie', async () => {
+      const app = await buildCsrfTestAppWithArrayHeader(['wrong', 'abc123'])
+      const res = await request(app).post('/mutate').set('Cookie', 'XSRF-TOKEN=abc123')
       expect(res.status).toBe(419)
     })
   })

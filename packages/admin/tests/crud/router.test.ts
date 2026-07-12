@@ -3,6 +3,7 @@ import express from 'express'
 import request from 'supertest'
 
 import { createAdminRouter } from '../../src/crud/router.js'
+import { MAX_RELATED_OPTIONS } from '../../src/constants.js'
 import type { AdminModelMeta, PrismaClientLike, LoggerLike, AdminAuthLike } from '../../src/types.js'
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -130,7 +131,29 @@ function buildAuthApp(auth: AdminAuthLike, models = [betterAuthUserModel]) {
   return app
 }
 
-// ── Dashboard ----------------------------------------------------------------
+// Builds an app with Better Auth admin methods available for the User model,
+// but with a res.inertia that throws synchronously — exercises the catch(err)
+// branch in routes that call res.inertia! directly with no other async work
+// that could otherwise fail.
+function buildAuthAppWithThrowingInertia(auth: AdminAuthLike, models = [betterAuthUserModel]) {
+  const app = express()
+  app.use(express.json())
+  app.use(express.urlencoded({ extended: false }))
+
+  app.use((_req, res, next) => {
+    ;(res as unknown as Record<string, unknown>)['inertia'] = () => {
+      throw new Error('render failed')
+    }
+    next()
+  })
+
+  const router = createAdminRouter(mockPrisma, models, PREFIX, { allMeta: models, auth })
+  app.use(PREFIX, router)
+
+  app.use((_req, res) => res.status(404).json({ error: 'Not Found' }))
+
+  return app
+}
 
 describe('GET /admin -- Dashboard', () => {
   beforeEach(() => vi.clearAllMocks())
@@ -461,6 +484,27 @@ describe('GET /admin/related-options/:relatedModel', () => {
     const res = await request(app).get('/admin/related-options/nonexistent')
     expect(res.status).toBe(404)
   })
+
+  it('calls next(err) and returns 500 when fetchRelatedOptions throws', async () => {
+    userDelegate.findMany.mockRejectedValueOnce(new Error('DB error'))
+    const app = buildApp()
+    const res = await request(app).get('/admin/related-options/user')
+    expect(res.status).toBe(500)
+  })
+
+  it('falls back to page 1 when the page query param is not a finite number', async () => {
+    const app = buildApp()
+    const res = await request(app).get('/admin/related-options/user?page=abc')
+    expect(res.status).toBe(200)
+    expect(userDelegate.findMany).toHaveBeenCalledWith({ take: MAX_RELATED_OPTIONS, skip: 0 })
+  })
+
+  it('falls back to page 1 when the page query param is less than 1', async () => {
+    const app = buildApp()
+    const res = await request(app).get('/admin/related-options/user?page=0')
+    expect(res.status).toBe(200)
+    expect(userDelegate.findMany).toHaveBeenCalledWith({ take: MAX_RELATED_OPTIONS, skip: 0 })
+  })
 })
 
 // -- Logger -------------------------------------------------------------------
@@ -572,6 +616,12 @@ describe('Better Auth user management', () => {
       const res = await request(app).get('/admin/user/new')
       expect(res.body.props.errors).toEqual({})
     })
+
+    it('calls next(err) and returns 500 when res.inertia throws while rendering', async () => {
+      const app = buildAuthAppWithThrowingInertia(mockAuth)
+      const res = await request(app).get('/admin/user/new')
+      expect(res.status).toBe(500)
+    })
   })
 
   // POST /user ────────────────────────────────────────────────────────────────
@@ -612,6 +662,14 @@ describe('Better Auth user management', () => {
         .post('/admin/user')
         .send({ name: 'Alice', email: 'alice@example.com', password: 'secret123', role: 'user' })
       expect(userDelegate.create).not.toHaveBeenCalled()
+    })
+
+    it('falls back to empty strings for name, email, and password when omitted from the body', async () => {
+      const app = buildAuthApp(mockAuth)
+      await request(app).post('/admin/user').send({ role: 'user' })
+      expect(mockCreateUser).toHaveBeenCalledWith({
+        body: { name: '', email: '', password: '', role: 'user' },
+      })
     })
 
     it('redirects for Inertia when createUser throws', async () => {

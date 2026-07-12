@@ -7,6 +7,33 @@ vi.mock('../../../src/utils/logger.js', () => ({
   logger: { info: vi.fn(), success: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
+const mockReaddirSync = vi.fn()
+const mockMkdirSync = vi.fn()
+vi.mock('node:fs', () => ({
+  readdirSync: (...args: unknown[]) => mockReaddirSync(...args),
+  mkdirSync: (...args: unknown[]) => mockMkdirSync(...args),
+}))
+
+const mockRandomBytes = vi.fn()
+vi.mock('node:crypto', () => ({
+  randomBytes: (...args: unknown[]) => mockRandomBytes(...args),
+}))
+
+const mockPrompt = vi.fn()
+vi.mock('../../../src/utils/prompt.js', () => ({
+  prompt: (...args: unknown[]) => mockPrompt(...args),
+}))
+
+const mockGenerateFiles = vi.fn()
+vi.mock('../../../src/commands/new/generate-files.js', () => ({
+  generateFiles: (...args: unknown[]) => mockGenerateFiles(...args),
+}))
+
+const mockRunSetup = vi.fn()
+vi.mock('../../../src/commands/new/run-setup.js', () => ({
+  runSetup: (...args: unknown[]) => mockRunSetup(...args),
+}))
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeDeps(overrides: Partial<NewCommandDeps> = {}): NewCommandDeps {
@@ -343,5 +370,43 @@ describe('generateFiles runs before runSetup', () => {
     })
     await runNew(deps)
     expect(order.indexOf('generate')).toBeLessThan(order.indexOf('setup'))
+  })
+})
+
+// ── default deps (real loadDeps) ────────────────────────────────────────────
+
+describe('registerNewCommand — default deps', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockReaddirSync.mockReturnValue([])
+    mockMkdirSync.mockReturnValue(undefined)
+    mockRandomBytes.mockReturnValue(Buffer.alloc(32, 0xab))
+    mockPrompt.mockImplementation(async () => '')
+    mockGenerateFiles.mockResolvedValue([])
+    mockRunSetup.mockResolvedValue(undefined)
+  })
+
+  it('wires real fs/crypto/prompt/generateFiles/runSetup when deps is omitted', async () => {
+    mockPrompt
+      .mockResolvedValueOnce('1') // new directory
+      .mockResolvedValueOnce('my-app') // project name
+
+    const program = new Command()
+    program.exitOverride()
+    registerNewCommand(program)
+    await program.parseAsync(['node', 'hypersonic', 'new'])
+
+    // cwd() wrapper — invoked to resolve the new subdirectory path
+    // mkdirSync() wrapper — invoked to create the new subdirectory
+    expect(mockMkdirSync).toHaveBeenCalledWith(
+      join(process.cwd(), 'my-app'),
+      { recursive: true },
+    )
+    expect(mockGenerateFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ projectDir: join(process.cwd(), 'my-app'), projectName: 'my-app' }),
+    )
+    expect(mockRunSetup).toHaveBeenCalledWith(
+      expect.objectContaining({ projectDir: join(process.cwd(), 'my-app') }),
+    )
   })
 })

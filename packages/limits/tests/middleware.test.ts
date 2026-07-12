@@ -418,6 +418,23 @@ describe('createLimiter — handler blocks client', () => {
     expect(prisma.rateLimit.upsert).not.toHaveBeenCalled()
     expect(res.status).toHaveBeenCalledWith(429)
   })
+
+  it('handler uses "unknown" as the block key when req.ip is undefined', async () => {
+    const prisma = { rateLimit: makePrismaRateLimitModel() as unknown as PrismaRateLimitModel }
+    const { limit } = await createLimiter({ config: { backend: 'database' }, env: {}, prisma })
+    limit({ name: 'test-route', requests: 5, windowMs: 60_000, blockDuration: 300_000 })
+    const options = mockRateLimit.mock.calls[0]![0] as {
+      handler: (req: Partial<Request>, res: ReturnType<typeof makeRes>) => Promise<void>
+    }
+    const req = makeReq(undefined as unknown as string)
+    ;(req as { ip: undefined }).ip = undefined
+    const res = makeRes()
+    await options.handler(req, res)
+    await vi.waitFor(() => expect(res.status).toHaveBeenCalledWith(429))
+    expect(prisma.rateLimit.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { key: 'unknown' } }),
+    )
+  })
 })
 
 // ── database backend — per-call PrismaStore ───────────────────────────────────

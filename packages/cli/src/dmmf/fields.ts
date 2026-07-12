@@ -1,9 +1,10 @@
 import type { AdminFieldMeta, AdminFieldKind } from '@hypersonic-js/admin'
 import type { DmmfField, DmmfEnum } from './types.js'
-
-const DISPLAY_FIELD_CANDIDATES = ['name', 'title', 'email', 'label', 'slug'] as const
-const AUTO_MANAGED_FIELD_NAMES = ['createdAt', 'updatedAt'] as const
-const LARGE_TEXT_FIELD_NAMES = ['body', 'content', 'description', 'text', 'html', 'markdown'] as const
+import {
+  DISPLAY_FIELD_CANDIDATES,
+  AUTO_MANAGED_FIELD_NAMES,
+  LARGE_TEXT_FIELD_NAMES,
+} from './constants.js'
 
 /** Maps a DMMF field kind to our simplified AdminFieldKind. */
 export function classifyField(field: DmmfField): AdminFieldKind {
