@@ -1,9 +1,12 @@
 import { Link, router } from '@inertiajs/react'
 
+type FieldKind = 'scalar' | 'relation' | 'enum' | 'file'
+
 interface FieldMeta {
   name: string
   isId: boolean
   prismaType: string
+  kind: FieldKind
 }
 
 interface ModelMeta {
@@ -38,6 +41,31 @@ function displayValue(value: unknown, prismaType: string): string {
   if (value instanceof Date) return value.toLocaleString()
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
+}
+
+/**
+ * Renders a list-view table cell. File fields render a "View" link (through
+ * the admin server's presigned-download redirect route) instead of the raw
+ * S3 key, since the key alone isn't useful to a human reader.
+ */
+function renderCellValue(
+  field: FieldMeta,
+  record: Record<string, unknown>,
+  model: ModelMeta,
+  prefix: string,
+): React.ReactNode {
+  if (field.kind === 'file') {
+    const value = record[field.name]
+    if (typeof value !== 'string' || value === '') return '—'
+    const href = `${prefix}/${model.urlSlug}/${String(record[model.idField])}/files/${field.name}`
+    return (
+      <a href={href} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+        View
+      </a>
+    )
+  }
+
+  return displayValue(record[field.name], field.prismaType)
 }
 
 export default function AdminModelIndex({ model, records, pagination, prefix }: Props) {
@@ -87,7 +115,7 @@ export default function AdminModelIndex({ model, records, pagination, prefix }: 
                   <tr key={String(record[model.idField])} className="hover:bg-gray-50">
                     {model.listFields.map((f) => (
                       <td key={f.name} className="px-4 py-3 text-gray-800">
-                        {displayValue(record[f.name], f.prismaType)}
+                        {renderCellValue(f, record, model, prefix)}
                       </td>
                     ))}
                     <td className="px-4 py-3 text-right space-x-2">

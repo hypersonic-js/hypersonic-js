@@ -16,16 +16,18 @@ pnpm install
 
 ## Common commands
 
-| Command | Description                          |
-|---|--------------------------------------|
-| `pnpm build` | Build all packages                   |
-| `pnpm test` | Run all tests                        |
-| `pnpm test:coverage` | Run tests with coverage              |
-| `pnpm lint` | Lint all packages                    |
-| `pnpm type-check` | Find type problems all packages      |
-| `pnpm docs:dev` | Start the docs dev server            |
-| `pnpm docs:build` | Build the docs                       |
-| `pnpm run licenses` | Regenerate `THIRD_PARTY_LICENSES.md` |
+| Command                      | Description                         |
+|------------------------------|-------------------------------------|
+| `pnpm build`                 | Build all packages                  |
+| `pnpm test`                  | Run all tests                       |
+| `pnpm test:coverage`         | Run tests with coverage             |
+| `pnpm lint`                  | Lint all packages                   |
+| `pnpm type-check`            | Find type problems all packages     |
+| `pnpm docs:dev`              | Start the docs dev server           |
+| `pnpm docs:build`            | Build the docs                      |
+| `pnpm run licenses`          | Regenerate `THIRD_PARTY_LICENSES.md` |
+| `git apply --check "filename.patch"` | Dry run git patch apply             |
+| `git apply "filename.patch"` | Apply git patch                     |
 
 To target a specific package:
 

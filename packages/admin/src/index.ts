@@ -8,6 +8,7 @@ export type {
   AdminFieldKind,
   AdminPaginationMeta,
   AdminAuthLike,
+  AdminFileStorageLike,
   LoggerLike,
   ScaffoldOptions,
   ScaffoldResult,

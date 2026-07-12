@@ -25,6 +25,7 @@ export function mountAdmin(
     logger: options.logger,
     auth: options.auth,
     betterAuthUserModel: options.betterAuthUserModel,
+    fileStorage: options.fileStorage,
   })
 
   app.use(prefix, authMiddleware, router)

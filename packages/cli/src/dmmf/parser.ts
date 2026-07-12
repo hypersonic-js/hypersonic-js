@@ -1,6 +1,7 @@
 import type { AdminModelMeta } from '@hypersonic-js/admin'
 import type { DmmfDocument } from './types.js'
 import { mapField, getDisplayField, getListFields, getFormFields } from './fields.js'
+import { validateFileFields } from './file-fields.js'
 
 /**
  * Converts a model name to a plural display name.
@@ -28,6 +29,8 @@ export function parseDmmf(dmmf: DmmfDocument): AdminModelMeta[] {
   )
 
   return dmmf.datamodel.models.map((model) => {
+    validateFileFields(model)
+
     // Build a map of FK scalar name → related model name.
     // Each relation (object) field lists its FK scalars in relationFromFields
     // and its type is the related model name.

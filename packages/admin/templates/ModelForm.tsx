@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useForm, Link } from '@inertiajs/react'
 
-type FieldKind = 'scalar' | 'relation' | 'enum'
+type FieldKind = 'scalar' | 'relation' | 'enum' | 'file'
 
 interface FieldMeta {
   name: string
@@ -12,6 +12,13 @@ interface FieldMeta {
   relatedModelName?: string
   relatedModelSlug?: string
   enumValues?: string[]
+  /**
+   * For `kind: 'file'` fields only — the name of the required companion
+   * Boolean field tracking this file's public/private toggle. Rendered
+   * inside the file field's own upload widget rather than as a second,
+   * independent checkbox in the form.
+   */
+  filePublicField?: string
 }
 
 interface ModelMeta {
@@ -34,6 +41,13 @@ interface FieldOptionsState {
   hasMore: boolean
   page: number
   loading: boolean
+}
+
+interface FileUploadState {
+  uploading: boolean
+  error: string | null
+  /** The name of the file most recently picked, shown while its upload is in flight or has just completed. */
+  selectedName: string | null
 }
 
 interface Props {
@@ -150,6 +164,72 @@ export default function AdminModelForm({ model, record, errors, prefix, relatedO
     }
   }
 
+  const [fileUploads, setFileUploads] = useState<Record<string, FileUploadState>>({})
+
+  function updateFileUpload(fieldName: string, patch: Partial<FileUploadState>) {
+    setFileUploads((prev) => {
+      const current: FileUploadState = prev[fieldName] ?? {
+        uploading: false,
+        error: null,
+        selectedName: null,
+      }
+      return { ...prev, [fieldName]: { ...current, ...patch } }
+    })
+  }
+
+  /**
+   * Direct-to-S3 upload: requests a presigned PUT URL from the admin server
+   * (which never sees the file's bytes), uploads the file straight to S3,
+   * then stores the resulting key in the form's data — the same key the
+   * server will persist to the field's String column on submit.
+   */
+  async function handleFileChange(field: FieldMeta, file: File | undefined): Promise<void> {
+    if (file === undefined) return
+
+    updateFileUpload(field.name, { uploading: true, error: null, selectedName: file.name })
+
+    try {
+      const presignRes = await fetch(`${prefix}/${model.urlSlug}/files/${field.name}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, mimeType: file.type }),
+      })
+      if (!presignRes.ok) {
+        throw new Error(`Could not get an upload URL (HTTP ${presignRes.status})`)
+      }
+      const { url, key } = (await presignRes.json()) as { url: string; key: string }
+
+      const uploadRes = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      })
+      if (!uploadRes.ok) {
+        throw new Error(`Upload failed (HTTP ${uploadRes.status})`)
+      }
+
+      setData(field.name, key)
+      updateFileUpload(field.name, { uploading: false })
+    } catch (err) {
+      updateFileUpload(field.name, {
+        uploading: false,
+        error: err instanceof Error ? err.message : 'Upload failed',
+      })
+    }
+  }
+
+  // Names of Boolean fields that back a file field's public/private toggle —
+  // rendered inside the file field's own widget (see renderInput's 'file'
+  // branch), so they're skipped when the main form loop below iterates
+  // formFields, to avoid rendering them a second time as an independent
+  // checkbox. Still present in formFields itself (and therefore still
+  // submitted and persisted) — this is a rendering-only filter.
+  const hiddenFieldNames = new Set(
+    model.formFields
+      .filter((f) => f.kind === 'file' && f.filePublicField !== undefined)
+      .map((f) => f.filePublicField as string),
+  )
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (isEdit) {
@@ -208,6 +288,55 @@ export default function AdminModelForm({ model, record, errors, prefix, relatedO
       )
     }
 
+    if (field.kind === 'file') {
+      const uploadState = fileUploads[field.name] ?? { uploading: false, error: null, selectedName: null }
+      const hasValue = value !== ''
+      const viewHref =
+        isEdit && hasValue
+          ? `${prefix}/${model.urlSlug}/${String(record![model.idField])}/files/${field.name}`
+          : null
+      const publicFieldName = field.filePublicField
+      const isPublic = publicFieldName !== undefined && data[publicFieldName] === 'true'
+
+      return (
+        <div className="space-y-2">
+          {hasValue && (
+            <div className="text-sm text-gray-600 flex items-center gap-2">
+              <span className="truncate">{uploadState.selectedName ?? value}</span>
+              {viewHref !== null && (
+                <a
+                  href={viewHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 hover:underline shrink-0"
+                >
+                  View
+                </a>
+              )}
+            </div>
+          )}
+          <input
+            type="file"
+            onChange={(e) => void handleFileChange(field, e.target.files?.[0])}
+            className="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+          {uploadState.uploading && <p className="text-xs text-gray-500">Uploading…</p>}
+          {uploadState.error !== null && <p className="text-xs text-red-600">{uploadState.error}</p>}
+          {publicFieldName !== undefined && (
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={isPublic}
+                onChange={(e) => setData(publicFieldName, String(e.target.checked))}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+              />
+              Public
+            </label>
+          )}
+        </div>
+      )
+    }
+
     if (field.prismaType === 'Boolean') {
       return (
         <input
@@ -253,7 +382,9 @@ export default function AdminModelForm({ model, record, errors, prefix, relatedO
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-6 space-y-5">
-          {model.formFields.map((field) => (
+          {model.formFields
+            .filter((field) => !hiddenFieldNames.has(field.name))
+            .map((field) => (
             <div key={field.name}>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 {field.name}

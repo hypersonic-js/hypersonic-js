@@ -24,6 +24,8 @@ export interface DmmfField {
   relationName?: string | null
   relationFromFields?: string[]
   relationToFields?: string[]
+  /** The field's Prisma doc comment (`///`), if any. Used to detect the `@admin.file` directive. */
+  documentation?: string
 }
 
 export interface DmmfModel {

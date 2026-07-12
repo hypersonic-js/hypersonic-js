@@ -1,6 +1,12 @@
 import { Router } from 'express'
 import type { Response, Request, NextFunction, ErrorRequestHandler } from 'express'
-import type { PrismaClientLike, AdminModelMeta, LoggerLike, AdminAuthLike } from '../types.js'
+import type {
+  PrismaClientLike,
+  AdminModelMeta,
+  LoggerLike,
+  AdminAuthLike,
+  AdminFileStorageLike,
+} from '../types.js'
 import {
   findMany,
   countRecords,
@@ -52,6 +58,13 @@ export interface AdminRouterOptions {
    * Defaults to `'User'`.
    */
   betterAuthUserModel?: string
+  /**
+   * File storage backend for `/// @admin.file` fields. When omitted, models
+   * with file fields can still be viewed/edited, but the presigned-upload
+   * route responds 501 and no automatic cleanup of replaced/deleted files
+   * occurs.
+   */
+  fileStorage?: AdminFileStorageLike
 }
 
 /**
@@ -92,6 +105,59 @@ async function buildRelatedOptions(
 }
 
 /**
+ * Returns the current S3 key of every `kind: 'file'` field on `model` that
+ * has a non-empty value in `record`.
+ */
+function getAllFileKeys(model: AdminModelMeta, record: Record<string, unknown>): string[] {
+  return model.fields
+    .filter((f) => f.kind === 'file')
+    .map((f) => record[f.name])
+    .filter((v): v is string => typeof v === 'string' && v !== '')
+}
+
+/**
+ * Compares a record's existing file-field values against the incoming update
+ * body and returns the OLD key of every file field that is changing (either
+ * replaced with a different key, or cleared) — these are the keys safe to
+ * delete from S3 once the update succeeds. Unchanged file fields are not
+ * included, since their key is still in use.
+ */
+function getStaleFileKeys(
+  model: AdminModelMeta,
+  existing: Record<string, unknown>,
+  incoming: Record<string, unknown>,
+): string[] {
+  const stale: string[] = []
+  for (const field of model.fields) {
+    if (field.kind !== 'file') continue
+    const oldValue = existing[field.name]
+    if (typeof oldValue !== 'string' || oldValue === '') continue
+    if (oldValue !== incoming[field.name]) stale.push(oldValue)
+  }
+  return stale
+}
+
+/**
+ * Best-effort deletion of S3 objects for cleanup after a record update or
+ * delete. Failures are logged, not thrown — the record-level operation the
+ * admin actually asked for has already succeeded by the time this runs, so
+ * an S3 cleanup failure (e.g. a transient outage) shouldn't surface as a
+ * failed request; it would just leave an orphaned object to clean up later.
+ */
+async function cleanupFileKeys(
+  fileStorage: AdminFileStorageLike | undefined,
+  keys: string[],
+  logger: LoggerLike | undefined,
+): Promise<void> {
+  if (fileStorage === undefined || keys.length === 0) return
+  try {
+    await fileStorage.delete(keys)
+  } catch (err) {
+    logger?.error({ err, keys }, 'Admin: failed to clean up replaced/deleted S3 file(s)')
+  }
+}
+
+/**
  * Builds an Express Router containing all admin CRUD routes.
  * The router should be mounted at the admin prefix via app.use(prefix, authMiddleware, router).
  *
@@ -103,6 +169,8 @@ async function buildRelatedOptions(
  * Routes (all relative to mount prefix):
  *   GET  /                              -> Admin/Dashboard
  *   GET  /related-options/:relatedModel -> JSON { options, hasMore } for FK load-more
+ *   POST /:model/files/:field           -> JSON { url, key } presigned S3 upload URL
+ *   GET  /:model/:id/files/:field       -> 302 redirect to a presigned S3 download URL
  *   GET  /:model                        -> Admin/ModelIndex  (paginated list)
  *   GET  /:model/new                    -> Admin/UserCreate  (when auth.api.createUser present)
  *                                          Admin/ModelForm   (create form, otherwise)
@@ -110,9 +178,13 @@ async function buildRelatedOptions(
  *   POST /:model                        -> Better Auth createUser (when auth.api.createUser present)
  *                                          create record via Prisma, otherwise
  *   PATCH /:model/:id                   -> Better Auth adminUpdateUser (when auth.api.adminUpdateUser present)
- *                                          update record via Prisma, otherwise
+ *                                          update record via Prisma, otherwise — replaced
+ *                                          `kind: 'file'` field values trigger best-effort
+ *                                          S3 cleanup of the old key (see cleanupFileKeys)
  *   DELETE /:model/:id                  -> Better Auth removeUser (when auth.api.removeUser present)
- *                                          delete record via Prisma, otherwise
+ *                                          delete record via Prisma, otherwise — also
+ *                                          triggers best-effort S3 cleanup of any
+ *                                          `kind: 'file'` field values on the deleted record
  */
 export function createAdminRouter(
   prisma: PrismaClientLike,
@@ -120,7 +192,7 @@ export function createAdminRouter(
   prefix: string,
   options: AdminRouterOptions = {},
 ): Router {
-  const { allMeta = models, logger, auth, betterAuthUserModel = 'User' } = options
+  const { allMeta = models, logger, auth, betterAuthUserModel = 'User', fileStorage } = options
 
   const router = Router()
 
@@ -172,6 +244,64 @@ export function createAdminRouter(
       const hasMore = options_.length === MAX_RELATED_OPTIONS
 
       res.json({ options: options_, hasMore })
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // POST /:model/files/:field -- request a presigned S3 upload URL for a file field.
+  // Registered before the generic /:model/* routes for the same reason as
+  // /related-options above — the extra path segments mean there's no actual
+  // ambiguity with GET/PATCH/DELETE /:model/:id, but keeping file routes
+  // grouped together here matches that convention.
+  router.post('/:model/files/:field', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const model = modelMap.get(req.params['model'] as string)
+      if (model === undefined) { res.status(404).json({ error: 'Not Found' }); return }
+
+      const field = model.fields.find((f) => f.name === req.params['field'] && f.kind === 'file')
+      if (field === undefined) { res.status(404).json({ error: 'Not Found' }); return }
+
+      if (fileStorage === undefined) {
+        res.status(501).json({ error: 'File storage is not configured for this admin instance' })
+        return
+      }
+
+      const body = req.body as { filename?: unknown; mimeType?: unknown }
+      const filename = typeof body.filename === 'string' ? body.filename : ''
+      if (filename === '') { res.status(400).json({ error: 'filename is required' }); return }
+      const mimeType = typeof body.mimeType === 'string' ? body.mimeType : undefined
+
+      const result = await fileStorage.getPresignedUploadUrl({ filename, mimeType })
+      res.json(result)
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // GET /:model/:id/files/:field -- redirect to a presigned download URL for
+  // a file field's current value. Used by ModelIndex/ModelForm "View" links.
+  router.get('/:model/:id/files/:field', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const model = modelMap.get(req.params['model'] as string)
+      if (model === undefined) { res.status(404).json({ error: 'Not Found' }); return }
+
+      const field = model.fields.find((f) => f.name === req.params['field'] && f.kind === 'file')
+      if (field === undefined) { res.status(404).json({ error: 'Not Found' }); return }
+
+      if (fileStorage === undefined) {
+        res.status(501).json({ error: 'File storage is not configured for this admin instance' })
+        return
+      }
+
+      const record = await findUnique(prisma, model, req.params['id'] as string)
+      if (record === null) { res.status(404).json({ error: 'Not Found' }); return }
+
+      const key = (record as Record<string, unknown>)[field.name]
+      if (typeof key !== 'string' || key === '') { res.status(404).json({ error: 'Not Found' }); return }
+
+      const url = await fileStorage.getPresignedDownloadUrl(key)
+      res.redirect(302, url)
     } catch (err) {
       next(err)
     }
@@ -370,7 +500,20 @@ export function createAdminRouter(
       const model = modelMap.get(req.params['model'] as string)
       if (model === undefined) { next(); return }
 
-      await updateRecord(prisma, model, req.params['id'] as string, req.body as Record<string, unknown>)
+      const hasFileFields = model.fields.some((f) => f.kind === 'file')
+      const incoming = req.body as Record<string, unknown>
+
+      let staleKeys: string[] = []
+      if (hasFileFields) {
+        const existing = await findUnique(prisma, model, req.params['id'] as string)
+        if (existing !== null) {
+          staleKeys = getStaleFileKeys(model, existing as Record<string, unknown>, incoming)
+        }
+      }
+
+      await updateRecord(prisma, model, req.params['id'] as string, incoming)
+      await cleanupFileKeys(fileStorage, staleKeys, logger)
+
       res.redirect(303, `${prefix}/${model.urlSlug}`)
     } catch (err) {
       next(err)
@@ -383,7 +526,18 @@ export function createAdminRouter(
       const model = modelMap.get(req.params['model'] as string)
       if (model === undefined) { next(); return }
 
+      const hasFileFields = model.fields.some((f) => f.kind === 'file')
+      let keysToDelete: string[] = []
+      if (hasFileFields) {
+        const existing = await findUnique(prisma, model, req.params['id'] as string)
+        if (existing !== null) {
+          keysToDelete = getAllFileKeys(model, existing as Record<string, unknown>)
+        }
+      }
+
       await deleteRecord(prisma, model, req.params['id'] as string)
+      await cleanupFileKeys(fileStorage, keysToDelete, logger)
+
       res.redirect(303, `${prefix}/${model.urlSlug}`)
     } catch (err) {
       next(err)

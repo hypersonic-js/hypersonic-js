@@ -256,9 +256,9 @@ describe('template content', () => {
     expect(content).toContain('toLocaleString()')
   })
 
-  it('ModelIndex cell passes f.prismaType to displayValue', () => {
+  it('ModelIndex cell rendering passes f.prismaType to displayValue', () => {
     const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
-    expect(content).toContain('displayValue(record[f.name], f.prismaType)')
+    expect(content).toContain('displayValue(record[field.name], field.prismaType)')
   })
 
   it('ModelIndex template does not use a regex for date detection', () => {
@@ -270,5 +270,54 @@ describe('template content', () => {
   it('ModelIndex displayValue does not call toLocaleDateString (time would be stripped)', () => {
     const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
     expect(content).not.toContain('toLocaleDateString()')
+  })
+
+  // ── @admin.file fields ────────────────────────────────────────────────────
+
+  it('ModelForm FieldKind includes "file"', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain("type FieldKind = 'scalar' | 'relation' | 'enum' | 'file'")
+  })
+
+  it('ModelForm FieldMeta declares filePublicField', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('filePublicField?: string')
+  })
+
+  it('ModelForm requests a presigned upload URL before uploading directly to S3', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('/files/${field.name}')
+    expect(content).toContain("method: 'PUT'")
+  })
+
+  it('ModelForm stores the uploaded key via setData, not the raw File object', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('setData(field.name, key)')
+  })
+
+  it('ModelForm hides a file field\'s companion Boolean from the main render loop', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('hiddenFieldNames')
+    expect(content).toContain('.filter((field) => !hiddenFieldNames.has(field.name))')
+  })
+
+  it('ModelForm does not spread stale defaults after prev/patch in updateFileUpload (TS2783 guard)', () => {
+    // Regression guard: literal defaults must be computed into a separate
+    // `current` binding, not spread inline alongside `...prev[fieldName]` in
+    // the same object literal — the latter trips TS2783 ("specified more
+    // than once") under strict mode.
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelForm.tsx'), 'utf-8')
+    expect(content).toContain('const current: FileUploadState = prev[fieldName] ?? {')
+  })
+
+  it('ModelIndex FieldMeta declares kind', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).toContain('kind: FieldKind')
+  })
+
+  it('ModelIndex renders a View link for file fields via the redirect route', () => {
+    const content = readFileSync(join(TEMPLATES_DIR, 'ModelIndex.tsx'), 'utf-8')
+    expect(content).toContain("field.kind === 'file'")
+    expect(content).toContain('/files/${field.name}')
   })
 })

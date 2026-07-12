@@ -5,11 +5,13 @@ import {
   AUTO_MANAGED_FIELD_NAMES,
   LARGE_TEXT_FIELD_NAMES,
 } from './constants.js'
+import { hasFileDirective, getFilePublicFieldName } from './file-fields.js'
 
 /** Maps a DMMF field kind to our simplified AdminFieldKind. */
 export function classifyField(field: DmmfField): AdminFieldKind {
   if (field.kind === 'object') return 'relation'
   if (field.kind === 'enum') return 'enum'
+  if (field.kind === 'scalar' && field.type === 'String' && hasFileDirective(field)) return 'file'
   return 'scalar'
 }
 
@@ -45,7 +47,7 @@ export function getDisplayField(fields: AdminFieldMeta[]): string {
 /** Returns the subset of fields suitable for table list columns. Capped at 6. */
 export function getListFields(fields: AdminFieldMeta[]): AdminFieldMeta[] {
   return fields
-    .filter((f) => f.kind === 'scalar' && !f.isList)
+    .filter((f) => (f.kind === 'scalar' || f.kind === 'file') && !f.isList)
     .filter((f) => !(LARGE_TEXT_FIELD_NAMES as readonly string[]).includes(f.name))
     .slice(0, 6)
 }
@@ -59,6 +61,14 @@ export function getListFields(fields: AdminFieldMeta[]): AdminFieldMeta[] {
  *  - FK scalar fields are INCLUDED even though isReadOnly is true — the admin
  *    needs to supply the FK value; the router renders them as a <select>.
  *  - Id fields with a default (e.g. autoincrement) are excluded.
+ *
+ * NOTE: a file field's companion `{name}Public` Boolean is deliberately kept
+ * IN formFields (unlike other "hidden" concerns) — `coerceData` uses
+ * `formFields` as its mass-assignment allowlist, so removing it here would
+ * silently prevent the value from ever being persisted. The admin's
+ * ModelForm template renders it as part of the file field's own upload
+ * widget instead of as a second, independent checkbox — a rendering
+ * choice, not a data-layer one.
  */
 export function getFormFields(fields: AdminFieldMeta[]): AdminFieldMeta[] {
   return fields.filter((f) => {
@@ -107,5 +117,6 @@ export function mapField(
     isList: field.isList,
     relationTo: field.kind === 'object' ? field.type : undefined,
     enumValues: enumDef?.values.map((v) => v.name),
+    filePublicField: kind === 'file' ? getFilePublicFieldName(field.name) : undefined,
   }
 }

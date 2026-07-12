@@ -12,6 +12,7 @@ export type {
   DatabaseProvider,
   LimitsConfig,
   LimitsBackend,
+  S3Config,
 } from './config/types.js'
 export type { Env } from './config/env.js'
 export type { LoadedConfig } from './config/loader.js'

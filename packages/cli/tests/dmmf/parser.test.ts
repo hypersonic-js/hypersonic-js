@@ -326,6 +326,84 @@ describe('parseDmmf', () => {
     expect(title!.relatedModelSlug).toBeUndefined()
   })
 
+  // ── @admin.file fields ────────────────────────────────────────────────────
+
+  it('classifies a valid @admin.file field as kind "file" with filePublicField set', () => {
+    const dmmf: DmmfDocument = {
+      datamodel: {
+        models: [{
+          name: 'Post', dbName: null,
+          fields: [
+            { name: 'id', type: 'Int', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+            { name: 'coverImage', type: 'String', kind: 'scalar', isRequired: false, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false, documentation: '@admin.file' },
+            { name: 'coverImagePublic', type: 'Boolean', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+          ],
+        }],
+        enums: [],
+      },
+    }
+    const [model] = parseDmmf(dmmf)
+    const coverImage = model!.fields.find((f) => f.name === 'coverImage')
+    expect(coverImage!.kind).toBe('file')
+    expect(coverImage!.filePublicField).toBe('coverImagePublic')
+  })
+
+  it('includes both the file field and its companion Boolean in formFields', () => {
+    const dmmf: DmmfDocument = {
+      datamodel: {
+        models: [{
+          name: 'Post', dbName: null,
+          fields: [
+            { name: 'id', type: 'Int', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+            { name: 'coverImage', type: 'String', kind: 'scalar', isRequired: false, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false, documentation: '@admin.file' },
+            { name: 'coverImagePublic', type: 'Boolean', kind: 'scalar', isRequired: true, isUnique: false, isId: false, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+          ],
+        }],
+        enums: [],
+      },
+    }
+    const [model] = parseDmmf(dmmf)
+    const formFieldNames = model!.formFields.map((f) => f.name)
+    expect(formFieldNames).toContain('coverImage')
+    // Kept in formFields (not hidden) since coerceData uses formFields as its
+    // mass-assignment allowlist — see getFormFields' doc comment.
+    expect(formFieldNames).toContain('coverImagePublic')
+  })
+
+  it('throws a descriptive error when an @admin.file field is missing its companion Boolean', () => {
+    const dmmf: DmmfDocument = {
+      datamodel: {
+        models: [{
+          name: 'Post', dbName: null,
+          fields: [
+            { name: 'id', type: 'Int', kind: 'scalar', isRequired: true, isUnique: false, isId: true, isList: false, hasDefaultValue: true, isReadOnly: false, isUpdatedAt: false },
+            { name: 'coverImage', type: 'String', kind: 'scalar', isRequired: false, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false, documentation: '@admin.file' },
+          ],
+        }],
+        enums: [],
+      },
+    }
+    expect(() => parseDmmf(dmmf)).toThrowError(/missing its companion field/)
+  })
+
+  it('validates file fields before checking for an empty model, surfacing the file-field error first', () => {
+    // Regression guard: validateFileFields must run early in parseDmmf so a
+    // misconfigured file field is reported with its own specific message,
+    // not masked by unrelated downstream errors.
+    const dmmf: DmmfDocument = {
+      datamodel: {
+        models: [{
+          name: 'Post', dbName: null,
+          fields: [
+            { name: 'coverImage', type: 'Int', kind: 'scalar', isRequired: false, isUnique: false, isId: false, isList: false, hasDefaultValue: false, isReadOnly: false, isUpdatedAt: false, documentation: '@admin.file' },
+          ],
+        }],
+        enums: [],
+      },
+    }
+    expect(() => parseDmmf(dmmf)).toThrowError(/is not a scalar String field/)
+  })
+
   it('auto-managed timestamp fields are NOT in formFields', () => {
     const dmmf: DmmfDocument = {
       datamodel: {

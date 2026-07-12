@@ -4,7 +4,7 @@ import request from 'supertest'
 
 import { createAdminRouter } from '../../src/crud/router.js'
 import { MAX_RELATED_OPTIONS } from '../../src/constants.js'
-import type { AdminModelMeta, PrismaClientLike, LoggerLike, AdminAuthLike } from '../../src/types.js'
+import type { AdminModelMeta, PrismaClientLike, LoggerLike, AdminAuthLike, AdminFileStorageLike } from '../../src/types.js'
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -80,10 +80,54 @@ const betterAuthUserModel: AdminModelMeta = {
 
 const PREFIX = '/admin'
 
+// Post model with an @admin.file field ('coverImage') and its required
+// companion Boolean ('coverImagePublic') — used by the presigned-upload-url
+// route tests and the PATCH/DELETE file-cleanup tests. Kept separate from
+// `postModel` (whose `fields` is deliberately empty) so those existing tests
+// are unaffected — `hasFileFields` is false for `postModel`.
+const postModelWithFile: AdminModelMeta = {
+  name: 'Post',
+  urlSlug: 'post',
+  displayName: 'Posts',
+  idField: 'id',
+  idType: 'number',
+  displayField: 'title',
+  fields: [
+    { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'coverImage', prismaType: 'String', kind: 'file', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false, filePublicField: 'coverImagePublic' },
+    { name: 'coverImagePublic', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+  ],
+  listFields: [
+    { name: 'id', prismaType: 'Int', kind: 'scalar', isRequired: true, isId: true, isUnique: true, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+  ],
+  formFields: [
+    { name: 'title', prismaType: 'String', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false },
+    { name: 'coverImage', prismaType: 'String', kind: 'file', isRequired: false, isId: false, isUnique: false, hasDefault: false, isReadOnly: false, isForeignKey: false, isList: false, filePublicField: 'coverImagePublic' },
+    { name: 'coverImagePublic', prismaType: 'Boolean', kind: 'scalar', isRequired: true, isId: false, isUnique: false, hasDefault: true, isReadOnly: false, isForeignKey: false, isList: false },
+  ],
+}
+
+function makeFileStorage(): AdminFileStorageLike & {
+  getPresignedUploadUrl: ReturnType<typeof vi.fn>
+  getPresignedDownloadUrl: ReturnType<typeof vi.fn>
+  delete: ReturnType<typeof vi.fn>
+} {
+  return {
+    getPresignedUploadUrl: vi
+      .fn()
+      .mockResolvedValue({ url: 'https://s3.example.com/signed', key: 'uploads/photo-01.jpg' }),
+    getPresignedDownloadUrl: vi.fn().mockResolvedValue('https://s3.example.com/signed-download'),
+    delete: vi.fn().mockResolvedValue(undefined),
+  }
+}
+
 function buildApp(
   models: AdminModelMeta[] = [postModel],
   allMeta: AdminModelMeta[] = [postModel, userModel],
   logger?: LoggerLike,
+  fileStorage?: AdminFileStorageLike,
 ) {
   const app = express()
   app.use(express.json())
@@ -99,7 +143,7 @@ function buildApp(
     next()
   })
 
-  const router = createAdminRouter(mockPrisma, models, PREFIX, { allMeta, logger })
+  const router = createAdminRouter(mockPrisma, models, PREFIX, { allMeta, logger, fileStorage })
   app.use(PREFIX, router)
 
   app.use((_req, res) => res.status(404).json({ error: 'Not Found' }))
@@ -365,6 +409,328 @@ describe('DELETE /admin/:model/:id -- Delete', () => {
     const app = buildApp()
     const res = await request(app).delete('/admin/nonexistent/1')
     expect(res.status).toBe(404)
+  })
+})
+
+// -- Presigned upload URL -------------------------------------------------------
+
+describe('POST /admin/:model/files/:field -- presigned upload URL', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns a presigned URL and key for a valid file field', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    const res = await request(app)
+      .post('/admin/post/files/coverImage')
+      .send({ filename: 'photo.jpg', mimeType: 'image/jpeg' })
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ url: 'https://s3.example.com/signed', key: 'uploads/photo-01.jpg' })
+    expect(fileStorage.getPresignedUploadUrl).toHaveBeenCalledWith({
+      filename: 'photo.jpg',
+      mimeType: 'image/jpeg',
+    })
+  })
+
+  it('passes mimeType as undefined when not provided', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    await request(app).post('/admin/post/files/coverImage').send({ filename: 'photo.jpg' })
+
+    expect(fileStorage.getPresignedUploadUrl).toHaveBeenCalledWith({
+      filename: 'photo.jpg',
+      mimeType: undefined,
+    })
+  })
+
+  it('returns 404 for an unknown model', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).post('/admin/nonexistent/files/coverImage').send({ filename: 'a.jpg' })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 for an unknown field', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).post('/admin/post/files/nonexistent').send({ filename: 'a.jpg' })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 for a field that exists but is not kind "file"', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).post('/admin/post/files/title').send({ filename: 'a.jpg' })
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 501 when fileStorage is not configured', async () => {
+    const app = buildApp([postModelWithFile], [postModelWithFile])
+    const res = await request(app).post('/admin/post/files/coverImage').send({ filename: 'a.jpg' })
+    expect(res.status).toBe(501)
+  })
+
+  it('returns 400 when filename is missing', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).post('/admin/post/files/coverImage').send({})
+    expect(res.status).toBe(400)
+    expect(fileStorage.getPresignedUploadUrl).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 when filename is an empty string', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).post('/admin/post/files/coverImage').send({ filename: '' })
+    expect(res.status).toBe(400)
+  })
+
+  it('calls next(err) and returns 500 when getPresignedUploadUrl throws', async () => {
+    const fileStorage = makeFileStorage()
+    fileStorage.getPresignedUploadUrl.mockRejectedValueOnce(new Error('S3 error'))
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).post('/admin/post/files/coverImage').send({ filename: 'a.jpg' })
+    expect(res.status).toBe(500)
+  })
+})
+
+// -- View/download redirect ------------------------------------------------------
+
+describe('GET /admin/:model/:id/files/:field -- view/download redirect', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('redirects to the presigned download URL', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: 'uploads/photo.jpg', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    const res = await request(app).get('/admin/post/1/files/coverImage')
+
+    expect(res.status).toBe(302)
+    expect(res.headers['location']).toBe('https://s3.example.com/signed-download')
+    expect(fileStorage.getPresignedDownloadUrl).toHaveBeenCalledWith('uploads/photo.jpg')
+  })
+
+  it('returns 404 for an unknown model', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).get('/admin/nonexistent/1/files/coverImage')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 for an unknown field', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).get('/admin/post/1/files/nonexistent')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 for a field that exists but is not kind "file"', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).get('/admin/post/1/files/title')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 501 when fileStorage is not configured', async () => {
+    const app = buildApp([postModelWithFile], [postModelWithFile])
+    const res = await request(app).get('/admin/post/1/files/coverImage')
+    expect(res.status).toBe(501)
+  })
+
+  it('returns 404 when the record does not exist', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce(null)
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).get('/admin/post/1/files/coverImage')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 when the field value is empty', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: '', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).get('/admin/post/1/files/coverImage')
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 when the field value is null', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: null, coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).get('/admin/post/1/files/coverImage')
+    expect(res.status).toBe(404)
+  })
+
+  it('calls next(err) and returns 500 when getPresignedDownloadUrl throws', async () => {
+    const fileStorage = makeFileStorage()
+    fileStorage.getPresignedDownloadUrl.mockRejectedValueOnce(new Error('S3 error'))
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: 'uploads/photo.jpg', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+    const res = await request(app).get('/admin/post/1/files/coverImage')
+    expect(res.status).toBe(500)
+  })
+})
+
+// -- File field cleanup on update/delete ----------------------------------------
+
+describe('PATCH /admin/:model/:id -- file field cleanup', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('deletes the old S3 key when a file field value changes', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: 'old-key.jpg', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    const res = await request(app)
+      .patch('/admin/post/1')
+      .send({ title: 'Updated', coverImage: 'new-key.jpg', coverImagePublic: 'true' })
+
+    expect(res.status).toBe(303)
+    expect(fileStorage.delete).toHaveBeenCalledWith(['old-key.jpg'])
+  })
+
+  it('does not delete when the file field value is unchanged', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: 'same-key.jpg', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    await request(app).patch('/admin/post/1').send({ title: 'Updated', coverImage: 'same-key.jpg' })
+
+    expect(fileStorage.delete).not.toHaveBeenCalled()
+  })
+
+  it('deletes the old key when the file field is cleared', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: 'old-key.jpg', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    await request(app).patch('/admin/post/1').send({ title: 'Updated' })
+
+    expect(fileStorage.delete).toHaveBeenCalledWith(['old-key.jpg'])
+  })
+
+  it('does not call findUnique for models with no file fields', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModel], [postModel, userModel], undefined, fileStorage)
+
+    await request(app).patch('/admin/post/1').send({ title: 'Updated' })
+
+    expect(postDelegate.findUnique).not.toHaveBeenCalled()
+    expect(fileStorage.delete).not.toHaveBeenCalled()
+  })
+
+  it('does not call fileStorage.delete when fileStorage is not configured', async () => {
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: 'old-key.jpg', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile])
+
+    const res = await request(app)
+      .patch('/admin/post/1')
+      .send({ title: 'Updated', coverImage: 'new-key.jpg' })
+
+    expect(res.status).toBe(303)
+    expect(postDelegate.update).toHaveBeenCalledOnce()
+  })
+
+  it('does not attempt cleanup when the existing record lookup returns null', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce(null)
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    const res = await request(app).patch('/admin/post/1').send({ title: 'Updated' })
+
+    expect(res.status).toBe(303)
+    expect(fileStorage.delete).not.toHaveBeenCalled()
+  })
+
+  it('does not treat an already-empty file field as stale', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: '', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    const res = await request(app)
+      .patch('/admin/post/1')
+      .send({ title: 'Updated', coverImage: 'new-key.jpg' })
+
+    expect(res.status).toBe(303)
+    expect(fileStorage.delete).not.toHaveBeenCalled()
+  })
+
+  it('does not fail the request when fileStorage.delete rejects, and logs the error', async () => {
+    const fileStorage = makeFileStorage()
+    fileStorage.delete.mockRejectedValueOnce(new Error('S3 unavailable'))
+    const logger: LoggerLike = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: 'old-key.jpg', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], logger, fileStorage)
+
+    const res = await request(app)
+      .patch('/admin/post/1')
+      .send({ title: 'Updated', coverImage: 'new-key.jpg' })
+
+    expect(res.status).toBe(303)
+    expect(logger.error).toHaveBeenCalledOnce()
+  })
+})
+
+describe('DELETE /admin/:model/:id -- file field cleanup', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('deletes all file field S3 keys after deleting the record', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: 'key.jpg', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    const res = await request(app).delete('/admin/post/1')
+
+    expect(res.status).toBe(303)
+    expect(postDelegate.delete).toHaveBeenCalledOnce()
+    expect(fileStorage.delete).toHaveBeenCalledWith(['key.jpg'])
+  })
+
+  it('does not call fileStorage.delete when the file field has no value', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: null, coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    await request(app).delete('/admin/post/1')
+
+    expect(fileStorage.delete).not.toHaveBeenCalled()
+  })
+
+  it('does not call findUnique for models with no file fields', async () => {
+    const fileStorage = makeFileStorage()
+    const app = buildApp([postModel], [postModel, userModel], undefined, fileStorage)
+
+    await request(app).delete('/admin/post/1')
+
+    expect(postDelegate.findUnique).not.toHaveBeenCalled()
+    expect(fileStorage.delete).not.toHaveBeenCalled()
+  })
+
+  it('does not attempt cleanup when the existing record lookup returns null', async () => {
+    const fileStorage = makeFileStorage()
+    postDelegate.findUnique.mockResolvedValueOnce(null)
+    const app = buildApp([postModelWithFile], [postModelWithFile], undefined, fileStorage)
+
+    const res = await request(app).delete('/admin/post/1')
+
+    expect(res.status).toBe(303)
+    expect(fileStorage.delete).not.toHaveBeenCalled()
+  })
+
+  it('does not fail the request when fileStorage.delete rejects, and logs the error', async () => {
+    const fileStorage = makeFileStorage()
+    fileStorage.delete.mockRejectedValueOnce(new Error('S3 unavailable'))
+    const logger: LoggerLike = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+    postDelegate.findUnique.mockResolvedValueOnce({ id: 1, title: 'Post 1', coverImage: 'key.jpg', coverImagePublic: false })
+    const app = buildApp([postModelWithFile], [postModelWithFile], logger, fileStorage)
+
+    const res = await request(app).delete('/admin/post/1')
+
+    expect(res.status).toBe(303)
+    expect(logger.error).toHaveBeenCalledOnce()
   })
 })
 

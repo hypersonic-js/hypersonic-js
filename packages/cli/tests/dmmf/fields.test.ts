@@ -48,6 +48,20 @@ describe('classifyField', () => {
   it('returns scalar for unsupported fields', () => {
     expect(classifyField(makeField({ kind: 'unsupported' }))).toBe('scalar')
   })
+  it('returns file for a String scalar field with the @admin.file directive', () => {
+    expect(classifyField(makeField({ type: 'String', documentation: '@admin.file' }))).toBe('file')
+  })
+  it('returns scalar for a String field without the directive', () => {
+    expect(classifyField(makeField({ type: 'String', documentation: undefined }))).toBe('scalar')
+  })
+  it('does not return file for a non-String field even with the directive', () => {
+    expect(classifyField(makeField({ type: 'Int', documentation: '@admin.file' }))).toBe('scalar')
+  })
+  it('does not return file for a relation field even with the directive', () => {
+    expect(classifyField(makeField({ kind: 'object', type: 'User', documentation: '@admin.file' }))).toBe(
+      'relation',
+    )
+  })
 })
 
 // ── isAutoManagedField ────────────────────────────────────────────────────────
@@ -137,6 +151,22 @@ describe('getListFields', () => {
   it('returns an empty array when all fields are relations', () => {
     expect(getListFields([makeAdminField({ name: 'user', kind: 'relation' })])).toHaveLength(0)
   })
+  it('includes file-kind fields', () => {
+    const fields = [
+      makeAdminField({ name: 'id', kind: 'scalar' }),
+      makeAdminField({ name: 'coverImage', kind: 'file', filePublicField: 'coverImagePublic' }),
+    ]
+    expect(getListFields(fields).map((f) => f.name)).toContain('coverImage')
+  })
+  it('keeps a file field\'s companion Boolean field (data allowlist, not a rendering filter)', () => {
+    const fields = [
+      makeAdminField({ name: 'coverImage', kind: 'file', filePublicField: 'coverImagePublic' }),
+      makeAdminField({ name: 'coverImagePublic', kind: 'scalar' }),
+    ]
+    const names = getListFields(fields).map((f) => f.name)
+    expect(names).toContain('coverImage')
+    expect(names).toContain('coverImagePublic')
+  })
 })
 
 // ── getFormFields ─────────────────────────────────────────────────────────────
@@ -173,6 +203,20 @@ describe('getFormFields', () => {
   })
   it('returns all editable fields when nothing is excluded', () => {
     expect(getFormFields([makeAdminField({ name: 'title' }), makeAdminField({ name: 'body' })])).toHaveLength(2)
+  })
+  it('includes file-kind fields', () => {
+    const result = getFormFields([
+      makeAdminField({ name: 'title' }),
+      makeAdminField({ name: 'coverImage', kind: 'file', filePublicField: 'coverImagePublic' }),
+    ])
+    expect(result.map((f) => f.name)).toContain('coverImage')
+  })
+  it('keeps a file field\'s companion Boolean field (data allowlist, not a rendering filter)', () => {
+    const result = getFormFields([
+      makeAdminField({ name: 'coverImage', kind: 'file', filePublicField: 'coverImagePublic' }),
+      makeAdminField({ name: 'coverImagePublic', kind: 'scalar' }),
+    ])
+    expect(result.map((f) => f.name)).toEqual(['coverImage', 'coverImagePublic'])
   })
 })
 
@@ -287,5 +331,17 @@ describe('mapField', () => {
   })
   it('marks createdAt as read-only by name convention', () => {
     expect(mapField(makeField({ name: 'createdAt' }), NO_ENUMS).isReadOnly).toBe(true)
+  })
+  it('sets filePublicField on a file-kind field', () => {
+    const result = mapField(
+      makeField({ name: 'coverImage', type: 'String', documentation: '@admin.file' }),
+      NO_ENUMS,
+    )
+    expect(result.kind).toBe('file')
+    expect(result.filePublicField).toBe('coverImagePublic')
+  })
+  it('leaves filePublicField undefined for a regular scalar field', () => {
+    const result = mapField(makeField({ name: 'title', type: 'String' }), NO_ENUMS)
+    expect(result.filePublicField).toBeUndefined()
   })
 })

@@ -1,0 +1,55 @@
+{
+  "name": "@hypersonic-js/s3",
+  "version": "0.1.0",
+  "description": "S3-backed file storage for Hypersonic.js — upload, download, and presigned URLs",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hypersonic-js/hypersonic-js"
+  },
+  "license": "MIT",
+  "author": "Joaquim Dalton-Pereira",
+  "homepage": "https://hypersonic-js.com",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=24.18.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist coverage"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1085.0",
+    "@aws-sdk/lib-storage": "3.1085.0",
+    "@aws-sdk/s3-request-presigner": "3.1085.0",
+    "ulid": "3.0.2"
+  },
+  "peerDependencies": {
+    "@hypersonic-js/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@hypersonic-js/core": "workspace:*",
+    "@types/node": "26.1.0",
+    "@vitest/coverage-v8": "4.1.10",
+    "aws-sdk-client-mock": "4.1.0",
+    "aws-sdk-client-mock-vitest": "7.1.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  }
+}

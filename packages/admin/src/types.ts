@@ -1,6 +1,6 @@
 // ── Admin field / model metadata ─────────────────────────────────────────────
 
-export type AdminFieldKind = 'scalar' | 'relation' | 'enum'
+export type AdminFieldKind = 'scalar' | 'relation' | 'enum' | 'file'
 
 export interface AdminFieldMeta {
   name: string
@@ -37,6 +37,14 @@ export interface AdminFieldMeta {
   isList: boolean
   relationTo?: string
   enumValues?: string[]
+  /**
+   * For `kind: 'file'` fields only — the name of the required companion
+   * scalar `Boolean` field that tracks this file's public/private toggle
+   * (e.g. `'coverImagePublic'` for a file field named `'coverImage'`).
+   * Set by `getFilePublicFieldName` in `@hypersonic-js/cli`'s DMMF parser —
+   * the single source of truth for the `{name}Public` naming convention.
+   */
+  filePublicField?: string
 }
 
 export interface AdminModelMeta {
@@ -132,6 +140,35 @@ export interface LoggerLike {
   info(obj: unknown, msg?: string): void
 }
 
+// ── File storage ─────────────────────────────────────────────────────────────
+
+/**
+ * Minimal structural interface satisfied by `@hypersonic-js/s3`'s `S3Storage`.
+ * Kept as a local interface — rather than a hard dependency on
+ * `@hypersonic-js/s3` — so admin only needs a file-storage instance passed
+ * in, the same pattern already used for `PrismaClientLike`, `LoggerLike`,
+ * and `AdminAuthLike`. An actual `S3Storage` instance satisfies this
+ * structurally, with no adapter needed.
+ */
+export interface AdminFileStorageLike {
+  getPresignedUploadUrl(input: {
+    filename: string
+    mimeType?: string
+    expiresIn?: number
+  }): Promise<{ url: string; key: string }>
+  /**
+   * Used by the admin router's view/download redirect route. Always used
+   * regardless of the file's public/private toggle — within the admin
+   * dashboard the caller is already an authenticated admin, so a presigned
+   * URL is simpler and more uniform than also tracking the bucket's public
+   * base URL here. The public/private toggle's effect is scoped to how the
+   * developer's own app-level routes choose to serve the file, not to
+   * admin's own preview links.
+   */
+  getPresignedDownloadUrl(fileKey: string, expiresIn?: number): Promise<string>
+  delete(fileKeys: string | string[]): Promise<void>
+}
+
 // ── Options ──────────────────────────────────────────────────────────────────
 
 export interface AdminOptions {
@@ -155,6 +192,15 @@ export interface AdminOptions {
    * Defaults to `'User'`.
    */
   betterAuthUserModel?: string
+  /**
+   * File storage backend for `/// @admin.file` fields — pass an
+   * `S3Storage` instance from `@hypersonic-js/s3`. Required for models with
+   * file fields to support uploads and automatic cleanup of replaced/deleted
+   * files; omitted otherwise. Better Auth-routed User mutations (when the
+   * Better Auth admin plugin is active) do NOT get automatic file cleanup,
+   * since those go through Better Auth's own API rather than Prisma.
+   */
+  fileStorage?: AdminFileStorageLike
 }
 
 // ── Scaffold ──────────────────────────────────────────────────────────────────

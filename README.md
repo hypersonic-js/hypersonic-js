@@ -22,6 +22,7 @@ Your app is now scaffolded and ready to be developed!
 | [`@hypersonic-js/admin`](https://npmjs.com/package/@hypersonic-js/admin)       | Auto-generated Prisma admin dashboard                 |
 | [`@hypersonic-js/cli`](https://npmjs.com/package/@hypersonic-js/cli)           | Developer CLI tooling                                 |
 | [`@hypersonic-js/limits`](https://npmjs.com/package/@hypersonic-js/limits)     | Configurable DB, Redis or memory backed rate limiting |
+| [`@hypersonic-js/s3`](https://npmjs.com/package/@hypersonic-js/s3)             | S3-backed file storage — upload, download, presigned URLs |
 
 ## Documentation
 

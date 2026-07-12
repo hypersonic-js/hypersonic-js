@@ -97,6 +97,50 @@ export type LimitsConfig =
       window: number
     }
 
+// ── S3 storage ───────────────────────────────────────────────────────────────
+
+/**
+ * Non-secret configuration for the `@hypersonic-js/s3` package.
+ * When present, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` become required
+ * environment variables (see `buildEnvSchema`) — the secret credentials
+ * themselves are deliberately not part of this config object. The app reads
+ * them from validated env and passes them to `S3Storage` explicitly, the
+ * same way `@hypersonic-js/limits`' `connectRedisClient` takes `redisUrl` as
+ * a parameter rather than reading `process.env` itself.
+ *
+ * `createApp` does not resolve `@hypersonic-js/s3` itself — constructing an
+ * `S3Storage` from this config is left to the app (or to `@hypersonic-js/admin`
+ * when a `/// @admin.file` field is present in the Prisma schema).
+ */
+export interface S3Config {
+  /** AWS region the bucket lives in (or the S3-compatible provider's equivalent). */
+  region: string
+  /** Name of the S3 bucket files are stored in. */
+  bucket: string
+  /**
+   * Base URL used to construct public file URLs: `${fileUrl}/${key}`.
+   * For AWS this is typically the bucket's public endpoint or a CDN in
+   * front of it; for S3-compatible providers, whatever public base URL
+   * that provider exposes for the bucket.
+   */
+  fileUrl: string
+  /** Optional key prefix prepended to every uploaded file's key. */
+  prefix?: string
+  /**
+   * Custom endpoint for S3-compatible providers (Cloudflare R2, MinIO,
+   * DigitalOcean Spaces, etc). Omit to use AWS's default endpoint resolution.
+   */
+  endpoint?: string
+  /**
+   * Forces path-style addressing (`https://endpoint/bucket/key`) instead of
+   * virtual-hosted-style (`https://bucket.endpoint/key`). Most S3-compatible
+   * providers require this; real AWS S3 does not. Defaults to `false`,
+   * matching the AWS SDK's own default — not inferred from `endpoint` being
+   * set, since not every S3-compatible provider needs it.
+   */
+  forcePathStyle?: boolean
+}
+
 // ── Root config ───────────────────────────────────────────────────────────────
 
 export interface HypersonicConfig {
@@ -115,4 +159,9 @@ export interface HypersonicConfig {
    * `limitsPlugin` option (see `CreateAppOptions.limitsPlugin`).
    */
   limits?: LimitsConfig
+  /**
+   * S3 file storage configuration — requires `@hypersonic-js/s3` to be
+   * installed. See `S3Config` for details.
+   */
+  s3?: S3Config
 }

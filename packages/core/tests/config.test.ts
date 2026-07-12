@@ -166,6 +166,66 @@ describe('buildEnvSchema', () => {
     const config: HypersonicConfig = { ...baseConfig, limits: { backend: 'redis', window: 10 } }
     expect(() => validateEnv(config, baseEnv)).toThrowError(/REDIS_URL/)
   })
+
+  // ── s3 — S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY ─────────────────────────
+
+  const s3Config: HypersonicConfig = {
+    ...baseConfig,
+    s3: { region: 'us-east-1', bucket: 'my-bucket', fileUrl: 'https://cdn.example.com' },
+  }
+  const s3Env = { S3_ACCESS_KEY_ID: 'AKIA...', S3_SECRET_ACCESS_KEY: 'secret' }
+
+  it('does not require S3 vars when s3 is not configured', () => {
+    expect(buildEnvSchema(baseConfig).safeParse(baseEnv).success).toBe(true)
+  })
+
+  it('requires S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY when s3 is configured', () => {
+    expect(buildEnvSchema(s3Config).safeParse(baseEnv).success).toBe(false)
+    expect(buildEnvSchema(s3Config).safeParse({ ...baseEnv, ...s3Env }).success).toBe(true)
+  })
+
+  it('rejects an empty S3_ACCESS_KEY_ID when s3 is configured', () => {
+    expect(
+      buildEnvSchema(s3Config).safeParse({ ...baseEnv, ...s3Env, S3_ACCESS_KEY_ID: '' }).success,
+    ).toBe(false)
+  })
+
+  it('rejects an empty S3_SECRET_ACCESS_KEY when s3 is configured', () => {
+    expect(
+      buildEnvSchema(s3Config).safeParse({ ...baseEnv, ...s3Env, S3_SECRET_ACCESS_KEY: '' })
+        .success,
+    ).toBe(false)
+  })
+
+  it('does not require S3_SESSION_TOKEN even when s3 is configured', () => {
+    expect(buildEnvSchema(s3Config).safeParse({ ...baseEnv, ...s3Env }).success).toBe(true)
+  })
+
+  it('accepts S3_SESSION_TOKEN when provided', () => {
+    expect(
+      buildEnvSchema(s3Config).safeParse({ ...baseEnv, ...s3Env, S3_SESSION_TOKEN: 'token' })
+        .success,
+    ).toBe(true)
+  })
+
+  it('does not add S3 vars to the schema shape when s3 is not configured', () => {
+    expect(buildEnvSchema(baseConfig).shape['S3_ACCESS_KEY_ID']).toBeUndefined()
+    expect(buildEnvSchema(baseConfig).shape['S3_SECRET_ACCESS_KEY']).toBeUndefined()
+  })
+
+  it('the error message mentions S3_ACCESS_KEY_ID when it is missing', () => {
+    expect(() => validateEnv(s3Config, baseEnv)).toThrowError(/S3_ACCESS_KEY_ID/)
+  })
+
+  it('the error message mentions S3_SECRET_ACCESS_KEY when it is missing', () => {
+    expect(() => validateEnv(s3Config, { ...baseEnv, S3_ACCESS_KEY_ID: 'AKIA...' })).toThrowError(
+      /S3_SECRET_ACCESS_KEY/,
+    )
+  })
+
+  it('validateEnv succeeds with valid S3 credentials', () => {
+    expect(() => validateEnv(s3Config, { ...baseEnv, ...s3Env })).not.toThrow()
+  })
 })
 
 describe('validateEnv', () => {
@@ -267,6 +327,52 @@ describe('HypersonicConfig logging field', () => {
   it('defineConfig round-trips the logging field unchanged', () => {
     const config: HypersonicConfig = { ...baseConfig, logging: { level: 'warn' } }
     expect(defineConfig(config).logging?.level).toBe('warn')
+  })
+})
+
+// ── S3Config ─────────────────────────────────────────────────────────────────
+
+describe('HypersonicConfig s3 field', () => {
+  it('accepts a config with no s3 field', () => {
+    const config: HypersonicConfig = { ...baseConfig }
+    expect(config.s3).toBeUndefined()
+  })
+
+  it('accepts the minimal required s3 shape', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      s3: { region: 'us-east-1', bucket: 'my-bucket', fileUrl: 'https://cdn.example.com' },
+    }
+    expect(config.s3).toEqual({
+      region: 'us-east-1',
+      bucket: 'my-bucket',
+      fileUrl: 'https://cdn.example.com',
+    })
+  })
+
+  it('accepts the full s3 shape with prefix, endpoint, and forcePathStyle', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      s3: {
+        region: 'auto',
+        bucket: 'my-bucket',
+        fileUrl: 'https://cdn.example.com',
+        prefix: 'uploads/',
+        endpoint: 'https://abc123.r2.cloudflarestorage.com',
+        forcePathStyle: true,
+      },
+    }
+    expect(config.s3?.prefix).toBe('uploads/')
+    expect(config.s3?.endpoint).toBe('https://abc123.r2.cloudflarestorage.com')
+    expect(config.s3?.forcePathStyle).toBe(true)
+  })
+
+  it('defineConfig round-trips the s3 field unchanged', () => {
+    const config: HypersonicConfig = {
+      ...baseConfig,
+      s3: { region: 'us-east-1', bucket: 'my-bucket', fileUrl: 'https://cdn.example.com' },
+    }
+    expect(defineConfig(config).s3).toEqual(config.s3)
   })
 })
 

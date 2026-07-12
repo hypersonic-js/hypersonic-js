@@ -44,6 +44,15 @@ export function buildEnvSchema(config: HypersonicConfig): z.ZodObject<z.ZodRawSh
       .min(1, 'REDIS_URL is required when limits.backend is "redis"')
   }
 
+  if (config.s3 !== undefined) {
+    shape['S3_ACCESS_KEY_ID'] = z
+      .string()
+      .min(1, 'S3_ACCESS_KEY_ID is required when the "s3" config block is present')
+    shape['S3_SECRET_ACCESS_KEY'] = z
+      .string()
+      .min(1, 'S3_SECRET_ACCESS_KEY is required when the "s3" config block is present')
+  }
+
   return z.object(shape as z.ZodRawShape)
 }
 
@@ -60,6 +69,12 @@ export type Env = {
    * Format: `redis[s]://[[username][:password]@][host][:port][/db]`
    */
   REDIS_URL?: string
+  /** Required when the `s3` config block is present. */
+  S3_ACCESS_KEY_ID?: string
+  /** Required when the `s3` config block is present. */
+  S3_SECRET_ACCESS_KEY?: string
+  /** Optional — only needed for temporary/STS credentials. */
+  S3_SESSION_TOKEN?: string
 }
 
 /**
