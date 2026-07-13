@@ -74,7 +74,7 @@
     "@vitest/coverage-v8": "4.1.10",
     "prisma": "7.8.0",
     "supertest": "7.2.2",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vitest": "4.1.10"
   }
 }
