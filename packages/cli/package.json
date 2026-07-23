@@ -34,15 +34,15 @@
     "commander": "15.0.0",
     "dotenv": "17.4.2",
     "picocolors": "1.1.1",
-    "@prisma/get-dmmf": "7.8.0"
+    "@prisma/get-dmmf": "7.9.0"
   },
   "devDependencies": {
     "@hypersonic-js/core": "workspace:*",
-    "@prisma/adapter-pg": "7.8.0",
-    "@prisma/client": "7.8.0",
-    "@types/node": "26.1.0",
+    "@prisma/adapter-pg": "7.9.0",
+    "@prisma/client": "7.9.0",
+    "@types/node": "26.1.1",
     "@vitest/coverage-v8": "4.1.10",
-    "better-auth": "1.6.23",
+    "better-auth": "1.6.25",
     "typescript": "6.0.3",
     "vitest": "4.1.10"
   }
