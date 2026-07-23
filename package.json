@@ -2,7 +2,7 @@
   "name": "hypersonic",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "pnpm@11.10.0",
+  "packageManager": "pnpm@11.17.0",
   "scripts": {
     "build": "turbo build",
     "test": "turbo test",
@@ -19,13 +19,13 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "@changesets/cli": "2.31.0",
-    "@types/node": "26.1.0",
-    "eslint": "10.6.0",
+    "@changesets/cli": "2.31.1",
+    "@types/node": "26.1.1",
+    "eslint": "10.7.0",
     "globals": "17.7.0",
-    "turbo": "2.10.4",
+    "turbo": "2.10.6",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.63.0"
+    "typescript-eslint": "8.65.0"
   },
   "engines": {
     "node": ">=24.18.0"
