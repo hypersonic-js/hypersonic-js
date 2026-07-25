@@ -1,3 +1,5 @@
+IPMPORTANT: THIS REPO IS NO LONGER MAINTAINED IF YOU WOULD LIKE TO USE HYPERSONIC JS WE RECCOMEND FORKING THE REPO AND COMPLETING AND NESSASRY DEPENDANCY UPDATES AND SECURITY PATCHES THAT HAVE NOT BE COMPLETED SINCE OUR LAST VERSION RELEASE.
+
 # Hypersonic.js
 
 A TypeScript framework for building full-stack monoliths fast. Hypersonic.js bundles Express, Inertia.js, Prisma, Better Auth, an auto-generated admin dashboard, and a CLI into one cohesive framework — taking inspiration from Django and Rails.
