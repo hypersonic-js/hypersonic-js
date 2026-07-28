@@ -6,7 +6,7 @@ settings:
 
 overrides:
   form-data: 4.0.6
-  js-yaml@4: 5.2.1
+  js-yaml@4: 5.2.2
 
 importers:
 
@@ -2632,8 +2632,8 @@ packages:
     resolution: {integrity: sha512-PMSmkqxr106Xa156c2M265Z+FTrPl+oxd/rgOQy2tijQeK5TxQ43psO1ZCwhVOSdnn+RzkzlRz/eY4BgJBYVpg==}
     hasBin: true
 
-  js-yaml@5.2.1:
-    resolution: {integrity: sha512-zfLtNfQqxVqq3uaTqSkh4x4hZw3KHobGUA0fJUj4wawW8bsQLTVqpHdXSIzidh7o+4lEW36tANuAGdaFx6Zgnw==}
+  js-yaml@5.2.2:
+    resolution: {integrity: sha512-dayzUzKkJ1MkuUtZglSebU43utNXH0OWQByK9rKOOuYIO8M5TV1y+n8ALMdG0rdzBnfNkOmZEqrURepb0ejqBw==}
     hasBin: true
 
   json-buffer@3.0.1:
@@ -4023,7 +4023,7 @@ snapshots:
   '@changesets/parse@0.4.3':
     dependencies:
       '@changesets/types': 6.1.0
-      js-yaml: 5.2.1
+      js-yaml: 5.2.2
 
   '@changesets/pre@2.0.2':
     dependencies:
@@ -5070,7 +5070,7 @@ snapshots:
       '@vue/shared': 3.5.35
       estree-walker: 2.0.2
       magic-string: 0.30.21
-      postcss: 8.5.15
+      postcss: 8.5.16
       source-map-js: 1.2.1
 
   '@vue/compiler-ssr@3.5.35':
@@ -5948,7 +5948,7 @@ snapshots:
       argparse: 1.0.10
       esprima: 4.0.1
 
-  js-yaml@5.2.1:
+  js-yaml@5.2.2:
     dependencies:
       argparse: 2.0.1
 
